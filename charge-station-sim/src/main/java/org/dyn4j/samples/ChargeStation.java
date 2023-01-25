@@ -337,7 +337,23 @@ public class ChargeStation extends SimulationFrame {
 
 		// ################################
 		//
-		// Case 2: add a pusher further out and higher
+		// Case 2A: add a low pusher, makes a bulldozer
+		// SimulationBody pusher = new SimulationBody(Color.BLACK);
+		// BodyFixture pusherFixture = pusher.addFixture(new Circle(m(1.0)));
+		// pusherFixture.setFilter(allFilter);
+		// pusherFixture.setDensity(100);
+		// pusherFixture.setFriction(0.25); // kinda slippery but not extremely so
+		// pusher.setMass(MassType.NORMAL);
+		// pusher.translate(m(robotFrameDistance), m(1.5));
+		// this.world.addBody(pusher);
+
+		// WeldJoint<SimulationBody> pusherJoint = new WeldJoint<SimulationBody>(pusher, robotFrame,
+		// 		new Vector2(m(robotFrameDistance), m(1.5)));
+		// this.world.addJoint(pusherJoint);
+
+		// ################################
+		//
+		// Case 2B: add a pusher further out and higher, works
 		SimulationBody pusher = new SimulationBody(Color.BLACK);
 		BodyFixture pusherFixture = pusher.addFixture(new Circle(m(2.5 / 2)));
 		pusherFixture.setFilter(allFilter);
