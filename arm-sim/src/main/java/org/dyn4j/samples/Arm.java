@@ -26,9 +26,9 @@ public class Arm extends SimulationFrame {
 
 	protected void initializeWorld() {
 		SimulationBody frame = new SimulationBody();
-		BodyFixture frameFixture = frame.addFixture(Geometry.createRectangle(0.5, 10.0));
+		BodyFixture frameFixture = frame.addFixture(Geometry.createRectangle(0.5, 2.5));
 		frameFixture.setFilter(normalFilter);
-		frame.translate(new Vector2(0.0, 0.0));
+		frame.translate(new Vector2(0.0, 1.25));
 		frame.setMass(MassType.INFINITE);
 		world.addBody(frame);
 
@@ -62,9 +62,9 @@ public class Arm extends SimulationFrame {
 		world.addJoint(elbow);
 
 		SimulationBody ulnaLinkage = new SimulationBody();
-		BodyFixture ulnaLinkageFixture = ulnaLinkage.addFixture(Geometry.createRectangle(0.5, 5.0), 2.0, 0.0, 0.0);
+		BodyFixture ulnaLinkageFixture = ulnaLinkage.addFixture(Geometry.createRectangle(0.5, 2.5), 2.0, 0.0, 0.0);
 		ulnaLinkageFixture.setFilter(magicFilter);
-		ulnaLinkage.translate(new Vector2(0.0, -2.5));
+		ulnaLinkage.translate(new Vector2(0.0, 1.25));
 		ulnaLinkage.setMass(MassType.NORMAL);
 		world.addBody(ulnaLinkage);
 
@@ -77,8 +77,8 @@ public class Arm extends SimulationFrame {
 		world.addJoint(beltConstraint);
 
 		DistanceJoint<SimulationBody> bicep = new DistanceJoint<SimulationBody>(
-				frame, ulnaLinkage, new Vector2(0.0, -2.5), new Vector2(0.0, -2.5));
-		bicep.setSpringStiffness(150);
+				frame, ulnaLinkage, new Vector2(0.0, 2.5), new Vector2(0.0, 2.5));
+		bicep.setSpringStiffness(175);
 		bicep.setSpringEnabled(true);
 		bicep.setRestDistance(0.0);
 		world.addJoint(bicep);
