@@ -17,6 +17,7 @@ import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 
@@ -28,8 +29,10 @@ public class Robot extends TimedRobot {
   private final DoublePublisher timestamp_publisher;
 
   private final ObjectMapper object_mapper;
+  int connListenerHandle;
 
   public Robot() {
+    DataLogManager.start();
     NetworkTableInstance inst = NetworkTableInstance.getDefault();
     inst.startServer("example server");
     NetworkTable example_table = inst.getTable("example_table");
@@ -40,6 +43,13 @@ public class Robot extends TimedRobot {
         vision_table.getEntry("tags"),
         EnumSet.of(NetworkTableEvent.Kind.kValueAll),
         (event) -> accept(event));
+    connListenerHandle = inst.addConnectionListener(true, event -> {
+      if (event.is(NetworkTableEvent.Kind.kConnected)) {
+        System.out.println("Connected to " + event.connInfo.remote_id);
+      } else if (event.is(NetworkTableEvent.Kind.kDisconnected)) {
+        System.out.println("Disconnected from " + event.connInfo.remote_id);
+      }
+    });
   }
 
   private void accept(NetworkTableEvent event) {
