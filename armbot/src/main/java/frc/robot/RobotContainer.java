@@ -17,13 +17,15 @@ public class RobotContainer {
 
         // While holding X, move the arm position to the controller's left Y and stop it
         // there.
-        Supplier<State> manualGoal = () -> new State(controller.getLeftY(), 0);
-        MoveArmToGoal manualGoalCommand = MoveArmToGoal.factory(manualGoal, arm);
+        // In simulation, the "X" button is the "C" key, and left Y is W and S
+        Supplier<State> manualGoalRad = () -> new State(controller.getLeftY() * Math.PI/2, 0);
+        MoveArmToGoal manualGoalCommand = MoveArmToGoal.factory(manualGoalRad, arm);
         controller.x().whileTrue(manualGoalCommand);
 
         // While holding Y, move the arm position to a fixed point and stop it there.
-        Supplier<State> fixedGoal = () -> new State(1, 0);
-        MoveArmToGoal fixedGoalCommand = MoveArmToGoal.factory(fixedGoal, arm);
+        // In simulation, the "Y" button is the "V" key.
+        Supplier<State> fixedGoalRad = () -> new State(0, 0);
+        MoveArmToGoal fixedGoalCommand = MoveArmToGoal.factory(fixedGoalRad, arm);
         controller.y().whileTrue(fixedGoalCommand);
     }
 }
