@@ -1,45 +1,29 @@
 package frc.robot;
 
-import edu.wpi.first.wpilibj2.command.Commands;
+import java.util.function.Supplier;
+
+import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.ArmSubsystem;
+import team100.commands.MoveArmToGoal;
+import team100.subsystems.Arm;
 
 public class RobotContainer {
-    private final ArmSubsystem m_robotArm = new ArmSubsystem();
-
-    CommandXboxController m_driverController = new CommandXboxController(0);
+    private final CommandXboxController controller;
+    private final Arm arm;
 
     public RobotContainer() {
-        configureButtonBindings();
-    }
+        controller = new CommandXboxController(0);
+        arm = new Arm(0, 0);
 
-    private void configureButtonBindings() {
-        // Move the arm to 2 radians above horizontal when the 'A' button is pressed.
-        m_driverController.a().onTrue(Commands.runOnce(
-                () -> {
-                    m_robotArm.setGoal(2);
-                    m_robotArm.enable();
-                },
-                m_robotArm));
+        // While holding X, move the arm position to the controller's left Y and stop it
+        // there.
+        Supplier<State> manualGoal = () -> new State(controller.getLeftY(), 0);
+        MoveArmToGoal manualGoalCommand = MoveArmToGoal.factory(manualGoal, arm);
+        controller.x().whileTrue(manualGoalCommand);
 
-        // Move the arm to neutral position when the 'B' button is pressed.
-        m_driverController.b().onTrue(Commands.runOnce(
-                () -> {
-                    m_robotArm.setGoal(ArmSubsystem.kArmOffsetRads);
-                    m_robotArm.enable();
-                },
-                m_robotArm));
-
-        // Disable the arm controller when Y is pressed.
-        m_driverController.y().onTrue(Commands.runOnce(m_robotArm::disable));
-    }
-
-    /**
-     * Disables all ProfiledPIDSubsystem and PIDSubsystem instances. This should be
-     * called on robot
-     * disable to prevent integral windup.
-     */
-    public void disablePIDSubsystems() {
-        m_robotArm.disable();
+        // While holding Y, move the arm position to a fixed point and stop it there.
+        Supplier<State> fixedGoal = () -> new State(1, 0);
+        MoveArmToGoal fixedGoalCommand = MoveArmToGoal.factory(fixedGoal, arm);
+        controller.y().whileTrue(fixedGoalCommand);
     }
 }
