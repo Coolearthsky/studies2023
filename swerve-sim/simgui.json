@@ -6,6 +6,10 @@
     },
     "windows": {
       "/field": {
+        "waypoint": {
+          "arrowSize": 21,
+          "style": "Track"
+        },
         "window": {
           "visible": true
         }
