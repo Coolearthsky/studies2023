@@ -244,15 +244,15 @@ public class Robot extends TimedRobot {
     // more expo works well with less deadband.
 
     private double getRotSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getRightX(), 0.01), 0.5);
-    }
-
-    private double getYSpeedInput1_1() {
         return expoInput(deadband(m_controller.getLeftX(), 0.01), 0.5);
     }
 
+    private double getYSpeedInput1_1() {
+        return expoInput(deadband(m_controller.getRightX(), 0.01), 0.5);
+    }
+
     private double getXSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getLeftY(), 0.01), 0.5);
+        return expoInput(deadband(m_controller.getRightY(), 0.01), 0.5);
     }
 
     @Override
