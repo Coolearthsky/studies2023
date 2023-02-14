@@ -9,10 +9,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.filter.SlewRateLimiter;
+// import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -21,50 +20,57 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.networktables.DoublePublisher;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 public class Robot extends TimedRobot {
-    private final XboxController m_controller = new XboxController(0);
+    private final CommandXboxController m_controller = new CommandXboxController(0);
     private final Drivetrain m_swerve = new Drivetrain();
+    private final DriveManually driveManually = new DriveManually(m_swerve);
 
-    // Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-    private final SlewRateLimiter m_xspeedLimiter = new SlewRateLimiter(3);
-    private final SlewRateLimiter m_yspeedLimiter = new SlewRateLimiter(3);
-    private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(3);
+    // // Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
+    // private final SlewRateLimiter m_xspeedLimiter = new SlewRateLimiter(3);
+    // private final SlewRateLimiter m_yspeedLimiter = new SlewRateLimiter(3);
+    // private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(3);
 
     Command autoc;
     ProfiledPIDController m_rotationController;
     PIDController xController;
     PIDController yController;
 
-    private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
-    private final NetworkTable m_table = inst.getTable("robot");
-    private final DoublePublisher m_rotationSetpointPosition = m_table.getDoubleTopic("rotationSetpointPosition")
-            .publish();
-    private final DoublePublisher m_rotationSetpointVelocity = m_table.getDoubleTopic("rotationSetpointVelocity")
-            .publish();
+    // private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
+    // private final NetworkTable m_table = inst.getTable("robot");
+    // private final DoublePublisher m_rotationSetpointPosition = m_table.getDoubleTopic("rotationSetpointPosition")
+    //         .publish();
+    // private final DoublePublisher m_rotationSetpointVelocity = m_table.getDoubleTopic("rotationSetpointVelocity")
+    //         .publish();
 
-    private final DoublePublisher m_rotationPositionError = m_table.getDoubleTopic("rotationPositionError").publish();
-    private final DoublePublisher m_rotationVelocityError = m_table.getDoubleTopic("rotationVelocityError").publish();
+    // private final DoublePublisher m_rotationPositionError = m_table.getDoubleTopic("rotationPositionError").publish();
+    // private final DoublePublisher m_rotationVelocityError = m_table.getDoubleTopic("rotationVelocityError").publish();
 
-    // controller errors
-    private final DoublePublisher m_XErrorPub = m_table.getDoubleTopic("xError").publish();
-    private final DoublePublisher m_YErrorPub = m_table.getDoubleTopic("yError").publish();
+    // // controller errors
+    // private final DoublePublisher m_XErrorPub = m_table.getDoubleTopic("xError").publish();
+    // private final DoublePublisher m_YErrorPub = m_table.getDoubleTopic("yError").publish();
+
+    public Robot() {
+
+        Command waypointCommand =  toWaypoint2();
+        m_controller.y().whileTrue(waypointCommand);
+
+        m_swerve.setDefaultCommand(driveManually);
+    }
 
     @Override
     public void autonomousInit() {
         // autoc = auto();
         // autoc = circle();
-        autoc = toWaypoint();
+        // autoc = toWaypoint();
+        autoc = toWaypoint2();
         autoc.schedule();
     }
 
@@ -95,11 +101,16 @@ public class Robot extends TimedRobot {
 
     public Command toWaypoint() {
         // fixed waypoint for now
-        Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 4, new Rotation2d(-Math.PI / 2));
+//        Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 4, new Rotation2d(-Math.PI / 2));
+        Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 0, new Rotation2d());
         Supplier<Pose2d> poseSupplier = m_swerve::getPose;
         Consumer<SwerveModuleState[]> outputModuleStates = m_swerve::setModuleStates;
         return new DriveToWaypoint(waypointSupplier, poseSupplier, m_swerve.m_kinematics,
                 outputModuleStates, m_swerve);
+    }
+
+    public Command toWaypoint2() {
+        return new DriveToWaypoint2(new Pose2d(8, 4, new Rotation2d()), m_swerve);
     }
 
     /**
@@ -220,54 +231,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        driveWithJoystick(true);
-    }
-
-    private void driveWithJoystick(boolean fieldRelative) {
-        // Get the x speed. We are inverting this because Xbox controllers return
-        // negative values when we push forward.
-        final var xSpeed = -m_xspeedLimiter.calculate(getXSpeedInput1_1()) * Drivetrain.kMaxSpeed;
-
-        // Get the y speed or sideways/strafe speed. We are inverting this because
-        // we want a positive value when we pull to the left. Xbox controllers
-        // return positive values when you pull to the right by default.
-        final var ySpeed = -m_yspeedLimiter.calculate(getYSpeedInput1_1()) * Drivetrain.kMaxSpeed;
-
-        // Get the rate of angular rotation. We are inverting this because we want a
-        // positive value when we pull to the left (remember, CCW is positive in
-        // mathematics). Xbox controllers return positive values when you pull to
-        // the right by default.
-        final var rot = -m_rotLimiter.calculate(getRotSpeedInput1_1()) * Drivetrain.kMaxAngularSpeed;
-
-        m_swerve.drive(xSpeed, ySpeed, rot, fieldRelative);
-    }
-
-    /**
-     * Mix in the cube of the input; this feature is generally called "expo"
-     * in the RC community even though it's not an exponential function.
-     * 
-     * @param fraction how much cubic to add, [0,1]
-     */
-    private double expoInput(double input, double fraction) {
-        return (1 - fraction) * input + fraction * input * input * input;
-    }
-
-    private double deadband(double input, double threshold) {
-        return MathUtil.applyDeadband(input, threshold, Double.MAX_VALUE);
-    }
-
-    // more expo works well with less deadband.
-
-    private double getRotSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getLeftX(), 0.01), 0.5);
-    }
-
-    private double getYSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getRightX(), 0.01), 0.5);
-    }
-
-    private double getXSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getRightY(), 0.01), 0.5);
+        //driveWithJoystick(true);
     }
 
     @Override
@@ -290,6 +254,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testPeriodic() {
-        m_swerve.test(getYSpeedInput1_1(), getRotSpeedInput1_1());
+       // m_swerve.test(getYSpeedInput1_1(), getRotSpeedInput1_1());
     }
 }

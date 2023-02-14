@@ -99,6 +99,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public Pose2d getPose() {
+    updateOdometry();
     return m_poseEstimator.getEstimatedPosition();
   }
 
