@@ -163,12 +163,14 @@ public class SwerveModule {
      * Simulate module drive/steer velocity using some heuristics.
      */
     public double simulatedVelocity(double output, double ks, double kv) {
+        // 1 = no inertia, 0 = no output
+        final double inertia = 0.75;
         // Invert feedforward.
         double result = (output - ks * Math.signum(output)) / kv;
         // Add low-frequency noise.
         result += 0.1 * pinkNoise.nextValue();
         // Add inertia.
-        return 0.5 * m_driveEncoder.getRate() + 0.5 * result;
+        return inertia * result + (1-inertia) * m_driveEncoder.getRate();
     }
 
     public void simulationPeriodic() {
