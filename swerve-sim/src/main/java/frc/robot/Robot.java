@@ -6,6 +6,8 @@ package frc.robot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -14,6 +16,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
@@ -60,7 +63,8 @@ public class Robot extends TimedRobot {
     @Override
     public void autonomousInit() {
         // autoc = auto();
-        autoc = circle();
+        // autoc = circle();
+        autoc = toWaypoint();
         autoc.schedule();
     }
 
@@ -71,21 +75,31 @@ public class Robot extends TimedRobot {
 
         // System.out.printf("scheduled %s\n", autoc.isScheduled()?"yes":"no");
 
-        m_rotationPositionError.set(m_rotationController.getPositionError());
-        m_rotationVelocityError.set(m_rotationController.getVelocityError());
-        m_rotationSetpointPosition.set(m_rotationController.getSetpoint().position);
-        m_rotationSetpointVelocity.set(m_rotationController.getSetpoint().velocity);
+        // TODO move this to a class for the circle path etc.
+        // m_rotationPositionError.set(m_rotationController.getPositionError());
+        // m_rotationVelocityError.set(m_rotationController.getVelocityError());
+        // m_rotationSetpointPosition.set(m_rotationController.getSetpoint().position);
+        // m_rotationSetpointVelocity.set(m_rotationController.getSetpoint().velocity);
 
         // observe the controllers
 
-        m_XErrorPub.set(xController.getPositionError());
-        m_YErrorPub.set(yController.getPositionError());
+        // m_XErrorPub.set(xController.getPositionError());
+        // m_YErrorPub.set(yController.getPositionError());
 
     }
 
     public void autonomousExit() {
         if (autoc != null)
             autoc.cancel();
+    }
+
+    public Command toWaypoint() {
+        // fixed waypoint for now
+        Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 4, new Rotation2d(-Math.PI / 2));
+        Supplier<Pose2d> poseSupplier = m_swerve::getPose;
+        Consumer<SwerveModuleState[]> outputModuleStates = m_swerve::setModuleStates;
+        return new DriveToWaypoint(waypointSupplier, poseSupplier, m_swerve.m_kinematics,
+                outputModuleStates, m_swerve);
     }
 
     /**
@@ -120,7 +134,8 @@ public class Robot extends TimedRobot {
         TrapezoidProfile.Constraints rotationConstraints = new TrapezoidProfile.Constraints(
                 Drivetrain.kMaxAngularSpeed / 2, Drivetrain.kMaxAngularSpeed / 2);
         // OK go a little crazy with the PID
-        // m_rotationController = new ProfiledPIDController(1.5, 0, 0, rotationConstraints);
+        // m_rotationController = new ProfiledPIDController(1.5, 0, 0,
+        // rotationConstraints);
         m_rotationController = new ProfiledPIDController(5, 0, 0, rotationConstraints);
         SmartDashboard.putData("rotation controller", m_rotationController);
 
@@ -244,15 +259,15 @@ public class Robot extends TimedRobot {
     // more expo works well with less deadband.
 
     private double getRotSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getRightX(), 0.01), 0.5);
-    }
-
-    private double getYSpeedInput1_1() {
         return expoInput(deadband(m_controller.getLeftX(), 0.01), 0.5);
     }
 
+    private double getYSpeedInput1_1() {
+        return expoInput(deadband(m_controller.getRightX(), 0.01), 0.5);
+    }
+
     private double getXSpeedInput1_1() {
-        return expoInput(deadband(m_controller.getLeftY(), 0.01), 0.5);
+        return expoInput(deadband(m_controller.getRightY(), 0.01), 0.5);
     }
 
     @Override

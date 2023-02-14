@@ -80,7 +80,8 @@ public class Drivetrain extends SubsystemBase {
   DoublePublisher actualYSpeedPubM_s = inst.getTable("actual").getDoubleTopic("yspeed m_s").publish();
   DoublePublisher actualThetaSpeedPubRad_s = inst.getTable("actual").getDoubleTopic("thetaspeed rad_s").publish();
 
-  DoubleArrayPublisher fieldPub;
+  DoubleArrayPublisher robotPosePub;
+  DoubleArrayPublisher waypointPub;
   StringPublisher fieldTypePub;
 
   List<CallbackStore> cbs = new ArrayList<CallbackStore>();
@@ -91,7 +92,8 @@ public class Drivetrain extends SubsystemBase {
     m_gyro.reset();
     inst.startClient4("blarg");
     NetworkTable fieldTable = inst.getTable("field");
-    fieldPub = fieldTable.getDoubleArrayTopic("robotPose").publish();
+    robotPosePub = fieldTable.getDoubleArrayTopic("robotPose").publish();
+    waypointPub = fieldTable.getDoubleArrayTopic("waypoint").publish();
     fieldTypePub = fieldTable.getStringTopic(".type").publish();
     fieldTypePub.set("Field2d");
   }
@@ -172,8 +174,14 @@ public class Drivetrain extends SubsystemBase {
         });
 
     Pose2d newEstimate = m_poseEstimator.getEstimatedPosition();
-    fieldPub.set(new double[] {
+    robotPosePub.set(new double[] {
         newEstimate.getX(),
+        newEstimate.getY(),
+        newEstimate.getRotation().getDegrees()
+    });
+    // for testing
+    waypointPub.set(new double[] {
+        newEstimate.getX() + 1,
         newEstimate.getY(),
         newEstimate.getRotation().getDegrees()
     });
