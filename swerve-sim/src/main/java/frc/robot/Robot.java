@@ -32,12 +32,7 @@ public class Robot extends TimedRobot {
     private final CommandXboxController m_controller = new CommandXboxController(0);
     private final Drivetrain m_swerve = new Drivetrain();
     private final DriveManually driveManually = new DriveManually(m_swerve);
-
-    // // Slew rate limiters to make joystick inputs more gentle; 1/3 sec from 0 to 1.
-    // private final SlewRateLimiter m_xspeedLimiter = new SlewRateLimiter(3);
-    // private final SlewRateLimiter m_yspeedLimiter = new SlewRateLimiter(3);
-    // private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(3);
-
+    
     Command autoc;
     ProfiledPIDController m_rotationController;
     PIDController xController;
