@@ -1,8 +1,28 @@
 {
   "HALProvider": {
     "Addressable LEDs": {
+      "0": {
+        "columns": 1
+      },
       "window": {
         "visible": true
+      }
+    },
+    "Analog Inputs": {
+      "window": {
+        "visible": true
+      }
+    },
+    "Other Devices": {
+      "ADXRS450[0]": {
+        "header": {
+          "open": true
+        }
+      }
+    },
+    "RoboRIO": {
+      "RoboRIO Input": {
+        "open": true
       }
     }
   },
