@@ -69,7 +69,7 @@ public class OnboardIndicator {
         led.setLength(kStripLength);
         led.start();
         notifier = new Notifier(this::flip);
-        notifier.startPeriodic(0.5 / freq);
+        notifier.startPeriodic(4.0 / freq);
     }
 
     /**
@@ -142,25 +142,36 @@ public class OnboardIndicator {
         double absHeadingRadiansNWU = Math.abs(heading.getRadians());
         if (absHeadingRadiansNWU < Math.PI / 4) {
             // front facing driver, back facing loader
-            if (flashOn) {
+            if (flashOn && active == State.NO_FIX) {
                 System.arraycopy(State.OFF.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*4);
                //led.setData(State.OFF.buffer);
             } else {
                 System.arraycopy(active.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*4);
                 //led.setData(active.buffer);
             }
-            System.arraycopy(State.CONE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+            System.arraycopy(State.CUBE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
         } else if (absHeadingRadiansNWU < 3.0 * Math.PI / 4) {
             // some sideways orientation
             // steady orange both sides
-            led.setData(State.ORANGE.buffer);
+            // led.setData(State.ORANGE.buffer); *rff
+            System.arraycopy(State.ORANGE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*8);
         } else {
             // front facing loader, back facing driver
-            if (flashOn) {
+
+            if (flashOn && active == State.NO_FIX) {
+               System.arraycopy(State.OFF.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+               //led.setData(State.OFF.buffer);
+            } else {
+                System.arraycopy(active.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+                //led.setData(active.buffer);
+            }
+            System.arraycopy(State.CUBE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*4);
+           
+            /*if (flashOn) {
                 led.setData(State.OFF.buffer);
             } else {
                 led.setData(active.buffer);
-            }
+            } */
         }
         led.setData(activeBuffer);
 
