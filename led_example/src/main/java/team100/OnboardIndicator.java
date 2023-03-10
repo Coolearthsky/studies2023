@@ -58,6 +58,8 @@ public class OnboardIndicator {
     private boolean flashOn;
     private Rotation2d heading;
     private MyAddressableLEDBuffer activeBuffer;
+    private int gamePiece;
+    private int goodFixTimeOutCount;
 
     /**
      * @param freq Desired flashing frequency (Hz)
@@ -69,7 +71,7 @@ public class OnboardIndicator {
         led.setLength(kStripLength);
         led.start();
         notifier = new Notifier(this::flip);
-        notifier.startPeriodic(0.5 / freq);
+        notifier.startPeriodic(2.0 / freq);
     }
 
     /**
@@ -129,42 +131,75 @@ public class OnboardIndicator {
 
     public void go() {
         active = State.GOOD_FIX;
+        // Set count down clock which decreases every time flip routine is called.  
+        // When it goes to zero, 'active' will be set to State.NO_FIX.  Adjusting this 
+        // value in conjuntion with the Notify frequency allows user to specify how 
+        // lone the most recent position fix should be considered valid
+
+        goodFixTimeOutCount = 3;  // This value is a guess which should provide about 3/4 sec T.O.?
+        // Adjust as appropriate
     }
 
-    public void nogo() {
+    public void nogo() {    // This is not expected to be called & should not be called
         active = State.NO_FIX;
     }
 
+    public void setGamePieceType(int gamePiece) {
+        this.gamePiece = gamePiece;  // Cone = 1, Cube =2
+    }
+
     /**
-     * this actually does everything, not just flipping
+     * this actually controls all indicator LEDs, not just flipping light to dark
      */
     private void flip() {
         double absHeadingRadiansNWU = Math.abs(heading.getRadians());
         if (absHeadingRadiansNWU < Math.PI / 4) {
             // front facing driver, back facing loader
-            if (flashOn) {
+            if (flashOn && active == State.NO_FIX) {
                 System.arraycopy(State.OFF.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*4);
                //led.setData(State.OFF.buffer);
             } else {
                 System.arraycopy(active.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*4);
                 //led.setData(active.buffer);
             }
-            System.arraycopy(State.CONE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+
+            if (gamePiece == 1) {   // Cone = 1
+                System.arraycopy(State.CONE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+            } else {
+                System.arraycopy(State.CUBE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+            }
+
         } else if (absHeadingRadiansNWU < 3.0 * Math.PI / 4) {
             // some sideways orientation
             // steady orange both sides
-            led.setData(State.ORANGE.buffer);
+            // led.setData(State.ORANGE.buffer); *rff
+            System.arraycopy(State.ORANGE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), 0, kOffset*8);
         } else {
             // front facing loader, back facing driver
-            if (flashOn) {
-                led.setData(State.OFF.buffer);
+
+            if (flashOn && active == State.NO_FIX) {
+               System.arraycopy(State.OFF.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+               //led.setData(State.OFF.buffer);
             } else {
-                led.setData(active.buffer);
+                System.arraycopy(active.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+                //led.setData(active.buffer);
             }
+
+            if (gamePiece == 1) {   // Cone = 1
+                System.arraycopy(State.CONE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+            } else {
+                System.arraycopy(State.CUBE.buffer.getBuffer(), 0, activeBuffer.getBuffer(), kOffset*4, kOffset*4);
+            }
+              
         }
+
         led.setData(activeBuffer);
 
-
         flashOn ^= true; // flip with xor
+
+        if (goodFixTimeOutCount-- <= 0) {  // If a good AprilTag Fix is not found, 
+           //  set the active state to NO_FIX
+            active = State.NO_FIX;
+        }
     }
 }
