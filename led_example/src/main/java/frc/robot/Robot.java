@@ -27,6 +27,9 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         double headingDegreesNWU = -1.0 * gyro.getAngle();
+        //double headingRadiansNWU = Units.degreesToRadians(headingDegreesNWU);
+        //double wrappedHeadingRadiansNWU = MathUtil.angleModulus(headingRadiansNWU);
+        headingDegreesNWU = 0.0;
         double headingRadiansNWU = Units.degreesToRadians(headingDegreesNWU);
         double wrappedHeadingRadiansNWU = MathUtil.angleModulus(headingRadiansNWU);
         Rotation2d heading = new Rotation2d(wrappedHeadingRadiansNWU);
