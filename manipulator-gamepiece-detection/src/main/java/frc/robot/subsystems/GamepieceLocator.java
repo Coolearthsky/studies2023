@@ -5,28 +5,39 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.util.sendable.SendableBuilder;
 
 public class GamepieceLocator extends SubsystemBase {
+    DistanceSensor leftSensor;
+    DistanceSensor rightSensor;
+
     /** Creates a new GamepieceLocator. */
-    public GamepieceLocator() {}
+    public GamepieceLocator() {
+        leftSensor = new DistanceSensor(0x52, 0);
+        rightSensor = new DistanceSensor(0x56, 0);
+    }
 
     /**
-     * An example method querying a boolean state of the subsystem (for example, a digital sensor).
-     *
-     * @return value of some boolean subsystem state, such as a digital sensor.
+     * Get the offset of the gamepiece from the center of the manipulator in millimeters
+     * <p>Right side of the robot is positive</p>
+     * @return offset in millimeters
      */
-    public boolean exampleCondition() {
-        // Query some boolean state, such as a digital sensor.
-        return false;
+    public double getOffsetMillimeters() {
+        return (leftSensor.getMillimeters() - rightSensor.getMillimeters()) / 2;
     }
 
     @Override
     public void periodic() {
         // This method will be called once per scheduler run
+        leftSensor.periodic();
+        rightSensor.periodic();
     }
 
     @Override
-    public void simulationPeriodic() {
-        // This method will be called once per scheduler run during simulation
+    public void initSendable(SendableBuilder builder) {
+        super.initSendable(builder);
+        builder.addDoubleProperty("offset", () -> this.getOffsetMillimeters(), null);
+        builder.addDoubleProperty("left", () -> this.leftSensor.getMillimeters(), null);
+        builder.addDoubleProperty("right", () -> this.rightSensor.getMillimeters(), null);
     }
 }
