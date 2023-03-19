@@ -18,6 +18,7 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     if (controller.getAButton()) {
       double value = controller.getLeftTriggerAxis();
+      //double value = 1.0; // all the way on is ok
       illuminator.set(value);
     } else {
       illuminator.set(0);
