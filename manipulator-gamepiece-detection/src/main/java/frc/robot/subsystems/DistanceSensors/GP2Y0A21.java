@@ -18,6 +18,7 @@ public class GP2Y0A21 extends DistanceSensor {
         this(analogPort, 0);
     }
 
+    @Override
     public void periodic() {
         distance = readSensor() * 1.65; // Seemed to give more accurate data, may need further adjustments.
                                         // Possibly because these sensors are not as accurate at close ranges
@@ -36,5 +37,9 @@ public class GP2Y0A21 extends DistanceSensor {
 
     public double getMillimeters() {
         return distance - surfaceOffset;
+    }
+
+    public double getCentimeters() {
+        return getMillimeters() / 10.0;
     }
 }
