@@ -56,7 +56,7 @@ public class SwerveModule {
             new TrapezoidProfile.Constraints(
                     kModuleMaxAngularVelocity, kModuleMaxAngularAcceleration));
 
-    // Gains are for example purposes only - must be determined for your own robot!
+
     private final SimpleMotorFeedforward m_driveFeedforward = new SimpleMotorFeedforward(DRIVE_KS, DRIVE_KV);
     private final SimpleMotorFeedforward m_turnFeedforward = new SimpleMotorFeedforward(TURN_KS, TURN_KV);
 
@@ -159,9 +159,10 @@ public class SwerveModule {
      */
     public double simulatedVelocity(double output, double ks, double kv) {
         // 1 = no inertia, 0 = no output
-        final double inertia = 0.75;
+        final double inertia = 0.6;
         // Invert feedforward.
         double result = (output - ks * Math.signum(output)) / kv;
+        result *= 0.9; // a little under
         // Add low-frequency noise.
         result += 0.1 * pinkNoise.nextValue();
         // Add inertia.
