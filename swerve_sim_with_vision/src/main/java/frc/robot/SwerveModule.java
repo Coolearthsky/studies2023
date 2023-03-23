@@ -108,7 +108,6 @@ public class SwerveModule {
             int driveEncoderChannelB,
             int turningEncoderChannelA,
             int turningEncoderChannelB) {
-        // m_name = name;
         m_table = inst.getTable(name);
         m_DriveEncoderPubM = m_table.getDoubleTopic("driveEncoderDistanceM").publish();
         m_TurnEncoderPubRad = m_table.getDoubleTopic("turnEncoderDistanceRad").publish();
@@ -177,7 +176,6 @@ public class SwerveModule {
     }
 
     public void simulationPeriodic(double dtS) {
-
         // derive velocity from motor output
         double driveVM_s = simulatedVelocity(m_DrivePWMSim.getSpeed(), DRIVE_KS, DRIVE_KV);
         double turnVRad_s = simulatedVelocity(m_TurnPWMSim.getSpeed(), TURN_KS, TURN_KV);
@@ -202,21 +200,11 @@ public class SwerveModule {
         // nothing to do
     }
 
-    /**
-     * Returns the current state of the module.
-     *
-     * @return The current state of the module.
-     */
     public SwerveModuleState getState() {
         return new SwerveModuleState(
                 m_driveEncoder.getRate(), new Rotation2d(m_turningEncoder.getDistance()));
     }
 
-    /**
-     * Returns the current position of the module.
-     *
-     * @return The current position of the module.
-     */
     public SwerveModulePosition getPosition() {
         return new SwerveModulePosition(
                 m_driveEncoder.getDistance(), new Rotation2d(m_turningEncoder.getDistance()));
@@ -228,31 +216,17 @@ public class SwerveModule {
         m_TurnPInPubRad.set(state.angle.getRadians());
     }
 
-    /**
-     * Sets the desired state for the module.
-     *
-     * @param desiredState Desired state with speed and angle.
-     */
     public void setDesiredState(SwerveModuleState desiredState) {
-        // Optimize the reference state to avoid spinning further than 90 degrees
         SwerveModuleState state = SwerveModuleState.optimize(desiredState,
                 new Rotation2d(m_turningEncoder.getDistance()));
-        // state.speedMetersPerSecond max is correct at 3.
-        // Calculate the drive output from the drive PID controller.
         driveOutput = m_drivePIDController.calculate(m_driveEncoder.getRate(), state.speedMetersPerSecond);
-
         driveFeedforward = m_driveFeedforward.calculate(state.speedMetersPerSecond);
 
-        // Calculate the turning motor output from the turning PID controller.
         final double turnOutput = m_turningPIDController.calculate(m_turningEncoder.getDistance(),
                 state.angle.getRadians());
-
         final double turnFeedforward = m_turnFeedforward.calculate(m_turningPIDController.getSetpoint().velocity);
 
-        // m_driveMotor.setVoltage(driveOutput + driveFeedforward);
         m_driveMotor.set(driveOutput + driveFeedforward);
-
-        // m_turningMotor.setVoltage(turnOutput + turnFeedforward);
         m_turningMotor.set(turnOutput + turnFeedforward);
     }
 
@@ -268,14 +242,7 @@ public class SwerveModule {
     public void close() {
         m_driveMotor.close();
         m_turningMotor.close();
-
-        // m_DrivePWMSim.close();
-        // m_TurnPWMSim.close();
-
         m_driveEncoder.close();
         m_turningEncoder.close();
-
-        // m_DriveEncoderSim.close();
-        // m_TurnEncoderSim.close();
     }
 }
