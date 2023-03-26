@@ -58,7 +58,7 @@ public class Drivetrain extends SubsystemBase {
             },
             new Pose2d(),
             VecBuilder.fill(0.1, 0.1, 0.1),
-            VecBuilder.fill(0.9, 0.9, 0.9));
+            VecBuilder.fill(0.001, 0.001, 0.001));
 
     NetworkTableInstance inst = NetworkTableInstance.getDefault();
 

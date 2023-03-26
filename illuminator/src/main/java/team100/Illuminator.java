@@ -50,7 +50,7 @@ public class Illuminator {
         // note that "smart" current limiting appears to be for brushless motors only,
         // and "secondary" current limiting appears not to work (it produces an error in
         // the log, and happily outputs max current), so we don't use either one.
-        led = new CANSparkMax(21, MotorType.kBrushed);
+        led = new CANSparkMax(25, MotorType.kBrushed);
         led.setInverted(true);
     }
 

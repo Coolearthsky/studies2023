@@ -5,6 +5,7 @@ import java.util.List;
 import edu.wpi.first.math.controller.HolonomicDriveController;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -33,6 +34,11 @@ public class TrajectoryToWaypoint extends CommandBase {
     private final PIDController yController;
     private final HolonomicDriveController m_controller;
 
+    // smooth out observations prior to giving them to the holonomic controller
+    private final LinearFilter xFilter = LinearFilter.singlePoleIIR(0.06, 0.02);
+    private final LinearFilter yFilter = LinearFilter.singlePoleIIR(0.06, 0.02);
+    private final LinearFilter rFilter = LinearFilter.singlePoleIIR(0.06, 0.02);
+
     private Trajectory m_trajectory;
 
     // Network Tables
@@ -59,15 +65,18 @@ public class TrajectoryToWaypoint extends CommandBase {
     public TrajectoryToWaypoint(Pose2d goal, Drivetrain m_swerve) {
         this.goal = goal;
         this.m_swerve = m_swerve;
-        xController = new PIDController(5, 0, 0);
+        xController = new PIDController(10, 0, 1);
+        xController.setTolerance(0.01);
         SmartDashboard.putData("x controller", xController);
-        yController = new PIDController(5, 0, 0);
+        yController = new PIDController(10, 0, 1);
+        yController.setTolerance(0.01);
         SmartDashboard.putData("y controller", yController);
-        TrapezoidProfile.Constraints rotationConstraints = new TrapezoidProfile.Constraints(4, 4);
-        m_rotationController = new ProfiledPIDController(5, 0, 0, rotationConstraints);
+        TrapezoidProfile.Constraints rotationConstraints = new TrapezoidProfile.Constraints(6, 6);
+        m_rotationController = new ProfiledPIDController(10, 0, 1, rotationConstraints);
+        m_rotationController.setTolerance(0.01);
         SmartDashboard.putData("rotation controller", m_rotationController);
         m_controller = new HolonomicDriveController(xController, yController, m_rotationController);
-        translationConfig = new TrajectoryConfig(5.0, 20.0).setKinematics(m_swerve.m_kinematics);
+        translationConfig = new TrajectoryConfig(5, 5).setKinematics(m_swerve.m_kinematics);
         addRequirements(m_swerve);
     }
 
@@ -119,7 +128,9 @@ public class TrajectoryToWaypoint extends CommandBase {
         var desiredState = m_trajectory.sample(curTime);
 
         Pose2d pose = m_swerve.getPose();
-        var targetChassisSpeeds = m_controller.calculate(pose, desiredState, goal.getRotation());
+        Pose2d smoothPose = new Pose2d(xFilter.calculate(pose.getX()), yFilter.calculate(pose.getY()),
+                new Rotation2d(rFilter.calculate(pose.getRotation().getRadians())));
+        var targetChassisSpeeds = m_controller.calculate(smoothPose, desiredState, goal.getRotation());
         var targetModuleStates = m_swerve.m_kinematics.toSwerveModuleStates(targetChassisSpeeds);
 
         m_swerve.setModuleStates(targetModuleStates);
