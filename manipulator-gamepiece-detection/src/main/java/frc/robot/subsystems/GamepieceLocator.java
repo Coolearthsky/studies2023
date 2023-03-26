@@ -5,39 +5,89 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.subsystems.DistanceSensors.DistanceSensor;
+import frc.robot.subsystems.DistanceSensors.NTDistanceSensor;
 import edu.wpi.first.util.sendable.SendableBuilder;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class GamepieceLocator extends SubsystemBase {
-    DistanceSensor leftSensor;
-    DistanceSensor rightSensor;
+    private final double kSeparationWidth = 20;
+    private final DistanceSensor leftSensor;
+    private final DistanceSensor rightSensor;
+
+    private double offset;
+    private boolean hasGamepiece;
 
     /** Creates a new GamepieceLocator. */
     public GamepieceLocator() {
-        leftSensor = new DistanceSensor(0x52, 0);
-        rightSensor = new DistanceSensor(0x56, 0);
+        leftSensor = new NTDistanceSensor("distance_a");
+        rightSensor = new NTDistanceSensor("distance_b");
+
+        SmartDashboard.putData("Gamepiece Locator", this);
+
+        addChild("Left Sensor", leftSensor);
+        addChild("Right Sensor", rightSensor);
     }
 
     /**
-     * Get the offset of the gamepiece from the center of the manipulator in millimeters
-     * <p>Right side of the robot is positive</p>
-     * @return offset in millimeters
+     * Get the offset of the gamepiece from the center of the manipulator in centimeters.
+     * Positive is towards the right
+     * @return offset in centimeters (defaults to 0 if no gamepiece is detected)
      */
-    public double getOffsetMillimeters() {
-        return (leftSensor.getMillimeters() - rightSensor.getMillimeters()) / 2;
+    public double getOffsetCentimeters() {
+        return offset;
+    }
+
+    /**
+     * Get the offset of the gamepiece from the center of the manipulator in meters.
+     * Positive is towards the right
+     * @return offset in meters (defaults to 0 if no gamepiece is detected)
+     */
+    public double getOffsetMeters() {
+        return getOffsetCentimeters() / 100;
+    }
+
+    /**
+     * Whether or not a gamepiece has been detected.
+     * @return true if a gamepiece is detected
+     */
+    public boolean hasGamepiece() {
+        return hasGamepiece;
     }
 
     @Override
     public void periodic() {
-        // This method will be called once per scheduler run
-        leftSensor.periodic();
-        rightSensor.periodic();
+        // Read sensors
+        double left = leftSensor.getCentimeters();
+        double right = rightSensor.getCentimeters();
+
+        // If the sensors detect something outside of their rated range, the Pi will return -1.
+        // Also will be -2 if the Pi is not on NetworkTables. Detect those cases here
+        if (left < 0 || right < 0) {
+            offset = 0;
+            hasGamepiece = false;
+            // TODO add error state tracking
+        }
+
+        // If the sensors give us a distance larger than the manipulator, we can assume they are
+        // interfering with each other. This is likely because there is no gamepiece in the manipulator
+        else if (left > kSeparationWidth || right > kSeparationWidth || left + right > kSeparationWidth) {
+            offset = 0;
+            hasGamepiece = false;
+        }
+
+        // We have a gamepiece!
+        else {
+            offset = (left - right) / 2;
+            hasGamepiece = true;
+        }
     }
 
     @Override
     public void initSendable(SendableBuilder builder) {
         super.initSendable(builder);
-        builder.addDoubleProperty("offset", () -> this.getOffsetMillimeters(), null);
-        builder.addDoubleProperty("left", () -> this.leftSensor.getMillimeters(), null);
-        builder.addDoubleProperty("right", () -> this.rightSensor.getMillimeters(), null);
+        builder.addDoubleProperty("offset_cm", () -> this.getOffsetCentimeters(), null);
+        builder.addDoubleProperty("offset_m", () -> this.getOffsetMeters(), null);
+        builder.addBooleanProperty("hasGamepiece", () -> this.hasGamepiece(), null);
     }
 }
