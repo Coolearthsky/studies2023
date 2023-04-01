@@ -1,11 +1,7 @@
 package frc.robot.subsystems.DistanceSensors;
 
-public abstract class DistanceSensor {
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-    public abstract void periodic();
-
-    public abstract double getMillimeters();
-    public double getCentimeters() {
-        return getMillimeters() / 10;
-    }
+public abstract class DistanceSensor extends SubsystemBase {
+    public abstract double getCentimeters();
 }
