@@ -21,23 +21,30 @@ import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.util.sendable.Sendable;
+import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 /**
  * This is a sample program to demonstrate how to use a state-space controller
  * to control an arm.
  */
-public class Robot extends TimedRobot {
+public class Robot extends TimedRobot implements Sendable{
+  double nextVoltage;
+  double kV;
+  double kS;
+  double motorOutput;
   private CommandXboxController controller0 = new CommandXboxController(1);
   double wrappedPos;
   double setpoint;
-  private static final double kLoweredPosition = Units.degreesToRadians(0.0);
+  private final double kLoweredPosition = Units.degreesToRadians(0.0);
 
   // Moment of inertia of the arm, in kg * m^2. Can be estimated with CAD. If
   // finding this constant
   // is difficult, LinearSystem.identifyPositionSystem may be better.
-  private static final double kArmMOI = 0.0861125;
+  private static final double kArmMOI = 0.032;
 
   // Reduction between motors and encoder, as output over input. If the arm spins
   // slower than
@@ -45,8 +52,8 @@ public class Robot extends TimedRobot {
   private static final double kArmGearing = 15;
 
   private final TrapezoidProfile.Constraints m_constraints = new TrapezoidProfile.Constraints(
-      12*Math.PI,
-      12*Math.PI); // Max arm speed and acceleration.
+      6*Math.PI,
+      6*Math.PI); // Max arm speed and acceleration.
   private TrapezoidProfile.State m_lastProfiledReference = new TrapezoidProfile.State();
 
   // The plant holds a state-space model of our arm. This system has the following
@@ -58,6 +65,9 @@ public class Robot extends TimedRobot {
   private final LinearSystem<N2, N1, N1> m_armPlant = LinearSystemId
       .createSingleJointedArmSystem(DCMotor.getNEO(1), kArmMOI, kArmGearing);
 
+  public Robot() {
+    SmartDashboard.putData("Robot", this);
+  }
   // The observer fuses our encoder data and voltage inputs to reject noise.
   private final KalmanFilter<N2, N1, N1> m_observer = new KalmanFilter<>(
       Nat.N2(),
@@ -69,10 +79,11 @@ public class Robot extends TimedRobot {
       // data is. In this case we very highly trust our encoder position reading.
       0.020);
 
+  
   // A LQR uses feedback to create voltage commands.
   private final LinearQuadraticRegulator<N2, N1, N1> m_controller = new LinearQuadraticRegulator<>(
       m_armPlant,
-      VecBuilder.fill(Units.degreesToRadians(0.1), Units.degreesToRadians(10.0)), // qelms.
+      VecBuilder.fill(Units.degreesToRadians(.1), Units.degreesToRadians(10)), // qelms.
       // Position and velocity error tolerances, in radians and radians per second.
       // Decrease
       // this
@@ -81,7 +92,7 @@ public class Robot extends TimedRobot {
       // velocity, but
       // this
       // can be tuned to balance the two.
-      VecBuilder.fill(12), // relms. Control effort (voltage) tolerance. Decrease this to more
+      VecBuilder.fill(20), // relms. Control effort (voltage) tolerance. Decrease this to more
       // heavily penalize control effort, or make the controller less aggressive. 12
       // is a good
       // starting point because that is the (approximate) maximum voltage of a
@@ -121,7 +132,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    wrappedPos = MathUtil.angleModulus(encoder.getPosition());
+   wrappedPos = MathUtil.angleModulus(encoder.getPosition());
     setpoint = Math.atan2(MathUtil.applyDeadband(controller0.getLeftX(), 0.05),
         MathUtil.applyDeadband(controller0.getLeftY(), 0.05));
     // Sets the target position of our arm. This is similar to setting the setpoint
@@ -151,17 +162,21 @@ public class Robot extends TimedRobot {
     // Send the new calculated voltage to the motors.
     // voltage = duty cycle * battery voltage, so
     // duty cycle = voltage / battery voltage
-    double nextVoltage = m_loop.getU(0);
-    double kS = 0.03 * Math.signum(nextVoltage);
-    // double kV = Math.sin(wrappedPos);
-    System.out.printf("v: %8.3f p: %8.3f v: %8.3f s: %8.3f y: %8.3f x: %8.3f\n",
-        nextVoltage,
-        wrappedPos,
-        encoder.getVelocity(),
-        //feedfordward,
-        setpoint,
-        -controller0.getLeftY(),
-        controller0.getLeftX());
-    m_motor.setVoltage(nextVoltage+kS);
+    nextVoltage = m_loop.getU(0);
+    kS = 0.05 * Math.signum(nextVoltage);
+    kV = .22*Math.sin(wrappedPos);
+    motorOutput = kV+nextVoltage+kS;
+    m_motor.setVoltage(motorOutput);
+  }
+
+  @Override
+  public void initSendable(SendableBuilder builder) {
+    builder.addDoubleProperty("nextVoltage", () -> nextVoltage, null);
+    builder.addDoubleProperty("wrappedPos", () -> wrappedPos, null);
+    builder.addDoubleProperty("encoder.getVelocity()", () -> encoder.getVelocity(), null);
+    builder.addDoubleProperty("kV", () -> kV, null);
+    builder.addDoubleProperty("kS", () -> kS, null);
+    builder.addDoubleProperty("motorOutput", () -> motorOutput, null);
+    builder.addDoubleProperty("setpoint", () -> setpoint, null);
   }
 }
