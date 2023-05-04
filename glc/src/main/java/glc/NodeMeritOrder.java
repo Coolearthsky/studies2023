@@ -17,7 +17,7 @@ import java.util.Comparator;
      */ 
     // boolean operator()(final  Node node1, final  Node node2);
 
-    // bool NodeMeritOrder::operator()(final  GlcNode node1, final  GlcNode node2){
+    // boolean NodeMeritOrder::operator()(final  GlcNode node1, final  GlcNode node2){
     //     return node1->merit>node2->merit;//negation so top of queue is min not max     
     //   }
   

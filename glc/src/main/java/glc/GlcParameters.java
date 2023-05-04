@@ -1,11 +1,10 @@
 package glc;
 
-import java.util.ArrayList;
 
-class GlcParameters {
+public class GlcParameters {
   // ! \brief This parameter defines the initial condition for the trajectory
   // optimization
-  ArrayList<Double> x0;
+  public double[] x0;
   /**
    * \brief This is the primary tuning parameter for the algorithm (see detailed
    * info below)
@@ -20,11 +19,11 @@ class GlcParameters {
    * but it almost
    * always does.
    */
-  int res;
+  public int res;
   // ! \brief This is the dimension of the dynamical system's state space
-  int state_dim;
+  public int state_dim;
   // ! \brief This is the dimension of the control input space
-  int control_dim;
+  public int control_dim;
   /**
    * \brief An iteration limit for the algorithm
    * 
@@ -35,7 +34,7 @@ class GlcParameters {
    * max_iter. A linear time complexity implementation can be achieved
    * by replacing std::set with std::unordered_set.
    */
-  int max_iter;
+  public int max_iter;
   /**
    * \brief A constant factor dilation of the forward integration time in each
    * node expansion
@@ -49,7 +48,7 @@ class GlcParameters {
    * In this implementation the forward simulation time is set to T =
    * time_scale/res.
    */
-  double time_scale;
+  public double time_scale;
   /**
    * \brief A constant factor dilation of the equivalence class size
    *
@@ -60,7 +59,7 @@ class GlcParameters {
    * convergence. partition_scale is a constant factor multiplying
    * this function of the Lipschitz constant.
    */
-  double partition_scale;
+  public double partition_scale;
   /**
    * \brief A constant factor multiplying the depth limit of the search tree
    * 
@@ -69,12 +68,12 @@ class GlcParameters {
    * increased with increasing resolution at a carefully controlled rate.
    * The user is free to tune a constant factor.
    */
-  int depth_scale;
+  public  int depth_scale;
   /**
    * \brief Assuming a numerical integration scheme is used, this is the maximum
    * integration step
-   */
-  double dt_max;
+   * */
+ public  double dt_max;
 
   /**
    * \brief This method prints the parameters to the terminal

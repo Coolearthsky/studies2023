@@ -1,6 +1,5 @@
 package glc.glc_numerical_integration;
 
-import java.util.ArrayList;
 import java.util.Vector;
 
 import glc.glc_interface.DynamicalSystem;
@@ -16,8 +15,8 @@ import glc.glc_interpolation.InterpolatingPolynomial;
 public abstract class RungeKuttaTwo extends DynamicalSystem {
     // ! \brief These are temporary variables used in the Runge-Kutta 2 integration
     // method
-    // TODO i think these hould just be arrays.
-    ArrayList<Double> x1, x2, f0, f1, f2;
+
+    double[] x1, x2, f0, f1, f2;
     // ! \brief This is the maximum time step that sim is allowed to use
     double max_time_step;
     // ! \brief This is a temporary variable used by the integration scheme
@@ -32,11 +31,11 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
 
         super(lipschitz_constant_);
         max_time_step = max_time_step_;
-        x1 = new ArrayList<Double>(state_dim_);
-        x2 = new ArrayList<Double>(state_dim_);
-        f0 = new ArrayList<Double>(state_dim_);
-        f1 = new ArrayList<Double>(state_dim_);
-        f2 = new ArrayList<Double>(state_dim_);
+        x1 = new double[state_dim_];
+        x2 = new double[state_dim_];
+        f0 = new double[state_dim_];
+        f1 = new double[state_dim_];
+        f2 = new double[state_dim_];
     }
 
     /**
@@ -48,7 +47,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
      * @returns  the trajectory satisfying the dynamic equations
      */
     @Override
-    public InterpolatingPolynomial sim(double t0, double tf, final ArrayList<Double> x0,
+    public InterpolatingPolynomial sim(double t0, double tf, final double[] x0,
             final InterpolatingPolynomial u) {
         if (tf <= t0)
             throw new IllegalArgumentException();
@@ -58,7 +57,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
         InterpolatingPolynomial solution = new InterpolatingPolynomial(integration_step, t0, x0.size(), 4);
         solution.reserve(num_steps);
         // set initial state and time
-        ArrayList<Double> state = x0;
+        double[] state = x0;
         double time = t0;
         // InterpolatingPolynomial traj_segment;
         // integrate
@@ -83,7 +82,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
      * @return segment is a cubic approximation of the trajectory from t1 to t2
      */
     InterpolatingPolynomial step(
-            final ArrayList<Double> x0,
+            final double[] x0,
             final InterpolatingPolynomial u,
             final double t1,
             final double t2) {
@@ -107,20 +106,20 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
 
         // Cubic interpolation between x0 and x2 with x'(t1)=f(x0,u(t0)) and
         // x'(t2)=f(x2,u(t2))
-        Vector<ArrayList<Double>> cubic = new Vector<ArrayList<Double>>();
+        Vector<double[]> cubic = new Vector<double[]>();
         cubic.add(x0);// t^0 term
         cubic.add(f0);// t^1 term
-        ArrayList<Double> e = new ArrayList<Double>();
+        double[] e = new double[];
         for (int i = 0; i < f0.size(); ++i) {
             e.add((-2.0 * f0.get(i) + 3.0 * f1.get(i) - f2.get(i)) / h);
         }
         cubic.add(e);// t^2 term
-        e = new ArrayList<Double>();
+        e = new double[]();
         for (int i = 0; i < f0.size(); ++i) {
             e.add((f0.get(i) - 2.0 * f1.get(i) + f2.get(i)) / (h * h));
         }
         cubic.add(e);// t^3 term
-        Vector<Vector<ArrayList<Double>>> knot_point = new Vector<Vector<ArrayList<Double>>>();
+        Vector<Vector<double[]>> knot_point = new Vector<Vector<double[]>>();
         knot_point.add(cubic);
         return new InterpolatingPolynomial(knot_point, t2 - t1, t1, x0.size(), 4);
     }

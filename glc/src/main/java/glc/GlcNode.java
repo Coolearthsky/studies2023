@@ -1,10 +1,10 @@
 package glc;
 
-import java.util.ArrayList;
+
 import glc.glc_interpolation.InterpolatingPolynomial;
 
 /**
- * \brief Node object used in motion planning search tree
+ * Node object used in motion planning search tree
  * 
  * The Node object in the glc library will always belong to a motion
  * planning search tree. Each Node contains pointers to its parent
@@ -14,32 +14,32 @@ import glc.glc_interpolation.InterpolatingPolynomial;
  * which is the cost from the root together with the estimated
  * cost-to-go which is used in the A*-like search.
  */
-class GlcNode {
-  // ! \brief The pointer to this node's parent
+public class GlcNode {
+  // The pointer to this node's parent
   GlcNode parent;
-  // ! \brief The trajectory from the parent node to this node
+  // The trajectory from the parent node to this node
   InterpolatingPolynomial trajectory_from_parent;
-  // ! \brief The control signal producing the trajectory from the parent node to
+  // The control signal producing the trajectory from the parent node to
   // this node
   InterpolatingPolynomial control_from_parent;
-  // ! \brief An array of pointers to this node's children
+  // An array of pointers to this node's children
   // Vector< Node> children;
-  // ! \brief The state or configuration associated with this node
-  ArrayList<Double> state;
-  // ! \brief The duration of a trajectory from the root of the search tree to the
+  // The state or configuration associated with this node
+  double[] state;
+  // The duration of a trajectory from the root of the search tree to the
   // state of this node
   double time = 0;
-  // ! \brief The cost to reach this node from the root
+  // The cost to reach this node from the root
   double cost = 0;
-  // ! \brief The cost together with the estimated cost-to-go which is used for an
+  // The cost together with the estimated cost-to-go which is used for an
   // informed search
   double merit = 0;
-  // ! \brief The index from the discrete control set used to reach this node from
+  // The index from the discrete control set used to reach this node from
   // the parent in the current instance of the algorithm
   int u_idx = 0;
-  // ! \brief The depth of this node in the search tree
+  // The depth of this node in the search tree
   int depth = 0;
-  // ! \brief A flag to indicate if this Node is in the goal set
+  // A flag to indicate if this Node is in the goal set
   boolean in_goal = false;
 
   /**
@@ -62,7 +62,7 @@ class GlcNode {
       int _control_index,
       double _cost,
       double _cost_to_go,
-      final ArrayList<Double> _state,
+      final double[] _state,
       double _time,
       final GlcNode _parent,
       final InterpolatingPolynomial _trajectory_from_parent,

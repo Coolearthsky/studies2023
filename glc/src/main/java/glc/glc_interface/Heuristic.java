@@ -1,6 +1,6 @@
 package glc.glc_interface;
 
-import java.util.ArrayList;
+
 
 /**
  * \brief Base class for an admissible and consistent estimate of the cost-to-go
@@ -22,5 +22,5 @@ public abstract class Heuristic {
    * cost-to-go without over-approximating it anywhere in the state space.
    * Nominally, the heuristic is computationally cheap to evaluate.
    */
-  public abstract double costToGo(final ArrayList<Double> x0_);
+  public abstract double costToGo(final double[] x0_);
 };

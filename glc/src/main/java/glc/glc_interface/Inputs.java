@@ -1,6 +1,5 @@
 package glc.glc_interface;
 
-import java.util.ArrayList;
 import java.util.Vector;
 
 /** 
@@ -16,7 +15,7 @@ import java.util.Vector;
  */  
 public class Inputs{
   //! \brief points stores the finite set of control inputs 
-  Vector<ArrayList<Double>> points;
+  Vector<double[]> points;
 
   /**
    * \brief inserts a control input to the set of control inputs
@@ -30,11 +29,11 @@ public class Inputs{
    * with increasing algorithm resolution.
    */
 
-  void addInputSample(ArrayList<Double> _input){points.add(_input);}
+  protected void addInputSample(double[] _input){points.add(_input);}
   /**
    * \brief returns a copy of the set of control inputs
    */
-   Vector<ArrayList<Double>> readInputs()  {
+   public Vector<double[]> readInputs()  {
     return points;
   }
 

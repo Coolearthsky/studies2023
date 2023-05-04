@@ -1,6 +1,5 @@
 package glc;
 
-import java.util.ArrayList;
 import java.util.PriorityQueue;
 import java.util.Vector;
 
@@ -30,7 +29,7 @@ class GlcStateEquivalenceClass{
   -1, 
   Double.MAX_VALUE, 
 Double.MAX_VALUE,
-  new ArrayList<Double>(0),
+  new double[0],
   0,
   null,
   null,

@@ -1,6 +1,6 @@
 package glc.glc_interface;
 
-import java.util.ArrayList;
+
 
 import glc.glc_interpolation.InterpolatingPolynomial;
 
@@ -32,9 +32,9 @@ public abstract class DynamicalSystem {
      * 
      * @param x a state of the dynamic system
      * @param u a control input to the dynamical system
-     * @returns the time derivative of the state at x given x and u
+     * @param dx [out] the time derivative of the state at x given x and u
      */
-    public abstract ArrayList<Double> flow(final ArrayList<Double> x, final ArrayList<Double> u);
+    public abstract void flow(final double[] dx, final double[] x, final double[] u);
 
     /**
      * @returns the Lipschitz constant for the dynamic system
@@ -61,6 +61,9 @@ public abstract class DynamicalSystem {
      * @returns the trajectory satisfying the differential equation
      *          for the input data
      */
-    public abstract InterpolatingPolynomial sim(double t0, double tf, final ArrayList<Double> x0,
+    todo: make this back into an outvar
+    public abstract InterpolatingPolynomial sim(double t0, 
+    double tf, 
+    final double[] x0,
             final InterpolatingPolynomial u);
 };

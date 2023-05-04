@@ -1,6 +1,5 @@
 package glc.glc_interpolation;
 
-import java.util.ArrayList;
 import java.util.Vector;
 
 /**
@@ -45,7 +44,7 @@ public class InterpolatingPolynomial{
      * 
      * coefficient_array[time_interval_index][polynomial_coefficient_index][polynomial_coordinate_index]
      */
-    Vector< Vector< ArrayList<Double> > > coefficient_array;
+    Vector< Vector< double[] > > coefficient_array;
     
  
     /**
@@ -57,7 +56,7 @@ public class InterpolatingPolynomial{
      * \param[in] _degree initializes degree
      */
 
-           public InterpolatingPolynomial(final Vector< Vector< ArrayList<Double> > > _coeff_array, 
+           public InterpolatingPolynomial(final Vector< Vector< double[] > > _coeff_array, 
            final double _collocation_interval, 
            final double _t0, 
            final int _dimension, 
@@ -87,7 +86,7 @@ public class InterpolatingPolynomial{
                   t0 = _t0;
                   dimension = _dimension; 
                   degree = _degree;
-coefficient_array = new Vector< Vector< ArrayList<Double> > >();
+coefficient_array = new Vector< Vector< double[] > >();
 }
 
 
@@ -119,7 +118,7 @@ coefficient_array = new Vector< Vector< ArrayList<Double> > >();
     /**
      * \brief appends a single polynomial segment to the back of this spline
      */ 
-    void push(final Vector< ArrayList<Double> > knot){
+    void push(final Vector< double[] > knot){
         coefficient_array.add(knot);
       }
       
@@ -133,10 +132,10 @@ coefficient_array = new Vector< Vector< ArrayList<Double> > >();
      * is computed and this value is passed to the monomial basis on the 
      * inner array indices of coefficient_array.
      */
-    public ArrayList<Double> at(final double t){
+    public double[] at(final double t){
         int index = Math.min( (int)coefficient_array.size()-1, Math.max(0,(int)Math.floor((t-t0)/collocation_interval)));
         double time = (t-t0)-collocation_interval*((double)index);
-        ArrayList<Double> eval(0.0,dimension);
+        double[] eval(0.0,dimension);
         for(int i=0;i<degree;i++){
           eval+=coefficient_array[index][i]*pow(time,i);
         }
@@ -170,12 +169,12 @@ coefficient_array = new Vector< Vector< ArrayList<Double> > >();
      */
 
 
-    void printSpline(int num_points, final String msg){
+    public void printSpline(int num_points, final String msg){
         System.out.println( "\n*****" + msg + "*****" );
         double t=initialTime();
         double dt=(intervalLength()*numberOfIntervals())/(double)num_points;
         for(int i=0;i<num_points+1;i++){
-         ArrayList<Double> x = (at(t));
+         double[] x = (at(t));
          System.out.print( "(");
           for(int j=0;j<x.size()-1;j++){
             System.out.print( x.get(j));
@@ -189,7 +188,7 @@ coefficient_array = new Vector< Vector< ArrayList<Double> > >();
 
 
     
-    void printData(){
+    public void printData(){
       for(int t_id=0;t_id<numberOfIntervals();t_id++){
         System.out.println( "\n==== interval: " + t_id + "====");
         for(int mon_id=0;mon_id<4;mon_id++){

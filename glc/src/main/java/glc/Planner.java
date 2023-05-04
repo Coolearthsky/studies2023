@@ -9,37 +9,37 @@ import glc.glc_interface.Heuristic;
 import glc.glc_interface.Obstacles;
 import glc.glc_interpolation.InterpolatingPolynomial;
 
-import java.util.ArrayList;
+
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.Set;
 
 /**
-   * \brief The core planning class for carring out trajectory optimization
+   * The core planning class for carring out trajectory optimization
    * 
    * The algorithms is simply an A* search. The innovation is in the 
    * construction of a sparse, and nearly optimal discrete abstraction
    * of the set of feasible trajectories for a problem instance. 
    */
-  class Planner{
-    //! \brief A leaf node in the goal region with minimum cost from the root
+ public  class Planner{
+    // A leaf node in the goal region with minimum cost from the root
      GlcNode best;
-    //! \brief The root of the search tree
+    // The root of the search tree
      GlcNode root_ptr;
-    //! \brief A raw pointer to the dynamical system for the problem
+    // A raw pointer to the dynamical system for the problem
     DynamicalSystem dynamics;
-    //! \brief A raw pointer to the goal region for the problem
+    // A raw pointer to the goal region for the problem
     GoalRegion goal;
-    //! \brief A raw pointer to the (topologically)closed obstacle set for the problem
+    // A raw pointer to the (topologically)closed obstacle set for the problem
     Obstacles obs;
-    //! \brief A raw pointer to the cost function for the problem
+    // A raw pointer to the cost function for the problem
     CostFunction cf;
-    //! \brief A raw pointer to the heuristic for the problem
+    // A raw pointer to the heuristic for the problem
     Heuristic h;
-    //! \brief A comparator for measureing relative merit of nodes
+    // A comparator for measureing relative merit of nodes
     NodeMeritOrder compare;
     /**
-     * \brief A priority queue of leaf nodes that are open for expansion
+     * A priority queue of leaf nodes that are open for expansion
      * 
      * The queue is ordered by the cost plus the estimated cost to go 
      * determined by the admissible and consistent heuristic.
@@ -100,7 +100,7 @@ import java.util.Set;
      * with the node being expanded for a duration of 
      * expand_time.
      */
-    Vector<ArrayList<Double>> controls;
+    Vector<double[]> controls;
     //! \brief A counter for the number of calls to the sim method
     int sim_count = 0;
     //! \brief A counter for the number of calls to collisionFree
@@ -116,7 +116,7 @@ import java.util.Set;
      * The labels on each equivalence class is the node
      * with best known merit in that equivalence class.
      */
-    Set<GlcStateEquivalenceClass> partition_labels;
+    public Set<GlcStateEquivalenceClass> partition_labels;
     Iterator<GlcStateEquivalenceClass> it;
     
     /** 
@@ -125,13 +125,13 @@ import java.util.Set;
      * The essential scaling functions of the method are evaluated at the given
      * resolution within the constructor.
      */
-    Planner(Obstacles _obs, 
+    public Planner(Obstacles _obs, 
             GoalRegion _goal, 
             DynamicalSystem _dynamics, 
             Heuristic _h, 
             CostFunction _cf, 
             final GlcParameters _params, 
-            final Vector<ArrayList<Double>> _controls) {
+            final Vector<double[]> _controls) {
               
             params = _params;
             controls = _controls; 
@@ -141,7 +141,7 @@ import java.util.Set;
             cf = _cf;
             h = _h;
 root_ptr = new GlcNode(_controls.size(),0, 0,_h->costToGo(params.x0),params.x0,0,null,null,null);
-best = new GlcNode(0, -1, Double.MAX_VALUE, Double.MAX_VALUE,ArrayList<Double>(0),0,null,null,null);
+best = new GlcNode(0, -1, Double.MAX_VALUE, Double.MAX_VALUE,new double[0],0,null,null,null);
 ////////////*Scaling functions*//////////////
 // 1/R
 expand_time=params.time_scale/(double)params.res;
@@ -179,7 +179,7 @@ tstart = System.currentTimeMillis() ;
      * \param[in] forward is a flag to indicate if the nodes should be ordered from root to leaf (foward=true) or from leaf to root (forward=false)
      */
 
- Vector<GlcNode> pathToRoot(boolean forward){
+ public Vector<GlcNode> pathToRoot(boolean forward){
   if(found_goal==false){
     Vector< GlcNode> empty_vector;
     return empty_vector;
@@ -200,7 +200,7 @@ tstart = System.currentTimeMillis() ;
      * \param[in] path is the sequence of nodes from root to leaf connected by edge relations
      * \returns a pointer to a trajectory object representing the solution trajectory
      */
-  InterpolatingPolynomial recoverTraj(final Vector< GlcNode> path){
+  public InterpolatingPolynomial recoverTraj(final Vector< GlcNode> path){
     if(path.size()<2){return null;}
     InterpolatingPolynomial opt_sol=path.get(1).trajectory_from_parent;
     for(int i=2;i<path.size();i++){
@@ -266,7 +266,7 @@ tstart = System.currentTimeMillis() ;
   //Expand top of queue and store arcs in set of domains
   for(int i=0;i<controls.size();i++){
     InterpolatingPolynomial new_traj;
-    ArrayList<Double> c0;
+    double[] c0;
     //Create a control signal spline which is a first order hold.
     //u(t)=c0+c1*t. If expanding root, just use u(t)=constant;
     if(current_node->parent==nullptr){
@@ -275,9 +275,9 @@ tstart = System.currentTimeMillis() ;
     else{
       c0 = controls[current_node->u_idx];
     }
-    ArrayList<Double> c1 = (controls[i]-c0)/expand_time;
-    Vector<ArrayList<Double> > segment({c0,c1});
-    Vector< Vector< ArrayList<Double> > > linear_interp({segment});
+    double[] c1 = (controls[i]-c0)/expand_time;
+    Vector<double[] > segment({c0,c1});
+    Vector< Vector< double[] > > linear_interp({segment});
     //The above parameters are used to construct new_control
     InterpolatingPolynomial new_control(new InterpolatingPolynomial(linear_interp,expand_time,current_node->time,controls[i].size(),2));
     //Forward simulate with new_control to get a cubic spline between collocation points
@@ -294,7 +294,7 @@ tstart = System.currentTimeMillis() ;
                                           ));
 
     //Create a region for the new trajectory
-    ArrayList<Double> w = inverse_cubicle_side_length * new_arc->state;
+    double[] w = inverse_cubicle_side_length * new_arc->state;
     GlcStateEquivalenceClass d_new;
     d_new.coordinate = vecFloor( w );
     //Get the domain for the coordinate or create it and insert into labels.
@@ -310,7 +310,7 @@ tstart = System.currentTimeMillis() ;
   for(var open_domain : domains_needing_update){
     GlcStateEquivalenceClass current_domain = open_domain;
     //We go through the queue of candidates for relabeling/pushing in each set
-    bool found_best = false;
+    boolean found_best = false;
     while( (not found_best) and (not current_domain.candidates.empty()))
     {
       //If the top of the candidate queue is cheaper than the label we should coll check it
@@ -355,7 +355,7 @@ tstart = System.currentTimeMillis() ;
      * Overload of plan() which provides some output on the result
      * @returns  a struct containing info on whether a solution was found and what its cost is
      */
-    PlannerOutput plan(){
+    public PlannerOutput plan(){
       expandWhileLive();
       PlannerOutput out = new PlannerOutput();
       out.cost=best.cost;

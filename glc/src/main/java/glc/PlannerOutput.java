@@ -4,5 +4,5 @@ package glc;
 public class PlannerOutput {
     double cost;
     double time;
-    boolean solution_found;
+    public boolean solution_found;
 };
