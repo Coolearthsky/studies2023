@@ -1,7 +1,5 @@
 package glc.glc_interface;
 
-
-
 import glc.glc_interpolation.InterpolatingPolynomial;
 
 /**
@@ -30,8 +28,8 @@ public abstract class DynamicalSystem {
      * This method represents the function defining the differential
      * constraint x'(t)=f(x(t),u(t))
      * 
-     * @param x a state of the dynamic system
-     * @param u a control input to the dynamical system
+     * @param x  a state of the dynamic system
+     * @param u  a control input to the dynamical system
      * @param dx [out] the time derivative of the state at x given x and u
      */
     public abstract void flow(final double[] dx, final double[] x, final double[] u);
@@ -61,9 +59,8 @@ public abstract class DynamicalSystem {
      * @returns the trajectory satisfying the differential equation
      *          for the input data
      */
-    todo: make this back into an outvar
-    public abstract InterpolatingPolynomial sim(double t0, 
-    double tf, 
-    final double[] x0,
+    public abstract InterpolatingPolynomial sim(double t0,
+            double tf,
+            final double[] x0,
             final InterpolatingPolynomial u);
 };

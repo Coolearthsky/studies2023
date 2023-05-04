@@ -18,7 +18,7 @@ public class GlcLogging {
      * GLC
      */
 
-   public static void nodesToFile(
+    public static void nodesToFile(
             final String name,
             final String path,
             final Set<GlcStateEquivalenceClass> domains) {
@@ -26,11 +26,11 @@ public class GlcLogging {
             PrintWriter points = new PrintWriter(new FileWriter(path + name));
             for (var x : domains) {
                 double[] state = x.label.state;
-                for (int j = 0; j < state.size() - 1; j++) {
-                    points.print(state.get(j));
+                for (int j = 0; j < state.length - 1; j++) {
+                    points.print(state[j]);
                     points.print(",");
                 }
-                points.println(state.get(state.size() - 1));
+                points.println(state[state.length - 1]);
             }
             points.close();
         } catch (IOException e) {
@@ -59,11 +59,11 @@ public class GlcLogging {
             double dt = (traj.numberOfIntervals() * traj.intervalLength()) / num_points;
             for (int i = 0; i < num_points; i++) {
                 double[] state = traj.at(t);
-                for (int j = 0; j < state.size() - 1; j++) {
-                    points.print(state.get(j));
+                for (int j = 0; j < state.length - 1; j++) {
+                    points.print(state[j]);
                     points.print(",");
                 }
-                points.println(state.get(state.size() - 1));
+                points.println(state[state.length - 1]);
                 t += dt;
             }
             points.close();

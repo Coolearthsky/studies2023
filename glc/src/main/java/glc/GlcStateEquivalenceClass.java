@@ -4,7 +4,7 @@ import java.util.PriorityQueue;
 import java.util.Vector;
 
 /**
- * \brief This class defines the equivalence classes (i.e. partition) of the state space
+ * This class defines the equivalence classes (i.e. partition) of the state space
  * 
  * The GLC algorithm is able to build a sparse search tree by maintaining at most one node
  * per equivalence class. The size of the equivalence class is determined by the resolution
@@ -12,18 +12,18 @@ import java.util.Vector;
  */
 class GlcStateEquivalenceClass{
   
-  //! \brief Each equivalence class (a hyper-cubicle region) is uniquely identified by an integer tuple
+  // Each equivalence class (a hyper-cubicle region) is uniquely identified by an integer tuple
   Vector<Integer> coordinate;
-  //! \brief An equivalence class has a pointer to a node whose associated state is in the cubicle region
+  // An equivalence class has a pointer to a node whose associated state is in the cubicle region
    GlcNode label;
   /**
-   * \brief A priority queue of potential new nodes that could label the cell
+   * A priority queue of potential new nodes that could label the cell
    * 
    * Once relabeled, the subtree rooted at the old label is deleted.
    */ 
   PriorityQueue< GlcNode> candidates = new PriorityQueue<GlcNode>(new NodeMeritOrder());
   
-  //! \brief The constructor is the default constructor
+  //!  The constructor is the default constructor
   public GlcStateEquivalenceClass() {
     label = new GlcNode(0, 
   -1, 

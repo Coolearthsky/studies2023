@@ -107,9 +107,7 @@ coefficient_array = new Vector< Vector< double[] > >();
         if (tail.dimension != dimension) throw new IllegalArgumentException();
         if (tail.degree != degree) throw new IllegalArgumentException();
         if (Math.abs(tail.collocation_interval - collocation_interval) > 1e-4) throw new IllegalArgumentException();
-        coefficient_array.insert(coefficient_array.end(),
-                                 tail->coefficient_array.begin(),
-                                 tail->coefficient_array.end());
+        coefficient_array.addAll(tail.coefficient_array);
       }
       
  
@@ -135,9 +133,9 @@ coefficient_array = new Vector< Vector< double[] > >();
     public double[] at(final double t){
         int index = Math.min( (int)coefficient_array.size()-1, Math.max(0,(int)Math.floor((t-t0)/collocation_interval)));
         double time = (t-t0)-collocation_interval*((double)index);
-        double[] eval(0.0,dimension);
+        double[] eval = new double[dimension];
         for(int i=0;i<degree;i++){
-          eval+=coefficient_array[index][i]*pow(time,i);
+          eval+=coefficient_array[index][i]*Math.pow(time,i);
         }
         return eval;
       }
@@ -176,11 +174,11 @@ coefficient_array = new Vector< Vector< double[] > >();
         for(int i=0;i<num_points+1;i++){
          double[] x = (at(t));
          System.out.print( "(");
-          for(int j=0;j<x.size()-1;j++){
-            System.out.print( x.get(j));
+          for(int j=0;j<x.length-1;j++){
+            System.out.print( x[j]);
             System.out.print( ",");
           }
-          System.out.print( x.get(x.size()-1)) ;
+          System.out.print( x[x.length-1]) ;
           System.out.println( ")" );
           t+=dt;
         }
@@ -194,11 +192,12 @@ coefficient_array = new Vector< Vector< double[] > >();
         for(int mon_id=0;mon_id<4;mon_id++){
           System.out.print( "--- t^" + mon_id + ": ");
           for(int s_id=0;s_id<2;s_id++){
-            System.out.print( coefficient_array.get(t_id).get(mon_id).get(s_id));
+            System.out.print( coefficient_array.get(t_id).get(mon_id)[s_id]);
             System.out.print(  ",");
           }
         }
-        System.out.print( "end: " + at(initialTime()+(t_id+1)*intervalLength()).get(0) + "," + at(initialTime()+(t_id+1)*intervalLength()).get(1));
+        System.out.print( "end: " + at(initialTime()+(t_id+1)*intervalLength())[0] 
+        + "," + at(initialTime()+(t_id+1)*intervalLength())[1]);
       }
       
     }

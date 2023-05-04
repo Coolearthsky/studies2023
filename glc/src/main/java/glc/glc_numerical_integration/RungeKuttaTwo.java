@@ -40,11 +40,12 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
 
     /**
      * This method numerically integrates the dynamics
+     * 
      * @param t0 is the initial time for the simulation
      * @param tf is the final time for the simulation
      * @param x0 is the initial state for the simulation
-     * @param u is the control input defined over the interval [t0,tf]
-     * @returns  the trajectory satisfying the dynamic equations
+     * @param u  is the control input defined over the interval [t0,tf]
+     * @returns the trajectory satisfying the dynamic equations
      */
     @Override
     public InterpolatingPolynomial sim(double t0, double tf, final double[] x0,
@@ -54,7 +55,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
 
         int num_steps = (int) Math.ceil((tf - t0) / max_time_step);
         double integration_step = (tf - t0) / num_steps;
-        InterpolatingPolynomial solution = new InterpolatingPolynomial(integration_step, t0, x0.size(), 4);
+        InterpolatingPolynomial solution = new InterpolatingPolynomial(integration_step, t0, x0.length, 4);
         solution.reserve(num_steps);
         // set initial state and time
         double[] state = x0;
@@ -75,7 +76,9 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
     }
 
     /**
-     * This method implements one step of the Runge-Kutta 2 numerical integration method
+     * This method implements one step of the Runge-Kutta 2 numerical integration
+     * method
+     * 
      * @param t1 the initial time for the integration step
      * @param t2 the final time for the integration step
      * @param x0 is the initial state for the integration step
@@ -90,37 +93,35 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
             throw new IllegalArgumentException("[ERROR]: Integration step must be positive in RungeKuttaTwo");
 
         h = t2 - t1;
-        f0 = flow(x0, u.at(t1));
-        x1.clear();
-        for (int i = 0; i < f0.size(); ++i) {
-            x1.add(x0.get(i) + 0.5 * h * f0.get(i));
+        flow(f0, x0, u.at(t1));
+        for (int i = 0; i < f0.length; ++i) {
+            x1[i] = x0[i] + 0.5 * h * f0[i];
         }
         // x1=x0+0.5*h*f0;
-        f1 = flow(x1, u.at(t1 + 0.5 * h));
-        x2.clear();
-        for (int i = 0; i < f1.size(); ++i) {
-            x2.add(x0.get(i) + h * f1.get(i));
+        flow(f1, x1, u.at(t1 + 0.5 * h));
+        for (int i = 0; i < f1.length; ++i) {
+            x2[i] = x0[i] + h * f1[i];
         }
         // x2=x0+h*f1;
-        f2 = flow(x2, u.at(t2));
+        flow(f2, x2, u.at(t2));
 
         // Cubic interpolation between x0 and x2 with x'(t1)=f(x0,u(t0)) and
         // x'(t2)=f(x2,u(t2))
         Vector<double[]> cubic = new Vector<double[]>();
         cubic.add(x0);// t^0 term
         cubic.add(f0);// t^1 term
-        double[] e = new double[];
-        for (int i = 0; i < f0.size(); ++i) {
-            e.add((-2.0 * f0.get(i) + 3.0 * f1.get(i) - f2.get(i)) / h);
+        double[] e = new double[f0.length];
+        for (int i = 0; i < f0.length; ++i) {
+            e[i] = (-2.0 * f0[i] + 3.0 * f1[i] - f2[i]) / h;
         }
         cubic.add(e);// t^2 term
-        e = new double[]();
-        for (int i = 0; i < f0.size(); ++i) {
-            e.add((f0.get(i) - 2.0 * f1.get(i) + f2.get(i)) / (h * h));
+        e = new double[f0.length];
+        for (int i = 0; i < f0.length; ++i) {
+            e[i] = (f0[i] - 2.0 * f1[i] + f2[i]) / (h * h);
         }
         cubic.add(e);// t^3 term
         Vector<Vector<double[]>> knot_point = new Vector<Vector<double[]>>();
         knot_point.add(cubic);
-        return new InterpolatingPolynomial(knot_point, t2 - t1, t1, x0.size(), 4);
+        return new InterpolatingPolynomial(knot_point, t2 - t1, t1, x0.length, 4);
     }
 }
