@@ -1,6 +1,7 @@
 package glc;
 
-//! \brief Contains some of the output data
+/** Contains some of the output data
+ * */
 public class PlannerOutput {
     double cost;
     double time;

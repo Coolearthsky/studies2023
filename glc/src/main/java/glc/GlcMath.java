@@ -1,23 +1,21 @@
 package glc;
 
-import java.util.Vector;
-
 public class GlcMath {
 
     /**
-     * \brief Computes the square of a floating point number
-     * \param x_ a double that is squared
-     * \return The square of x
+     * Computes the square of a floating point number
+     * @param x_ a double that is squared
+     * @return The square of x
      */
     public static double sqr(final double x) {
         return x * x;
     }
 
     /**
-     * \brief Calculates the square of the L2-norm of a vector; more efficient than
+     *  Calculates the square of the L2-norm of a vector; more efficient than
      * sqr(norm2(x))
-     * \param x_ is the input vector whose norm be computed and squared.
-     * \returns The square of the norm of the parameter x.
+     * @param x_ is the input vector whose norm be computed and squared.
+     * @returns The square of the norm of the parameter x.
      */
 
     public static double normSqr(final double[] x) {
@@ -29,23 +27,23 @@ public class GlcMath {
     }
 
     /**
-     * \brief Element-wise floor operation
-     * \param x_ is the input vector whose entries will be rounded down
+     *  Element-wise floor operation
+     * @param x_ is the input vector whose entries will be rounded down
      */
 
-    public static Vector<Integer> vecFloor(final double[] x) {
-        Vector<Integer> floored = new Vector<Integer>(x.length);
+    public static int[] vecFloor(final double[] x) {
+        int[] floored = new int[x.length];
         for (int i = 0; i < x.length; i++) {
-            floored.set(i, (int) Math.floor(x[i]));
+            floored[i] = (int) Math.floor(x[i]);
         }
         return floored;
     }
 
     /**
-     * \brief The dot product of two vectors x and y
-     * \param[in] x_ is one of the vectors in the product
-     * \param[in] y_ the other vector in the product
-     * \returns The dot product obtained by x'y
+     *  The dot product of two vectors x and y
+     * @param x_ is one of the vectors in the product
+     * @param y_ the other vector in the product
+     * @returns The dot product obtained by x'y
      */
 
     public static double dot(final double[] x, final double[] y) {
@@ -59,9 +57,9 @@ public class GlcMath {
     }
 
     /**
-     * \brief This method computes the l2 norm of a vector x
-     * \param[in] x_ is the vector whose norm will be computed
-     * \returns The return value is the l2 norm of the parameter x
+     *  This method computes the l2 norm of a vector x
+     * @param x_ is the vector whose norm will be computed
+     * @returns The return value is the l2 norm of the parameter x
      */
     public static double norm2(final double[] x) {
         double norm = 0;
@@ -72,12 +70,12 @@ public class GlcMath {
     }
 
     /**
-     * \brief This method computes uniformly spaced points on an interval
-     * \param[in] start_ is the lower bound of the interval
-     * \param[in] end_ is the upper bound of the interval
-     * \param[in] num_points_ is the number of points uniformly spaced on
+     *  This method computes uniformly spaced points on an interval
+     * @param start_ is the lower bound of the interval
+     * @param end_ is the upper bound of the interval
+     * @param num_points_ is the number of points uniformly spaced on
      * [start_,end_)
-     * \returns An array of points with length num_points_ starting at start_ and
+     * @returns An array of points with length num_points_ starting at start_ and
      * ending at end_ the rightmost boundary is not included.
      */
     public static double[] linearSpace(final double start, final double end, final int points) {

@@ -15,31 +15,32 @@ import glc.glc_interpolation.InterpolatingPolynomial;
  */
 public class GlcNode {
     // The pointer to this node's parent
-    GlcNode parent;
+     final  GlcNode parent;
     // The trajectory from the parent node to this node
-    InterpolatingPolynomial trajectory_from_parent;
+     final InterpolatingPolynomial trajectory_from_parent;
     // The control signal producing the trajectory from the parent node to
     // this node
-    InterpolatingPolynomial control_from_parent;
+     final InterpolatingPolynomial control_from_parent;
     // An array of pointers to this node's children
     // Vector< Node> children;
     // The state or configuration associated with this node
-    double[] state;
+     final  double[] state;
     // The duration of a trajectory from the root of the search tree to the
     // state of this node
-    double time = 0;
+     final double time;
     // The cost to reach this node from the root
-    double cost = 0;
+     final   double cost;
     // The cost together with the estimated cost-to-go which is used for an
     // informed search
-    double merit = 0;
+     final   double merit ;
     // The index from the discrete control set used to reach this node from
     // the parent in the current instance of the algorithm
-    int u_idx = 0;
+     final  int u_idx ;
     // The depth of this node in the search tree
-    int depth = 0;
+    // TODO: This is never updated
+        int depth ;
     // A flag to indicate if this Node is in the goal set
-    boolean in_goal = false;
+    // private final boolean in_goal = false;
 
     /**
      * Constructor for the Node object which sets several of the struct's
@@ -59,7 +60,7 @@ public class GlcNode {
      * @param parent_        a pointer to the parent of this Node
      */
 
-    GlcNode(int _card_omega,
+    public GlcNode(int _card_omega,
             int _control_index,
             double _cost,
             double _cost_to_go,

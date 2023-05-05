@@ -6,29 +6,35 @@ import glc.glc_interface.DynamicalSystem;
 import glc.glc_interpolation.InterpolatingPolynomial;
 
 /**
- * \brief This class implements the sim method of the base class Dynamical
+ * This class implements the sim method of the base class Dynamical
  * System with a numerical integration scheme
  * 
  * Note that the user must still provide a concrete dynamical model with flow
  * implemented
  */
 public abstract class RungeKuttaTwo extends DynamicalSystem {
-    // ! \brief These are temporary variables used in the Runge-Kutta 2 integration
+    // These are temporary variables used in the Runge-Kutta 2 integration
     // method
 
-    double[] x1, x2, f0, f1, f2;
-    // ! \brief This is the maximum time step that sim is allowed to use
-    double max_time_step;
-    // ! \brief This is a temporary variable used by the integration scheme
-    double h;
+    private final double[] x1;
+    private final double[] x2;
+    private final double[] f0;
+    private final double[] f1;
+    private final double[] f2;
+
+    // This is the maximum time step that sim is allowed to use
+    private final double max_time_step;
+
+    // This is a temporary variable used by the integration scheme
+    private double h;
 
     /**
-     * \brief The constructor sets the member parameters of this and the base class
+     * The constructor sets the member parameters of this and the base class
      */
-    public RungeKuttaTwo(double lipschitz_constant_,
+    public RungeKuttaTwo(
+            double lipschitz_constant_,
             double max_time_step_,
             int state_dim_) {
-
         super(lipschitz_constant_);
         max_time_step = max_time_step_;
         x1 = new double[state_dim_];
@@ -48,7 +54,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
      * @returns the trajectory satisfying the dynamic equations
      */
     @Override
-    public InterpolatingPolynomial sim(double t0, double tf, final double[] x0,
+    public InterpolatingPolynomial sim(final double t0, final double tf, final double[] x0,
             final InterpolatingPolynomial u) {
         if (tf <= t0)
             throw new IllegalArgumentException();
@@ -60,7 +66,7 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
         // set initial state and time
         double[] state = x0;
         double time = t0;
-        // InterpolatingPolynomial traj_segment;
+ 
         // integrate
         for (int i = 0; i < num_steps; i++) {
             // Use numerical integration scheme to compute a spline extending from state

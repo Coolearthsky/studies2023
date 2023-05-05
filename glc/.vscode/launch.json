@@ -5,23 +5,30 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "java",
-      "name": "Launch Main",
-      "request": "launch",
-      "mainClass": "team100.Main",
-      "projectName": "glc"
+        "type": "java",
+        "name": "Launch ShortestPathDemo",
+        "request": "launch",
+        "mainClass": "examples.ShortestPathDemo",
+        "projectName": "glc"
     },
     {
-      "type": "wpilib",
-      "name": "WPILib Desktop Debug",
-      "request": "launch",
-      "desktop": true
+        "type": "java",
+        "name": "Launch Main",
+        "request": "launch",
+        "mainClass": "team100.Main",
+        "projectName": "glc"
     },
     {
-      "type": "wpilib",
-      "name": "WPILib roboRIO Debug",
-      "request": "launch",
-      "desktop": false
+        "type": "wpilib",
+        "name": "WPILib Desktop Debug",
+        "request": "launch",
+        "desktop": true
+    },
+    {
+        "type": "wpilib",
+        "name": "WPILib roboRIO Debug",
+        "request": "launch",
+        "desktop": false
     }
-  ]
+]
 }

@@ -11,10 +11,10 @@ import glc.glc_interpolation.InterpolatingPolynomial;
 public class GlcLogging {
 
     /**
-     * \brief Logs the states labeling each equivalence class to a nodesToFile
-     * \param[in] name is the desired filename
-     * \param[in] path is the desired location for the file to be saved
-     * \param[in] domains is the set of labeled equivalence classes from a run of
+     * Logs the states labeling each equivalence class to a nodesToFile
+     * @param name  the desired filename
+     * @param path the desired location for the file to be saved
+     * @param domains  the set of labeled equivalence classes from a run of
      * GLC
      */
 
@@ -40,11 +40,11 @@ public class GlcLogging {
     }
 
     /**
-     * \brief Logs a finely sampled set of points along a trajectory to a file
-     * \param[in] name is the desired filename
-     * \param[in] path is the desired location for the file to be saved
-     * \param[in] traj an interpolating spline object that is to be logged
-     * \param[in] num_points is the number of points sampled uniformly along traj
+     *  Logs a finely sampled set of points along a trajectory to a file
+     * @param name the desired filename
+     * @param path the desired location for the file to be saved
+     * @param traj an interpolating spline object that is to be logged
+     * @param num_points the number of points sampled uniformly along traj
      */
 
     public static void trajectoryToFile(

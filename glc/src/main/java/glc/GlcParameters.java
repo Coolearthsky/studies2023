@@ -1,11 +1,11 @@
 package glc;
 
 public class GlcParameters {
-    // ! \brief This parameter defines the initial condition for the trajectory
+    // This parameter defines the initial condition for the trajectory
     // optimization
     public double[] x0;
     /**
-     * \brief This is the primary tuning parameter for the algorithm (see detailed
+     * This is the primary tuning parameter for the algorithm (see detailed
      * info below)
      * 
      * The guaranteed property of the algorithm is that if all other parameters are
@@ -19,12 +19,12 @@ public class GlcParameters {
      * always does.
      */
     public int res;
-    // ! \brief This is the dimension of the dynamical system's state space
+    // This is the dimension of the dynamical system's state space
     public int state_dim;
-    // ! \brief This is the dimension of the control input space
+    // This is the dimension of the control input space
     public int control_dim;
     /**
-     * \brief An iteration limit for the algorithm
+     * An iteration limit for the algorithm
      * 
      * Theoretically, the algorithm is guaranteed to terminate with or without
      * an iteration limit. However, this parameter can be set to prevent out
@@ -35,7 +35,7 @@ public class GlcParameters {
      */
     public int max_iter;
     /**
-     * \brief A constant factor dilation of the forward integration time in each
+     * A constant factor dilation of the forward integration time in each
      * node expansion
      * 
      * The duration that the dynamics are forward simulated must converge to zero
@@ -49,7 +49,7 @@ public class GlcParameters {
      */
     public double time_scale;
     /**
-     * \brief A constant factor dilation of the equivalence class size
+     * A constant factor dilation of the equivalence class size
      *
      * The partition size is carefully controlled by the resolution
      * parameter. It will decrease as the resolution increases, and
@@ -60,7 +60,7 @@ public class GlcParameters {
      */
     public double partition_scale;
     /**
-     * \brief A constant factor multiplying the depth limit of the search tree
+     * A constant factor multiplying the depth limit of the search tree
      * 
      * In order to guarantee finite time termination, the algorithm is limited
      * to a finite search depth for a fixed search resolution. This limit is
@@ -69,13 +69,13 @@ public class GlcParameters {
      */
     public int depth_scale;
     /**
-     * \brief Assuming a numerical integration scheme is used, this is the maximum
+     * Assuming a numerical integration scheme is used, this is the maximum
      * integration step
      */
     public double dt_max;
 
     /**
-     * \brief This method prints the parameters to the terminal
+     * This method prints the parameters to the terminal
      */
 
     void printParams() {

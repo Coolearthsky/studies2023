@@ -1,9 +1,7 @@
 package glc.glc_interface;
 
-
-
 /**
- * \brief Base class for an admissible and consistent estimate of the cost-to-go
+ * Base class for an admissible and consistent estimate of the cost-to-go
  * from a particular state in the state space
  * 
  * The heuristic is computed at the state associated to nodes in the search tree
@@ -12,15 +10,16 @@ package glc.glc_interface;
  */
 public abstract class Heuristic {
 
-  /**
-   * \brief Base class for evaluates of the under-estimates the cost to go from a
-   * particular state
-   * 
-   * \param[in] x0_ is the state from which the cos-to-go is estimated
-   * 
-   * The the estimated cost-to-go should be as close as possible to the actual
-   * cost-to-go without over-approximating it anywhere in the state space.
-   * Nominally, the heuristic is computationally cheap to evaluate.
-   */
-  public abstract double costToGo(final double[] x0_);
+    /**
+     * Base class for evaluates of the under-estimates the cost to go from a
+     * particular state
+     * 
+     * The the estimated cost-to-go should be as close as possible to the actual
+     * cost-to-go without over-approximating it anywhere in the state space.
+     * Nominally, the heuristic is computationally cheap to evaluate.
+     * 
+     * @param x0_ is the state from which the cos-to-go is estimated
+     * @return estimated cost to go
+     */
+    public abstract double costToGo(final double[] x0_);
 };

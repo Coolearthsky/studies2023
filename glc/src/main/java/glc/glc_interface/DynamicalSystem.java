@@ -3,17 +3,17 @@ package glc.glc_interface;
 import glc.glc_interpolation.InterpolatingPolynomial;
 
 /**
- * \brief The user must define a dynamical system whose differential constraints
+ *  The user must define a dynamical system whose differential constraints
  * must be satisfied by a solution to a particular problem
  */
 public abstract class DynamicalSystem {
 
     // keeps track of how many calls to the simulation method
     // there are in a planning query
-    protected int sim_counter = 0;
+    public int sim_counter = 0;
 
     // the lipschitz constant of the dynamics (in the state variable!!!)
-    protected double lipschitz_constant;
+    protected final double lipschitz_constant;
 
     /**
      * The base constructor sets the lipschitz_constant for the dynamic model
