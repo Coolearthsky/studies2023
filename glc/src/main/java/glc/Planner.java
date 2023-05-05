@@ -1,5 +1,12 @@
 package glc;
 
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import glc.glc_interface.CostFunction;
@@ -8,15 +15,6 @@ import glc.glc_interface.GoalRegion;
 import glc.glc_interface.Heuristic;
 import glc.glc_interface.Obstacles;
 import glc.glc_interpolation.InterpolatingPolynomial;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 /**
  * The core planning class for carring out trajectory optimization
@@ -27,21 +25,21 @@ import java.util.TreeSet;
  */
 public class Planner {
     private static final float CLOCKS_PER_SEC = 1000;
-    // A leaf node in the goal region with minimum cost from the root
+    /** A leaf node in the goal region with minimum cost from the root */
     GlcNode best;
-    // The root of the search tree
+    /** The root of the search tree */
     private final GlcNode root_ptr;
-    // A raw pointer to the dynamical system for the problem
+    /** A raw pointer to the dynamical system for the problem */
     private final DynamicalSystem dynamics;
-    // A raw pointer to the goal region for the problem
+    /** A raw pointer to the goal region for the problem */
     private final GoalRegion goal;
-    // A raw pointer to the (topologically)closed obstacle set for the problem
+    /** A raw pointer to the (topologically)closed obstacle set for the problem */
     private final Obstacles obs;
-    // A raw pointer to the cost function for the problem
+    /** A raw pointer to the cost function for the problem */
     private final CostFunction cf;
-    // A raw pointer to the heuristic for the problem
+    /** A raw pointer to the heuristic for the problem */
     private final Heuristic h;
-    // A comparator for measureing relative merit of nodes
+    /** A comparator for measureing relative merit of nodes */
     private final NodeMeritOrder compare = new NodeMeritOrder();
     /**
      * A priority queue of leaf nodes that are open for expansion
@@ -49,7 +47,6 @@ public class Planner {
      * The queue is ordered by the cost plus the estimated cost to go
      * determined by the admissible and consistent heuristic.
      */
-    // PriorityQueue< GlcNode, Vector< GlcNode>, NodeMeritOrder> queue;
     private final PriorityQueue<GlcNode> queue = new PriorityQueue<GlcNode>(new NodeMeritOrder());
 
     /**
@@ -238,8 +235,8 @@ public class Planner {
     void expand() {
         // Increment the iteration count
         iter++;
-                /////////////////
-     //           System.out.println("ITER " + iter);
+        /////////////////
+        // System.out.println("ITER " + iter);
 
         // If the queue is empty then the problem is not feasible at the current
         // resolution
@@ -249,7 +246,7 @@ public class Planner {
             return;
         }
 
-      //  System.out.println("OPEN " + queue.size());
+        // System.out.println("OPEN " + queue.size());
         // Pop the top of the queue for expansion
         GlcNode current_node = queue.poll();
         // queue.pop();
@@ -293,19 +290,19 @@ public class Planner {
         // Expand top of queue and store arcs in set of domains
         for (int i = 0; i < controls.size(); i++) {
             ///////////////////
-  //          System.out.println("CONTROL " + i);
+            // System.out.println("CONTROL " + i);
             double[] c0;
             // Create a control signal spline which is a first order hold.
             // u(t)=c0+c1*t. If expanding root, just use u(t)=constant;
             if (current_node.parent == null) {
-   //             System.out.println("NO PARENT");
+                // System.out.println("NO PARENT");
                 c0 = controls.get(i);
             } else {
-   //             System.out.println("HAS PARENT");
+                // System.out.println("HAS PARENT");
                 c0 = controls.get(current_node.u_idx);
             }
             /////////////////
-   //         System.out.println("c0 " + Arrays.toString(c0));
+            // System.out.println("c0 " + Arrays.toString(c0));
             double[] c1 = new double[c0.length];
             for (int j = 0; j < c0.length; ++j) {
                 c1[j] = (controls.get(i)[j] - c0[j]) / expand_time;
@@ -318,9 +315,9 @@ public class Planner {
             // The above parameters are used to construct new_control
             InterpolatingPolynomial new_control = new InterpolatingPolynomial(linear_interp, expand_time,
                     current_node.time, controls.get(i).length, 2);
-/////
-        //    System.out.println("\nCONTROL");
-        //    new_control.printData();
+            /////
+            // System.out.println("\nCONTROL");
+            // new_control.printData();
 
             // Forward simulate with new_control to get a cubic spline between collocation
             // points
@@ -349,10 +346,10 @@ public class Planner {
 
             // Get the domain for the coordinate or create it and insert into labels.
             if (partition_labels.containsKey(d_new)) {
-                //System.out.println("USE");
+                // System.out.println("USE");
                 d_new = partition_labels.get(d_new);
             } else {
-               // System.out.println("PUT");
+                // System.out.println("PUT");
                 partition_labels.put(d_new, d_new);
             }
             GlcStateEquivalenceClass bucket = d_new;
@@ -360,20 +357,20 @@ public class Planner {
             domains_needing_update.add(bucket);
 
             if (compare.compare(new_arc, bucket.label) < 0) {
-                
+
                 bucket.candidates.add(new_arc);
             } else {
-            //    System.out.println("NO BUCKET");
+                // System.out.println("NO BUCKET");
             }
         }
 
         //////////////
-   //    System.out.println("update set size " + domains_needing_update.size());
+        // System.out.println("update set size " + domains_needing_update.size());
 
         // Go through the new trajectories and see if there is a possibility for
         // relabeling before collcheck
         for (var open_domain : domains_needing_update) {
-     //       System.out.println("OPEN CANDIDATES " + open_domain.candidates.size());
+            // System.out.println("OPEN CANDIDATES " + open_domain.candidates.size());
             GlcStateEquivalenceClass current_domain = open_domain;
             // We go through the queue of candidates for relabeling/pushing in each set
             boolean found_best = false;
@@ -412,7 +409,7 @@ public class Planner {
     void expandWhileLive() {
         while (live) {
             /////////////////
-     //       System.out.println("EXPAND");
+            // System.out.println("EXPAND");
 
             expand();
         }
