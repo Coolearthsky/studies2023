@@ -25,12 +25,32 @@ public class GlcLogging {
         try {
             PrintWriter points = new PrintWriter(new FileWriter(path + name));
             for (var x : domains) {
+                // NEW! includes a cost column for graph coloring!
+                points.print( x.label.cost);
+                points.print(",");
+                // NEW! includes parent state for line drawing
+                GlcNode parent_node = x.label.parent;
+                if (parent_node != null) {
+                double[] parent_state = x.label.parent.state;
+                for (int j = 0; j < parent_state.length; j++) {
+                    points.print(parent_state[j]);
+                    points.print(",");
+                }
+                } else { // print the same state twice
+                    double[] state = x.label.state;
+                    for (int j = 0; j < state.length; j++) {
+                        points.print(state[j]);
+                        points.print(",");
+                    }
+                }
+
                 double[] state = x.label.state;
                 for (int j = 0; j < state.length - 1; j++) {
                     points.print(state[j]);
                     points.print(",");
                 }
                 points.println(state[state.length - 1]);
+
             }
             points.close();
         } catch (IOException e) {
