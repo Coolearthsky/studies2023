@@ -3,29 +3,24 @@ package glc;
 import java.util.Comparator;
 
 /**
-   *  A structure for defining a weak linear ordering of nodes based on the ordering of their merit attribute.
-   *
-   * This ordering is used to order a priority queue used in the A* like search. 
-   */
-  public class NodeMeritOrder implements Comparator<GlcNode>{
+ * A structure for defining a weak linear ordering of nodes based on the
+ * ordering of their merit attribute.
+ *
+ * This ordering is used to order a priority queue used in the A* like search.
+ */
+public class NodeMeritOrder implements Comparator<GlcNode> {
 
     /**
-     *  The function defining the "less than" relation between two nodes
+     * Compare nodes based on merit.
+     * 
      * @param node1 is the left element to be checked for membership in the relation
-     * @param node2 is the right element to be checked for membership in the relation
-     * @returns true if the merit of node1 is less than the merit of node2 and false otherwise.
-     */ 
-    // boolean operator()(final  Node node1, final  Node node2);
-
-    // boolean NodeMeritOrder::operator()(final  GlcNode node1, final  GlcNode node2){
-    //     return node1.merit>node2.merit;//negation so top of queue is min not max     
-    //   }
-  
-
-  // TODO check the polarity here.
+     * @param node2 is the right element to be checked for membership in the
+     *              relation
+     * @returns negative if l < r, positive if l > r, zero otherwise
+     */
 
     @Override
-    public int compare(GlcNode arg0, GlcNode arg1) {
-      return Double.compare(arg0.merit, arg1.merit);
+    public int compare(GlcNode l, GlcNode r) {
+        return Double.compare(l.merit, r.merit);
     }
-  }
+}
