@@ -14,32 +14,52 @@ import glc.glc_interpolation.InterpolatingPolynomial;
  * cost-to-go which is used in the A*-like search.
  */
 public class GlcNode {
-    // The pointer to this node's parent
-     final  GlcNode parent;
-    // The trajectory from the parent node to this node
-     final InterpolatingPolynomial trajectory_from_parent;
-    // The control signal producing the trajectory from the parent node to
-    // this node
-     final InterpolatingPolynomial control_from_parent;
-    // An array of pointers to this node's children
-    // Vector< Node> children;
-    // The state or configuration associated with this node
-     final  double[] state;
-    // The duration of a trajectory from the root of the search tree to the
-    // state of this node
-     final double time;
-    // The cost to reach this node from the root
-     final   double cost;
-    // The cost together with the estimated cost-to-go which is used for an
-    // informed search
-     final   double merit ;
-    // The index from the discrete control set used to reach this node from
-    // the parent in the current instance of the algorithm
-     final  int u_idx ;
-    // The depth of this node in the search tree
-    // TODO: This is never updated
-        int depth ;
-    // A flag to indicate if this Node is in the goal set
+    /**
+     * The pointer to this node's parent
+     */
+    public final GlcNode parent;
+    /**
+     * The trajectory from the parent node to this node
+     */
+    public final InterpolatingPolynomial trajectory_from_parent;
+    /**
+     * The control signal producing the trajectory from the parent node to
+     * this node
+     */
+    public final InterpolatingPolynomial control_from_parent;
+    /**
+     * An array of pointers to this node's children
+     * Vector< Node> children;
+     * The state or configuration associated with this node
+     */
+    public final double[] state;
+    /**
+     * The duration of a trajectory from the root of the search tree to the
+     * state of this node
+     */
+    public final double time;
+    /**
+     * The cost to reach this node from the root
+     */
+    public final double cost;
+    /**
+     * The cost together with the estimated cost-to-go which is used for an
+     * informed search
+     */
+    public final double merit;
+    /**
+     * The index from the discrete control set used to reach this node from
+     * the parent in the current instance of the algorithm
+     */
+    public final int u_idx;
+    /**
+     * The depth of this node in the search tree
+     * TODO: This is never updated
+     */
+    public int depth;
+    /**
+     * A flag to indicate if this Node is in the goal set
+     */
     // private final boolean in_goal = false;
 
     /**
