@@ -126,7 +126,7 @@ class ShortestPathDemo {
     ////////////////////////////////////////////////////////
     public static class EuclideanHeuristic extends Heuristic {
         private final double radius;
-        private final double[] goal;
+        private  double[] goal;
 
         public EuclideanHeuristic(double[] _goal, double _radius) {
             radius = _radius;
@@ -139,9 +139,9 @@ class ShortestPathDemo {
             // offset by goal radius
         }
 
-        // void setGoal(final double[] goal_) {
-        //     goal = goal_;
-        // }
+        void setGoal(final double[] goal_) {
+            goal = goal_;
+        }
     };
 
     ////////////////////////////////////////////////////////
@@ -154,13 +154,10 @@ class ShortestPathDemo {
         }
 
         @Override
-        public void flow(final double[] dx,
-                final double[] x,
-                final double[] u) {
+        public void flow(final double[] dx, final double[] x, final double[] u) {
             for (int i = 0; i < u.length; ++i) {
                 dx[i] = u[i];
             }
-            ;
         }
 
         @Override
@@ -195,7 +192,6 @@ class ShortestPathDemo {
                 double[] diff = new double[traj_at_t.length];
                 for (int j = 0; j < traj_at_t.length; ++j) {
                     diff[j] = traj_at_t_dt[j] - traj_at_t[j];
-
                 }
                 c += GlcMath.norm2(diff);
                 t += dt;

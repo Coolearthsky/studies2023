@@ -249,6 +249,7 @@ public class Planner {
             return;
         }
 
+      //  System.out.println("OPEN " + queue.size());
         // Pop the top of the queue for expansion
         GlcNode current_node = queue.poll();
         // queue.pop();
@@ -317,6 +318,10 @@ public class Planner {
             // The above parameters are used to construct new_control
             InterpolatingPolynomial new_control = new InterpolatingPolynomial(linear_interp, expand_time,
                     current_node.time, controls.get(i).length, 2);
+/////
+        //    System.out.println("\nCONTROL");
+        //    new_control.printData();
+
             // Forward simulate with new_control to get a cubic spline between collocation
             // points
             InterpolatingPolynomial new_traj = dynamics.sim(current_node.time, current_node.time + expand_time,
@@ -332,6 +337,9 @@ public class Planner {
                     new_traj,
                     new_control);
 
+            // System.out.println("\nTRAJ");
+            // new_traj.printData();
+
             // Create a region for the new trajectory
             double[] w = new double[new_arc.state.length];
             for (int j = 0; j < new_arc.state.length; ++j) {
@@ -341,16 +349,21 @@ public class Planner {
 
             // Get the domain for the coordinate or create it and insert into labels.
             if (partition_labels.containsKey(d_new)) {
+                //System.out.println("USE");
                 d_new = partition_labels.get(d_new);
             } else {
+               // System.out.println("PUT");
                 partition_labels.put(d_new, d_new);
             }
             GlcStateEquivalenceClass bucket = d_new;
             // Add to a queue of domains that need inspection
             domains_needing_update.add(bucket);
 
-            if (0 != compare.compare(new_arc, bucket.label)) {
+            if (compare.compare(new_arc, bucket.label) < 0) {
+                
                 bucket.candidates.add(new_arc);
+            } else {
+            //    System.out.println("NO BUCKET");
             }
         }
 
@@ -360,13 +373,14 @@ public class Planner {
         // Go through the new trajectories and see if there is a possibility for
         // relabeling before collcheck
         for (var open_domain : domains_needing_update) {
+     //       System.out.println("OPEN CANDIDATES " + open_domain.candidates.size());
             GlcStateEquivalenceClass current_domain = open_domain;
             // We go through the queue of candidates for relabeling/pushing in each set
             boolean found_best = false;
             while ((!found_best) && (!current_domain.candidates.isEmpty())) {
                 // If the top of the candidate queue is cheaper than the label we should coll
                 // check it
-                if (0 != compare.compare(current_domain.candidates.peek(), current_domain.label)) {
+                if (compare.compare(current_domain.candidates.peek(), current_domain.label) < 0) {
                     GlcNode best_relabel_candidate = current_domain.candidates.peek();
                     InterpolatingPolynomial candidate_traj = best_relabel_candidate.trajectory_from_parent;// traj_from_parent[best_relabel_candidate];
                     if (obs.collisionFree(candidate_traj)) {

@@ -204,7 +204,11 @@ public class InterpolatingPolynomial {
             for (int mon_id = 0; mon_id < 4; mon_id++) {
                 System.out.print("--- t^" + mon_id + ": ");
                 for (int s_id = 0; s_id < 2; s_id++) {
-                    System.out.print(coefficient_array.get(t_id).get(mon_id)[s_id]);
+                    Vector<double[]> item = coefficient_array.get(t_id);
+                    if (item == null) continue;
+                    if (item.size() - 1 < mon_id) continue;
+                    double[] arr = item.get(mon_id);
+                    System.out.print(arr[s_id]);
                     System.out.print(",");
                 }
             }

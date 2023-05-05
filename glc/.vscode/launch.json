@@ -6,6 +6,20 @@
   "configurations": [
     {
         "type": "java",
+        "name": "Launch NonholonomicCarDemo",
+        "request": "launch",
+        "mainClass": "examples.NonholonomicCarDemo",
+        "projectName": "glc"
+    },
+    {
+        "type": "java",
+        "name": "Launch PendulumSwingupDemo",
+        "request": "launch",
+        "mainClass": "examples.PendulumSwingupDemo",
+        "projectName": "glc"
+    },
+    {
+        "type": "java",
         "name": "Launch ShortestPathDemo",
         "request": "launch",
         "mainClass": "examples.ShortestPathDemo",
