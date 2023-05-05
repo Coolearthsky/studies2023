@@ -1,5 +1,6 @@
 package glc.glc_numerical_integration;
 
+import java.util.Arrays;
 import java.util.Vector;
 
 import glc.glc_interface.DynamicalSystem;
@@ -114,8 +115,9 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
         // Cubic interpolation between x0 and x2 with x'(t1)=f(x0,u(t0)) and
         // x'(t2)=f(x2,u(t2))
         Vector<double[]> cubic = new Vector<double[]>();
-        cubic.add(x0);// t^0 term
-        cubic.add(f0);// t^1 term
+        // copy here because original copied them
+        cubic.add(Arrays.copyOf(x0, x0.length));// t^0 term
+        cubic.add(Arrays.copyOf(f0, f0.length));// t^1 term
         double[] e = new double[f0.length];
         for (int i = 0; i < f0.length; ++i) {
             e[i] = (-2.0 * f0[i] + 3.0 * f1[i] - f2[i]) / h;

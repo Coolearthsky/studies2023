@@ -1,9 +1,10 @@
 package glc.glc_interpolation;
 
+import java.util.Arrays;
 import java.util.Vector;
 
 /**
- *  A class used to represent parametric curves in arbitrary dimensions
+ * A class used to represent parametric curves in arbitrary dimensions
  * 
  * This is a very minimal class that does not enforce continuity or smoothness
  * of the curve it represents. This give maximum flexibility to the user. A
@@ -12,33 +13,33 @@ import java.util.Vector;
  */
 public class InterpolatingPolynomial {
     /**
-     *  the dimension of the polynomial vector space spanned by the basis
+     * the dimension of the polynomial vector space spanned by the basis
      * 
      * Node that degree is a slight misnomer. It represents the number of
      * coefficients
      * required in each state dimension to define a polynomial. The highest power
      * appearing in the basis functions is degree-1.
      */
-    private final   int degree;
+    private final int degree;
     /**
-     *  dimension is the dimension of the state space that the curve is
+     * dimension is the dimension of the state space that the curve is
      * defined in
      * 
      * There is a polynomial assigned to each dimension for a given curve
      */
-    private final     int dimension;
+    private final int dimension;
     /**
-     *  This is the time interval for each polynomial segment
+     * This is the time interval for each polynomial segment
      * 
      * Each polynomial is defined from t=0 to t=collocation_interval.
      */
-    private final     double collocation_interval;
+    private final double collocation_interval;
     /**
-     *  This is the initial time the curve is defined at
+     * This is the initial time the curve is defined at
      */
-    private final     double t0;
+    private final double t0;
     /**
-     *  The 3D array of coefficients for the muli-dimensional interpolating
+     * The 3D array of coefficients for the muli-dimensional interpolating
      * spline
      * 
      * The outermost index identifies the collocation interval. The middle index
@@ -48,15 +49,16 @@ public class InterpolatingPolynomial {
      * 
      * coefficient_array[time_interval_index][polynomial_coefficient_index][polynomial_coordinate_index]
      */
-    private final  Vector<Vector<double[]>> coefficient_array;
+    private final Vector<Vector<double[]>> coefficient_array;
 
     /**
-     *  This constructor takes values to set all member attributes
-     * @param _coeff_array initializes coefficient_array
+     * This constructor takes values to set all member attributes
+     * 
+     * @param _coeff_array          initializes coefficient_array
      * @param _collocation_interval initializes _collocation_interval
-     * @param _t0 initialilzed t0
-     * @param _dimension initializes dimension
-     * @param _degree initializes degree
+     * @param _t0                   initialilzed t0
+     * @param _dimension            initializes dimension
+     * @param _degree               initializes degree
      */
 
     public InterpolatingPolynomial(final Vector<Vector<double[]>> _coeff_array,
@@ -73,12 +75,13 @@ public class InterpolatingPolynomial {
     }
 
     /**
-     *  This constructor takes values to set member attributes with the
+     * This constructor takes values to set member attributes with the
      * exception of the coefficients which are left empty
+     * 
      * @param _collocation_interval initializes _collocation_interval
-     * @param _t0 initialilzed t0
-     * @param _dimension initializes dimension
-     * @param _degree initializes degree
+     * @param _t0                   initialilzed t0
+     * @param _dimension            initializes dimension
+     * @param _degree               initializes degree
      */
 
     public InterpolatingPolynomial(final double _collocation_interval,
@@ -93,7 +96,7 @@ public class InterpolatingPolynomial {
     }
 
     /**
-     *  Extends this curve by copying the contents of tail to the back of this
+     * Extends this curve by copying the contents of tail to the back of this
      * curve
      * 
      * The value of t0 in tail is ignored
@@ -112,14 +115,19 @@ public class InterpolatingPolynomial {
     }
 
     /**
-     *  appends a single polynomial segment to the back of this spline
+     * appends a single polynomial segment to the back of this spline
      */
     void push(final Vector<double[]> knot) {
-        coefficient_array.add(knot);
+        // make a copy here because the original made a copy
+        Vector<double[]> out = new Vector<double[]>();
+        for (int i = 0; i < knot.size(); ++i) {
+            out.add(Arrays.copyOf(knot.get(i), knot.get(i).length));
+        }
+        coefficient_array.add(out);
     }
 
     /**
-     *  Evaluate the curve at parameter value t
+     * Evaluate the curve at parameter value t
      * 
      * This method first identifies which interval I should
      * be evaluated. From there an offset equal to t-I*collocation_interval
@@ -139,37 +147,38 @@ public class InterpolatingPolynomial {
         return eval;
     }
 
-    //  Allocates memory in coefficient_array for "size" spline intervals
+    // Allocates memory in coefficient_array for "size" spline intervals
 
     public void reserve(final int size) {
         if (size < 0)
             throw new IllegalArgumentException(
                     "Cannot reserve negative space for InterpolatingPolynomial coefficients");
-        coefficient_array .ensureCapacity(size);
+        coefficient_array.ensureCapacity(size);
     }
 
-    //  returns a copy of the number of intervals in this interpolating
+    // returns a copy of the number of intervals in this interpolating
     // spline
     public int numberOfIntervals() {
         return coefficient_array.size();
     }
 
-    //  returns the length of each interval -- each interval has equal
+    // returns the length of each interval -- each interval has equal
     // length
     public double intervalLength() {
         return collocation_interval;
     }
 
-    //  returns the initial time for the parametric curve
+    // returns the initial time for the parametric curve
 
     public double initialTime() {
         return t0;
     }
 
     /**
-     *  prints uniformly sampled points along the curve to the terminal
+     * prints uniformly sampled points along the curve to the terminal
+     * 
      * @param num_points
-     * @param msg is a message that will accompany the output to the terminal
+     * @param msg        is a message that will accompany the output to the terminal
      */
 
     public void printSpline(int num_points, final String msg) {

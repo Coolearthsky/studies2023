@@ -9,6 +9,7 @@ import glc.glc_interface.Heuristic;
 import glc.glc_interface.Obstacles;
 import glc.glc_interpolation.InterpolatingPolynomial;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.PriorityQueue;
@@ -200,6 +201,7 @@ public class Planner {
         GlcNode currentNode = best;
         Vector<GlcNode> path = new Vector<GlcNode>();
         while (!(currentNode.parent == null)) {
+            // this was a copy but i don't think it's necessary here
             path.add(currentNode);
             currentNode = currentNode.parent;
         }
@@ -236,6 +238,9 @@ public class Planner {
     void expand() {
         // Increment the iteration count
         iter++;
+                /////////////////
+     //           System.out.println("ITER " + iter);
+
         // If the queue is empty then the problem is not feasible at the current
         // resolution
         if (queue.isEmpty()) {
@@ -286,14 +291,20 @@ public class Planner {
 
         // Expand top of queue and store arcs in set of domains
         for (int i = 0; i < controls.size(); i++) {
+            ///////////////////
+  //          System.out.println("CONTROL " + i);
             double[] c0;
             // Create a control signal spline which is a first order hold.
             // u(t)=c0+c1*t. If expanding root, just use u(t)=constant;
             if (current_node.parent == null) {
+   //             System.out.println("NO PARENT");
                 c0 = controls.get(i);
             } else {
+   //             System.out.println("HAS PARENT");
                 c0 = controls.get(current_node.u_idx);
             }
+            /////////////////
+   //         System.out.println("c0 " + Arrays.toString(c0));
             double[] c1 = new double[c0.length];
             for (int j = 0; j < c0.length; ++j) {
                 c1[j] = (controls.get(i)[j] - c0[j]) / expand_time;
@@ -342,6 +353,10 @@ public class Planner {
                 bucket.candidates.add(new_arc);
             }
         }
+
+        //////////////
+   //    System.out.println("update set size " + domains_needing_update.size());
+
         // Go through the new trajectories and see if there is a possibility for
         // relabeling before collcheck
         for (var open_domain : domains_needing_update) {
@@ -382,6 +397,9 @@ public class Planner {
      */
     void expandWhileLive() {
         while (live) {
+            /////////////////
+     //       System.out.println("EXPAND");
+
             expand();
         }
         return;

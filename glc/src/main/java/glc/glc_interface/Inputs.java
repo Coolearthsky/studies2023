@@ -1,5 +1,6 @@
 package glc.glc_interface;
 
+import java.util.Arrays;
 import java.util.Vector;
 
 /**
@@ -33,7 +34,8 @@ public class Inputs {
      */
 
     protected void addInputSample(double[] _input) {
-        points.add(_input);
+        // copy here because original made a copy
+        points.add(Arrays.copyOf(_input, _input.length));
     }
 
     /**

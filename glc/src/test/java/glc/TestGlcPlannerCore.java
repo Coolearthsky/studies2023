@@ -26,16 +26,32 @@ public class TestGlcPlannerCore {
         alg_params.state_dim = 2;
         alg_params.depth_scale = 100;
         alg_params.dt_max = 5.0;
+        ////////////////////
         alg_params.max_iter = 50000;
+//        alg_params.max_iter = 2;
         alg_params.time_scale = 20;
         alg_params.partition_scale = 40;
         alg_params.x0 = new double[] { 0.0, 0.0 };
+
+        /////////////////
+//        System.out.println("START");
 
         // Create a dynamic model
         SampleInterfaces.SingleIntegrator dynamic_model = new SampleInterfaces.SingleIntegrator(alg_params.dt_max);
 
         // Create the control inputs
         SampleInterfaces.ControlInputs2D controls = new SampleInterfaces.ControlInputs2D(alg_params.res);
+  //      System.out.print("CONTROLS ");
+  //      for (int i = 0; i < controls.readInputs().size(); ++i) {
+  //          System.out.print(" item " + i + " ");
+   //         for (int j = 0; j < controls.readInputs().get(i).length; ++j) {
+  //              System.out.print(" array " + j + " ");
+  //              System.out.print(controls.readInputs().get(i)[j]);
+   //             System.out.print(" ");
+  //          }
+   //         System.out.println();
+   //     }
+   //     System.out.println();
 
         // Create the cost function
         SampleInterfaces.ArcLength performance_objective = new SampleInterfaces.ArcLength(4);
@@ -57,6 +73,9 @@ public class TestGlcPlannerCore {
                 performance_objective,
                 alg_params,
                 controls.readInputs());
+
+        /////////////////
+    //    System.out.println("PLAN");
 
         // Run the planner and print solution
         PlannerOutput out = planner.plan();
@@ -211,7 +230,8 @@ public class TestGlcPlannerCore {
             assertTrue(GlcMath.norm2(diff) <= 3.0 * (tf - t0) / 100);
             // std::cout << GlcMath.norm2(x-y) << std::endl;
         }
-        GlcLogging.trajectoryToFile("pendulum_swingup_demo.txt", "../examples/", solution, 100);
+//        GlcLogging.trajectoryToFile("pendulum_swingup_demo.txt", "../examples/", solution, 100);
+        //GlcLogging.trajectoryToFile("pendulum_swingup_demo.txt", "", solution, 100);
 
     }
 
