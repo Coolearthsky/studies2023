@@ -17,43 +17,24 @@ import glc.glc_interface.Obstacles;
 import glc.glc_interpolation.InterpolatingPolynomial;
 import glc.glc_numerical_integration.RungeKuttaTwo;
 
-/* This example illustrates how to interface with the glc planner.
- * One must provide:
- * 
- * 1) A finite subset of admissible control inputs
- * parameterized by a resolution so that this finite
- * so that this finite set converges to a dense subset
- * with increasing resolution. 
- * 
- * 2) A goal checking subroutine that determines
- * if a trajectory object intersects the goal set.
- * 
- * 3) An admissible heuristic that underestimates 
- * the optimal cost-to-go from every feasible state.
- * One can always use h(x)=0 for all x as a heuristic.
- * 
- * 4) A dynamic model describing the response of the 
- * system to control inputs and also a lipschitz 
- * constant for the model.
- * 
- * 5) A feasibility or collision checking function.
- * 
- * 6) A Lipschitz continuous cost running cost for
- * candidate trajectories along with a known Lipschitz
- * constant.
+/**
+ * FRC path planner using 2023 game map.
  */
-
 class FRCShortestPathDemo {
 
-    ////////////////////////////////////////////////////////
-    ///////// Discretization of Control Inputs///////////////
-    ////////////////////////////////////////////////////////
+    /**
+     * Discretization of Control Inputs
+     * 
+     * A finite subset of admissible control inputs
+     * parameterized by a resolution so that this finite
+     * so that this finite set converges to a dense subset
+     * with increasing resolution.
+     */
     public static class ControlInputs2D extends Inputs {
         private static final double kVelocity = 0.5;
 
         // uniformly spaced points on a circle
         public ControlInputs2D(int num_inputs) {
-
             double[] u = new double[2];
             for (int i = 0; i < num_inputs; i++) {
                 u[0] = kVelocity * Math.sin(2.0 * i * Math.PI / num_inputs);
@@ -63,9 +44,12 @@ class FRCShortestPathDemo {
         }
     };
 
-    ////////////////////////////////////////////////////////
-    /////////////// Goal Checking Interface//////////////////
-    ////////////////////////////////////////////////////////
+    /**
+     * Goal Checking Interface
+     * 
+     * A goal checking subroutine that determines
+     * if a trajectory object intersects the goal set.
+     */
     public static class SphericalGoal extends GoalRegion {
         private double goal_radius;
         private double goal_radius_sqr;
@@ -122,9 +106,13 @@ class FRCShortestPathDemo {
         }
     };
 
-    ////////////////////////////////////////////////////////
-    //////// Problem Specific Admissible Heuristic///////////
-    ////////////////////////////////////////////////////////
+    /**
+     * Problem Specific Admissible Heuristic
+     * 
+     * An admissible heuristic that underestimates
+     * the optimal cost-to-go from every feasible state.
+     * One can always use h(x)=0 for all x as a heuristic.
+     */
     public static class EuclideanHeuristic extends Heuristic {
         private final double radius;
         private double[] goal;
@@ -145,11 +133,22 @@ class FRCShortestPathDemo {
         }
     };
 
-    ////////////////////////////////////////////////////////
-    ///////////////// Dynamic Model//////////////////////////
-    ////////////////////////////////////////////////////////
+    /**
+     * State space model.
+     * 
+     * A dynamic model describing the response of the
+     * system to control inputs and also a lipschitz
+     * constant for the model.
+     * 
+     * Two dimensions:
+     * x[0] = x position
+     * x[1] = y position
+     * 
+     * TODO: add x[2] = x velocity, x[3] = y velocity
+     * 
+     * 
+     */
     public static class SingleIntegrator extends RungeKuttaTwo {
-
         SingleIntegrator(final double max_time_step_) {
             super(0.0, max_time_step_, 2);
         }
@@ -167,9 +166,13 @@ class FRCShortestPathDemo {
         }
     };
 
-    ////////////////////////////////////////////////////////
-    ///////////////// Cost Function//////////////////////////
-    ////////////////////////////////////////////////////////
+    /**
+     * Cost Function
+     * 
+     * A Lipschitz continuous cost running cost for
+     * candidate trajectories along with a known Lipschitz
+     * constant.
+     */
     public static class ArcLength extends CostFunction {
         private final double sample_resolution;
 
@@ -201,23 +204,17 @@ class FRCShortestPathDemo {
         }
     };
 
-    ////////////////////////////////////////////////////////
-    ///////////////// State Constraints//////////////////////
-    ////////////////////////////////////////////////////////
+    /**
+     * State Constraints
+     * 
+     * A feasibility or collision checking function.
+     */
     public static class PlanarDemoObstacles extends Obstacles {
         private static final double kDia = 0.5;
         private final int resolution;
-        // private final double[] corners1;
-        // private final double[] corners2;
-        private final double[] center1;
-        private final double[] center2;
 
         public PlanarDemoObstacles(int _resolution) {
             resolution = _resolution;
-            // corners1 = new double[] {6.34, 1.51};
-            // corners2 = new double[] {4.41, 3.98};
-            center1 = new double[] { 3.0, 2.0 };
-            center2 = new double[] { 6.0, 8.0 };
         }
 
         @Override
@@ -231,20 +228,18 @@ class FRCShortestPathDemo {
                 state = traj.at(t);
                 double x = state[0];
                 double y = state[1];
-
                 // nodes
-                if (x  < 1.43 && y - kDia < 5.49)
+                if (x < 1.43 && y - kDia < 5.49)
                     return false;
                 // opponent community
-                if (x + kDia > 13.18 && y -  kDia < 5.49)
+                if (x + kDia > 13.18 && y - kDia < 5.49)
                     return false;
                 // opponent loading
                 if (x - kDia < 3.36 && y + kDia > 5.49)
                     return false;
                 // opponent loading
-                if (x - kDia < 6.71 && y +  kDia > 6.75)
+                if (x - kDia < 6.71 && y + kDia > 6.75)
                     return false;
-
                 // baseline
                 if (x + kDia > 16.54)
                     return false;
@@ -275,26 +270,17 @@ class FRCShortestPathDemo {
                         && y + kDia > 4.5
                         && y - kDia < 5.5)
                     return false;
-                    if (x + kDia > 6.5
-                    && x - kDia < 7.5
-                    && y + kDia > 5.5
-                    && y - kDia < 6.5)
-                return false;
-
-                // if (GlcMath.normSqr(new double[] { state[0] - center1[0], state[1] -
-                // center1[1] }) <= 4.0
-                // || GlcMath.normSqr(new double[] { state[0] - center2[0], state[1] -
-                // center2[1] }) <= 4.0) {
-                // return false;
-                // }
+                if (x + kDia > 6.5
+                        && x - kDia < 7.5
+                        && y + kDia > 5.5
+                        && y - kDia < 6.5)
+                    return false;
             }
             return true;
         }
     };
 
     public static void main(String... args) {
-
-        // Motion planning algorithm parameters
         GlcParameters alg_params = new GlcParameters();
         alg_params.res = 16;
         alg_params.control_dim = 2;
@@ -304,30 +290,19 @@ class FRCShortestPathDemo {
         alg_params.max_iter = 50000;
         alg_params.time_scale = 20;
         alg_params.partition_scale = 40;
-        // starting point is at the charge station
+        // starting point is at the substation
         alg_params.x0 = new double[] { 16.179, 6.750 };
 
-        // Create a dynamic model
         SingleIntegrator dynamic_model = new SingleIntegrator(alg_params.dt_max);
-
-        // Create the control inputs
         ControlInputs2D controls = new ControlInputs2D(alg_params.res);
-
-        // Create the cost function
         ArcLength performance_objective = new ArcLength(4);
 
-        // Create instance of goal region
-        // goal is the center scoring tag, actually just outside that.
-        double[] xg = new double[] { 1.43, 2.748 };
-
-        // goal radius is
-        SphericalGoal goal = new SphericalGoal(xg.length, 0.25, 4);
+        // Goal is 10 cm radius just outside the center scoring tag,
+        double[] xg = new double[] { 1.93, 2.748 };
+        SphericalGoal goal = new SphericalGoal(xg.length, 0.2, 4);
         goal.setGoal(xg);
 
-        // Create the obstacles
         PlanarDemoObstacles obstacles = new PlanarDemoObstacles(4);
-
-        // Create a heuristic for the current goal
         EuclideanHeuristic heuristic = new EuclideanHeuristic(xg, goal.getRadius());
         Planner planner = new Planner(obstacles,
                 goal,
@@ -337,7 +312,6 @@ class FRCShortestPathDemo {
                 alg_params,
                 controls.readInputs());
 
-        // Run the planner and print solution
         PlannerOutput out = planner.plan();
         if (out.solution_found) {
             Vector<GlcNode> path = planner.pathToRoot(true);

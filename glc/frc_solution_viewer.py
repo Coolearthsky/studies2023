@@ -50,7 +50,7 @@ ax.add_patch(Rectangle([6.5, 5.5], 1, 1, facecolor="blue", alpha=0.7, edgecolor=
 # start
 ax.add_patch(Circle([16.179, 6.75],0.25, facecolor="green",alpha=0.3,edgecolor="none"))
 # end, note this is not tag pose
-ax.add_patch(Circle([1.43, 2.748],0.25, facecolor="green",alpha=0.3,edgecolor="none"))
+ax.add_patch(Circle([1.93, 2.748],0.25, facecolor="green",alpha=0.3,edgecolor="none"))
 
 
 
