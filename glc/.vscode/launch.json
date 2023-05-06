@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "Launch FRCShortestPathDemo",
+        "request": "launch",
+        "mainClass": "examples.FRCShortestPathDemo",
+        "projectName": "glc"
+    },
+    {
+        "type": "java",
         "name": "Launch NonholonomicCarDemo",
         "request": "launch",
         "mainClass": "examples.NonholonomicCarDemo",
