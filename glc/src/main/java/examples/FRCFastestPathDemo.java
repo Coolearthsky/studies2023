@@ -37,7 +37,7 @@ class FRCFastestPathDemo {
         /** always max force */
         public ControlInputs2D(int num_inputs) {
             // always ok to do nothing
-             addInputSample(new double[]{0.0, 0.0});
+            addInputSample(new double[]{0.0, 0.0});
             double angle_increment = 2.0 * Math.PI / num_inputs;
             for (double angle = 0; angle < 2.0 * Math.PI; angle += angle_increment) {
                 double[] u = new double[2];
@@ -342,18 +342,35 @@ class FRCFastestPathDemo {
                     ++collision_counter;
                     return false;
                 }
-                if (x + kDia > 8.5
-                        && x - kDia < 9.5
-                        && y + kDia > 4.5
-                        && y - kDia < 5.5) {
+                // moving opponents
+                double opp1x = 4 + 2 * t;
+                double oppSize = 1;
+                double opp1y = 6 - t;
+                if (x + kDia >  opp1x-oppSize/2
+                        && x - kDia <  opp1x+oppSize/2
+                        && y + kDia >  opp1y-oppSize/2
+                        && y - kDia <  opp1y+oppSize/2) {
                     // System.out.println(" opponent 1");
                     ++collision_counter;
                     return false;
                 }
-                if (x + kDia > 6.5
-                        && x - kDia < 7.5
-                        && y + kDia > 5.5
-                        && y - kDia < 6.5) {
+                double opp2x = 4 + 2 * t;
+                double opp2y = 7 - t/4;
+                if (x + kDia > opp2x-oppSize/2
+                        && x - kDia <  opp2x+oppSize/2
+                        && y + kDia >  opp2y-oppSize/2
+                        && y - kDia <  opp2y+oppSize/2) {
+                    // System.out.println(" opponent 2");
+                    ++collision_counter;
+                    return false;
+                }
+                // defender
+                double opp3x = 8;
+                double opp3y = 5 ;
+                if (x + kDia > opp3x-oppSize/2
+                        && x - kDia <  opp3x+oppSize/2
+                        && y + kDia >  opp3y-oppSize/2
+                        && y - kDia <  opp3y+oppSize/2) {
                     // System.out.println(" opponent 2");
                     ++collision_counter;
                     return false;
@@ -365,7 +382,7 @@ class FRCFastestPathDemo {
 
     public static void main(String... args) {
         GlcParameters alg_params = new GlcParameters();
-        alg_params.res = 6;
+        alg_params.res = 5;
         alg_params.control_dim = 2;
         alg_params.state_dim = 4;
         alg_params.depth_scale = 10;

@@ -21,6 +21,7 @@ public class InterpolatingPolynomial {
      * appearing in the basis functions is degree-1.
      */
     private final int degree;
+
     /**
      * dimension is the dimension of the state space that the curve is
      * defined in
@@ -28,38 +29,30 @@ public class InterpolatingPolynomial {
      * There is a polynomial assigned to each dimension for a given curve
      */
     private final int dimension;
+
     /**
      * This is the time interval for each polynomial segment
      * 
      * Each polynomial is defined from t=0 to t=collocation_interval.
      */
     private final double collocation_interval;
+
     /**
      * This is the initial time the curve is defined at
      */
     private final double t0;
+
     /**
      * The 3D array of coefficients for the muli-dimensional interpolating
      * spline
      * 
      * The outermost index identifies the collocation interval. The middle index
      * identifies the polynomial basis monomial index. Tha innermost index
-     * identifies
-     * the coordinate in the state space. In summary,
+     * identifies the coordinate in the state space. In summary,
      * 
      * coefficient_array[time_interval_index][polynomial_coefficient_index][polynomial_coordinate_index]
      */
     private final Vector<Vector<double[]>> coefficient_array;
-
-    /**
-     * This constructor takes values to set all member attributes
-     * 
-     * @param _coeff_array          initializes coefficient_array
-     * @param _collocation_interval initializes _collocation_interval
-     * @param _t0                   initialilzed t0
-     * @param _dimension            initializes dimension
-     * @param _degree               initializes degree
-     */
 
     public InterpolatingPolynomial(final Vector<Vector<double[]>> _coeff_array,
             final double _collocation_interval,
@@ -83,7 +76,6 @@ public class InterpolatingPolynomial {
      * @param _dimension            initializes dimension
      * @param _degree               initializes degree
      */
-
     public InterpolatingPolynomial(final double _collocation_interval,
             final double _t0,
             final int _dimension,
@@ -101,7 +93,6 @@ public class InterpolatingPolynomial {
      * 
      * The value of t0 in tail is ignored
      */
-
     public void concatenate(final InterpolatingPolynomial tail) {
         if (tail == null)
             throw new IllegalArgumentException();
@@ -147,8 +138,9 @@ public class InterpolatingPolynomial {
         return eval;
     }
 
-    // Allocates memory in coefficient_array for "size" spline intervals
-
+    /**
+     * Allocates memory in coefficient_array for "size" spline intervals
+     */
     public void reserve(final int size) {
         if (size < 0)
             throw new IllegalArgumentException(
@@ -156,20 +148,23 @@ public class InterpolatingPolynomial {
         coefficient_array.ensureCapacity(size);
     }
 
-    // returns a copy of the number of intervals in this interpolating
-    // spline
+    /**
+     * the number of intervals in this interpolating spline
+     */
     public int numberOfIntervals() {
         return coefficient_array.size();
     }
 
-    // returns the length of each interval -- each interval has equal
-    // length
+    /**
+     * the length of each interval -- each interval has equal length
+     */
     public double intervalLength() {
         return collocation_interval;
     }
 
-    // returns the initial time for the parametric curve
-
+    /**
+     * the initial time for the parametric curve
+     */
     public double initialTime() {
         return t0;
     }
@@ -180,7 +175,6 @@ public class InterpolatingPolynomial {
      * @param num_points
      * @param msg        is a message that will accompany the output to the terminal
      */
-
     public void printSpline(int num_points, final String msg) {
         System.out.println("\n*****" + msg + "*****");
         double t = initialTime();
@@ -205,8 +199,10 @@ public class InterpolatingPolynomial {
                 System.out.print("--- t^" + mon_id + ": ");
                 for (int s_id = 0; s_id < 2; s_id++) {
                     Vector<double[]> item = coefficient_array.get(t_id);
-                    if (item == null) continue;
-                    if (item.size() - 1 < mon_id) continue;
+                    if (item == null)
+                        continue;
+                    if (item.size() - 1 < mon_id)
+                        continue;
                     double[] arr = item.get(mon_id);
                     System.out.print(arr[s_id]);
                     System.out.print(",");
