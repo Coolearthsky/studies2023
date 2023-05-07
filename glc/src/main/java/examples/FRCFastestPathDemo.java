@@ -192,7 +192,7 @@ class FRCFastestPathDemo {
      * x[3] = y velocity
      */
     public static class SingleIntegrator extends RungeKuttaTwo {
-        private static final double mass = 1;
+        private static final double mass = 0.5;
         private final double max_speed ;
 
         SingleIntegrator(final double max_time_step_, double max_speed) {
@@ -371,8 +371,8 @@ class FRCFastestPathDemo {
         alg_params.depth_scale = 10;
         alg_params.dt_max = 5.0;
         alg_params.max_iter = 500000;
-        alg_params.time_scale = 3;
-        alg_params.partition_scale = 9;
+        alg_params.time_scale = 2;
+        alg_params.partition_scale = 6;
         // starting point is at the substation (x, y, vx, vy)
         alg_params.x0 = new double[] { 15.5, 6.750, 0, 0 };
 
