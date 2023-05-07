@@ -22,17 +22,14 @@ public class Inputs {
     /**
      * Inserts a control input to the set of control inputs
      * 
-     * @param _input the control input added to the set of inputs
-     * 
      * Two simple ways of generating a set of control inputs meeting the
-     * requirements
-     * of the algorithm are to sample randomly from the set of admissible control
-     * inputs with the number of samples increasing with resolution or to intersect
-     * a
-     * uniform grid with the set of admissible control inputs and refine the grid
-     * with increasing algorithm resolution.
+     * requirements of the algorithm are to sample randomly from the set of
+     * admissible control inputs with the number of samples increasing with
+     * resolution or to intersect a uniform grid with the set of admissible control
+     * inputs and refine the grid with increasing algorithm resolution.
+     * 
+     * @param _input the control input added to the set of inputs
      */
-
     protected void addInputSample(double[] _input) {
         // copy here because original made a copy
         points.add(Arrays.copyOf(_input, _input.length));
@@ -44,5 +41,4 @@ public class Inputs {
     public Vector<double[]> readInputs() {
         return points;
     }
-
 };

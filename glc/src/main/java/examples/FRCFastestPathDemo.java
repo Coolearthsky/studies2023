@@ -4,6 +4,8 @@ import glc.GlcParameters;
 import glc.Planner;
 import glc.PlannerOutput;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Vector;
 
 import glc.GlcLogging;
@@ -34,6 +36,8 @@ class FRCFastestPathDemo {
 
         /** always max force */
         public ControlInputs2D(int num_inputs) {
+            // always ok to do nothing
+             addInputSample(new double[]{0.0, 0.0});
             double angle_increment = 2.0 * Math.PI / num_inputs;
             for (double angle = 0; angle < 2.0 * Math.PI; angle += angle_increment) {
                 double[] u = new double[2];
@@ -123,12 +127,14 @@ class FRCFastestPathDemo {
     public static class EuclideanHeuristic extends Heuristic {
         private final double radius;
         private final double[] goal;
+        private final double max_speed;
 
-        public EuclideanHeuristic(double[] _goal, double _radius) {
+        public EuclideanHeuristic(double[] _goal, double _radius, double max_speed) {
             if (_goal.length != 4)
                 throw new IllegalArgumentException();
             radius = _radius;
             goal = _goal;
+            this.max_speed = max_speed;
         }
 
         @Override
@@ -158,10 +164,18 @@ class FRCFastestPathDemo {
             // the current speed might yield an overestimate of the remaining time...
             // double speed = Math.sqrt(GlcMath.sqr(gvx - vx) + GlcMath.sqr(gvy - vy));
 
-            double speed = 2.0;
-
-            double eta = distance / speed;
+            double eta = distance / max_speed;
             return eta;
+        }
+    };
+
+    public static class ZeroHeuristic extends Heuristic {
+        public ZeroHeuristic() {
+        }
+
+        @Override
+        public double costToGo(final double[] state) {
+            return 0.0;
         }
     };
 
@@ -178,11 +192,12 @@ class FRCFastestPathDemo {
      * x[3] = y velocity
      */
     public static class SingleIntegrator extends RungeKuttaTwo {
-        static final double mass = 1;
-        static final double max_speed = 2;
+        private static final double mass = 1;
+        private final double max_speed ;
 
-        SingleIntegrator(final double max_time_step_) {
+        SingleIntegrator(final double max_time_step_, double max_speed) {
             super(0.0, max_time_step_, 4);
+            this.max_speed = max_speed;
         }
 
         /**
@@ -355,13 +370,14 @@ class FRCFastestPathDemo {
         alg_params.state_dim = 4;
         alg_params.depth_scale = 10;
         alg_params.dt_max = 5.0;
-        alg_params.max_iter = 50000;
+        alg_params.max_iter = 500000;
         alg_params.time_scale = 3;
-        alg_params.partition_scale = 10;
+        alg_params.partition_scale = 9;
         // starting point is at the substation (x, y, vx, vy)
         alg_params.x0 = new double[] { 15.5, 6.750, 0, 0 };
 
-        DynamicalSystem dynamic_model = new SingleIntegrator(alg_params.dt_max);
+        double max_speed = 5;
+        DynamicalSystem dynamic_model = new SingleIntegrator(alg_params.dt_max, max_speed);
         Inputs controls = new ControlInputs2D(alg_params.res);
         CostFunction performance_objective = new MinTime();
         // Goal is 10 cm radius just outside the center scoring tag, stopped.
@@ -371,7 +387,8 @@ class FRCFastestPathDemo {
         GoalRegion goal = new SphericalGoal(xg, goal_radius, goal_resolution);
         int obstacle_resolution = 4; // if this is too low then edges overlap obstacles
         Obstacles obstacles = new PlanarDemoObstacles(obstacle_resolution);
-        Heuristic heuristic = new EuclideanHeuristic(xg, goal_radius);
+        Heuristic heuristic = new EuclideanHeuristic(xg, goal_radius, max_speed);
+        //Heuristic heuristic = new ZeroHeuristic();
         Planner planner = new Planner(obstacles,
                 goal,
                 dynamic_model,
@@ -382,7 +399,23 @@ class FRCFastestPathDemo {
 
         PlannerOutput out = planner.plan();
         if (out.solution_found) {
+
             Vector<GlcNode> path = planner.pathToRoot(true);
+            try {
+                PrintWriter pathWriter = new PrintWriter("path.txt");
+
+                for (int i = 0; i < path.size(); ++i) {
+                    double time = path.get(i).time;
+                    double[] state = path.get(i).state;
+                    double[] u = controls.readInputs().get(path.get(i).u_idx);
+                    pathWriter.printf("%5.3f,%5.3f,%5.3f,%5.3f,%5.3f,%5.3f,%5.3f\n", 
+                    time, state[0], state[1], state[2], state[3], u[0], u[1]);
+                }
+                pathWriter.close();
+            } catch (IOException e) {
+
+            }
+
             InterpolatingPolynomial solution = planner.recoverTraj(path);
             if (solution != null) {
                 solution.printSpline(20, "Solution");

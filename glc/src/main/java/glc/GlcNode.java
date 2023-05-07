@@ -30,6 +30,8 @@ public class GlcNode {
     /**
      * An array of pointers to this node's children
      * Vector< Node> children;
+     */
+    /**
      * The state or configuration associated with this node
      */
     public final double[] state;
