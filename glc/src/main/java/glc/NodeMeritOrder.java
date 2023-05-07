@@ -13,8 +13,8 @@ public class NodeMeritOrder implements Comparator<GlcNode> {
     /**
      * Compare nodes based on merit.
      * 
-     * @param node1 is the left element to be checked for membership in the relation
-     * @param node2 is the right element to be checked for membership in the
+     * @param l the left element to be checked for membership in the relation
+     * @param r the right element to be checked for membership in the
      *              relation
      * @returns negative if l < r, positive if l > r, zero otherwise
      */

@@ -41,8 +41,8 @@ public class GlcMath {
 
     /**
      *  The dot product of two vectors x and y
-     * @param x_ is one of the vectors in the product
-     * @param y_ the other vector in the product
+     * @param x is one of the vectors in the product
+     * @param y the other vector in the product
      * @returns The dot product obtained by x'y
      */
 

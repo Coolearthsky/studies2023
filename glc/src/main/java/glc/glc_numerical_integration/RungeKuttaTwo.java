@@ -86,9 +86,10 @@ public abstract class RungeKuttaTwo extends DynamicalSystem {
      * This method implements one step of the Runge-Kutta 2 numerical integration
      * method
      * 
+     * @param x0 the initial state for the integration step
+     * @param u  the control input defined over the interval [t0,tf]
      * @param t1 the initial time for the integration step
      * @param t2 the final time for the integration step
-     * @param x0 is the initial state for the integration step
      * @return segment is a cubic approximation of the trajectory from t1 to t2
      */
     InterpolatingPolynomial step(

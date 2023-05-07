@@ -12,6 +12,15 @@ import matplotlib.ticker as ticker
 #Load results from txt file
 path = np.transpose(np.genfromtxt('frc_shortest_path_demo.txt', delimiter=','))
 nodes = np.transpose(np.genfromtxt('frc_shortest_path_demo_nodes.txt', delimiter=','))
+cost = nodes[0]
+px1 = nodes[1]
+py1 = nodes[2]
+vx1 = nodes[3]
+vy1 = nodes[4]
+px2 = nodes[5]
+py2 = nodes[6]
+vx2 = nodes[7]
+vy2 = nodes[8]
 
 #Plot data
 fig = plt.figure(figsize=(16,8))
@@ -21,8 +30,8 @@ ax = plt.gca()
 #Nodes of search tree
 # new! colored by cost!
 # new! lines!
-edges = list(zip(zip(nodes[1],nodes[2]), zip(nodes[3],nodes[4])))
-lc = LineCollection(edges, array=nodes[0])
+edges = list(zip(zip(px1,py1), zip(px2,py2)))
+lc = LineCollection(edges, array=cost)
 ax.add_collection(lc)
 #plt.scatter(nodes[1],nodes[2],c=nodes[0],s=5)
 
@@ -55,9 +64,25 @@ ax.add_patch(Circle([1.93, 2.748],0.25, facecolor="green",alpha=0.3,edgecolor="n
 
 
 #Solution from planner
-plt.plot(path[0],path[1], linewidth=5)
+pathx = path[0]
+pathy = path[1]
+pathvx = path[2]
+pathvy = path[3]
+pathv = np.sqrt(pathvx * pathvx + pathvy * pathvy)
+plt.scatter(pathx,pathy,c=pathv,marker='s',s=200,zorder=2,linewidth=2,edgecolor='black')
 ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
 ax.set_aspect('equal', adjustable='box')
 
 plt.autoscale()
+
+plt.figure()
+
+ax = plt.gca()
+ax.set_aspect('equal', adjustable='box')
+plt.scatter(pathvx, pathvy, marker='s', s=10, linewidth=2, edgecolor='black')
+plt.plot(pathvx, pathvy)
+plt.xlim([-2,2])
+plt.ylim([-2,2])
+plt.xlabel('x velocity')
+plt.ylabel('y velocity')
 plt.show()

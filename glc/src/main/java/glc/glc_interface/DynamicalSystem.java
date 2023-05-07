@@ -28,9 +28,9 @@ public abstract class DynamicalSystem {
      * This method represents the function defining the differential
      * constraint x'(t)=f(x(t),u(t))
      * 
-     * @param x  a state of the dynamic system
-     * @param u  a control input to the dynamical system
      * @param dx [out] the time derivative of the state at x given x and u
+     * @param x  state of the dynamic system
+     * @param u  control input to the dynamical system
      */
     public abstract void flow(final double[] dx, final double[] x, final double[] u);
 

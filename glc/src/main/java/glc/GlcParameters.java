@@ -17,10 +17,14 @@ public class GlcParameters {
     public int res;
     /**
      * The dimension of the dynamical system's state space
+     * 
+     * TODO: actually use this for something
      */
     public int state_dim;
     /**
-     * Te dimension of the control input space
+     * The dimension of the control input space
+     * 
+     * TODO: actually use this for something
      */
     public int control_dim;
     /**

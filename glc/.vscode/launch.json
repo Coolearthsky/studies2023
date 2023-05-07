@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "Launch FRCFastestPathDemo",
+        "request": "launch",
+        "mainClass": "examples.FRCFastestPathDemo",
+        "projectName": "glc"
+    },
+    {
+        "type": "java",
         "name": "Launch FRCShortestPathDemo",
         "request": "launch",
         "mainClass": "examples.FRCShortestPathDemo",

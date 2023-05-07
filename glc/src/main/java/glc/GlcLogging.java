@@ -12,10 +12,11 @@ public class GlcLogging {
 
     /**
      * Logs the states labeling each equivalence class to a nodesToFile
-     * @param name  the desired filename
-     * @param path the desired location for the file to be saved
-     * @param domains  the set of labeled equivalence classes from a run of
-     * GLC
+     * 
+     * @param name    the desired filename
+     * @param path    the desired location for the file to be saved
+     * @param domains the set of labeled equivalence classes from a run of
+     *                GLC
      */
 
     public static void nodesToFile(
@@ -26,16 +27,16 @@ public class GlcLogging {
             PrintWriter points = new PrintWriter(new FileWriter(path + name));
             for (var x : domains) {
                 // NEW! includes a cost column for graph coloring!
-                points.print( x.label.cost);
+                points.print(x.label.cost);
                 points.print(",");
                 // NEW! includes parent state for line drawing
                 GlcNode parent_node = x.label.parent;
                 if (parent_node != null) {
-                double[] parent_state = x.label.parent.state;
-                for (int j = 0; j < parent_state.length; j++) {
-                    points.print(parent_state[j]);
-                    points.print(",");
-                }
+                    double[] parent_state = x.label.parent.state;
+                    for (int j = 0; j < parent_state.length; j++) {
+                        points.print(parent_state[j]);
+                        points.print(",");
+                    }
                 } else { // print the same state twice
                     double[] state = x.label.state;
                     for (int j = 0; j < state.length; j++) {
@@ -50,6 +51,8 @@ public class GlcLogging {
                     points.print(",");
                 }
                 points.println(state[state.length - 1]);
+                // TODO: use u_idx to get the control signal out
+                //x.label.u_idx
 
             }
             points.close();
@@ -60,10 +63,11 @@ public class GlcLogging {
     }
 
     /**
-     *  Logs a finely sampled set of points along a trajectory to a file
-     * @param name the desired filename
-     * @param path the desired location for the file to be saved
-     * @param traj an interpolating spline object that is to be logged
+     * Logs a finely sampled set of points along a trajectory to a file
+     * 
+     * @param name       the desired filename
+     * @param path       the desired location for the file to be saved
+     * @param traj       an interpolating spline object that is to be logged
      * @param num_points the number of points sampled uniformly along traj
      */
 

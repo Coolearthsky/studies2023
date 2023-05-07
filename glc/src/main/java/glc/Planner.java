@@ -236,7 +236,7 @@ public class Planner {
         // Increment the iteration count
         iter++;
         /////////////////
-        // System.out.println("ITER " + iter);
+        //System.out.println("Planner iteration: " + iter);
 
         // If the queue is empty then the problem is not feasible at the current
         // resolution
@@ -368,7 +368,7 @@ public class Planner {
         // System.out.println("update set size " + domains_needing_update.size());
 
         // Go through the new trajectories and see if there is a possibility for
-        // relabeling before collcheck
+        // relabeling before collision check
         for (var open_domain : domains_needing_update) {
             // System.out.println("OPEN CANDIDATES " + open_domain.candidates.size());
             GlcStateEquivalenceClass current_domain = open_domain;
@@ -386,12 +386,18 @@ public class Planner {
                         if (time >= 0) {
                             found_goal = true;
                         }
-                        queue.add(best_relabel_candidate);// anything coll free at this point goes to queue
-                        if (!found_best) {
+                        queue.add(best_relabel_candidate);// anything collision free at this point goes to queue
+                        // why do we only choose the first best instead of the best from the whole set?
+                       // if (!found_best) {
                             found_best = true;
                             current_domain.label = best_relabel_candidate;
-                        }
+                       // }
+                    } else {
+                        //System.out.println(" collision");
+                        // candidate_traj.printData();
                     }
+                } else {
+                    //System.out.println(" more expensive");
                 }
                 current_domain.candidates.poll();
             }
