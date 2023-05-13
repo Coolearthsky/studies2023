@@ -1,0 +1,1 @@
+Note: some of this is cribbed from https://github.com/Pirhan/visibility-graph/ which is MIT licensed, and minimal amount of interface implementation to eliminate the Slick2d library (but this of course retains its API)
