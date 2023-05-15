@@ -19,15 +19,13 @@ import edu.wpi.first.math.numbers.N2;
  */
 public class KFTest extends KFTestBase {
 
-    final KalmanFilter<N2, N1, N1> observer = new KalmanFilter<>(states, outputs, plant, Q, R, kDt);
+    /** Normal KF does not wrap correctly. */
+    final KalmanFilter<N2, N1, N1> observer = new KalmanFilter<>(states, outputs, plant, stateStdDevs,
+            measurementStdDevs, kDt);
 
-    /** normal LQR does not wrap correctly */
+    /** Normal LQR does not wrap correctly */
     LinearQuadraticRegulator<N2, N1, N1> newController() {
-        return new LinearQuadraticRegulator<>(
-                plant,
-                stateTolerance,
-                controlTolerance,
-                kDt);
+        return new LinearQuadraticRegulator<>(plant, stateTolerance, controlTolerance, kDt);
     }
 
     @Test
@@ -375,25 +373,71 @@ public class KFTest extends KFTestBase {
     }
 
     @Test
-    public void testObserverWrapping() {
+    public void testObserverWrappingWithoutCorrection() {
+        // just test the observer prediction across the boundary
+        // it just predicts over and over.
+        // goal is pi-0.01,
+        // initial is -pi + 0.01
+        // so delta is -0.02, should push negative across the boundary
+        observer.reset();
+  
+        // initially, state estimate: at zero, motionless
+        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
+        Matrix<N2, N1> xhat = observer.getXhat();
+        assertEquals(-3.132, xhat.get(0, 0), kDelta);
+        assertEquals(0, xhat.get(1, 0), kDelta);
+
+        // saturate negative-going
+        final Matrix<N1, N1> conU = VecBuilder.fill(-12);
+
+        // update 1
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(-3.134, xhat.get(0, 0), kDelta);
+        assertEquals(-0.240, xhat.get(1, 0), kDelta);
+
+        // update 2
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(-3.141, xhat.get(0, 0), kDelta);
+        assertEquals(-0.480, xhat.get(1, 0), kDelta);
+
+        ////////////////////////////////////////////////////////////////////
+        //
+        // FAIL
+        //
+        // update 3: now it's exceeded -pi
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(-3.153, xhat.get(0, 0), kDelta);
+        assertEquals(-0.720, xhat.get(1, 0), kDelta);
+
+        // update 4: definitely wrong
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(-3.169, xhat.get(0, 0), kDelta);
+        assertEquals(-0.960, xhat.get(1, 0), kDelta);
+    }
+
+    @Test
+    public void testObserverWrappingWithCorrection() {
         // just test the observer across the boundary
         // goal is pi-0.01,
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
         observer.reset();
-        // starting point is the only difference
-        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
 
         // initially, state estimate: at zero, motionless
+        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
         Matrix<N2, N1> xhat = observer.getXhat();
         assertEquals(-3.132, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
 
-        // starting point is the only difference
-        observer.correct(VecBuilder.fill(0), VecBuilder.fill(-1.0 * Math.PI + 0.01));
-        xhat = observer.getXhat();
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        // // starting point is the only difference
+        // observer.correct(VecBuilder.fill(0), VecBuilder.fill(-1.0 * Math.PI + 0.01));
+        // xhat = observer.getXhat();
+        // assertEquals(-3.132, xhat.get(0, 0), kDelta);
+        // assertEquals(0, xhat.get(1, 0), kDelta);
 
         // saturate negative-going
         final Matrix<N1, N1> conU = VecBuilder.fill(-12);

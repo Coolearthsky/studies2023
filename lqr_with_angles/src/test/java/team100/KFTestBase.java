@@ -46,9 +46,9 @@ public abstract class KFTestBase {
     // observers are in subclasses; they don't share a superclass.  :-(
 
     // Q: state stdev
-    final Vector<N2> Q = VecBuilder.fill(0.015, 0.17);
+    final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
     // R: measurement stdev
-    final Vector<N1> R = VecBuilder.fill(0.01);
+    final Vector<N1> measurementStdDevs = VecBuilder.fill(0.01);
 
     // CONTROLLER
 
