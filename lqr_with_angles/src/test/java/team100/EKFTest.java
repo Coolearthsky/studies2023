@@ -503,7 +503,7 @@ public class EKFTest extends KFTestBase {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
         observer.reset();
-  
+
         // initially, state estimate: at zero, motionless
         observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
         Matrix<N2, N1> xhat = observer.getXhat();

@@ -5,14 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.LinearQuadraticRegulator;
 import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.math.system.LinearSystemLoop;
 
 /**
  * Demonstrates angle-wrapping with LinearSystemLoop.
@@ -21,16 +19,12 @@ public class AngleLoopTest extends KFTestBase {
     /** AngleEKF wraps correctly. */
     final ExtendedKalmanFilter<N2, N1, N1> observer = new AngleEKF(stateStdDevs, measurementStdDevs, kDt);
 
-    /** Works with the loop, using EKF inside. */
-    final EKFShim<N2, N1, N1> shim = new EKFShim<>(Nat.N2(), Nat.N1(), plant, stateStdDevs, measurementStdDevs, kDt,
-            observer);
-
     /** AngleLQR wraps correctly. */
     LinearQuadraticRegulator<N2, N1, N1> newController() {
         return new AngleLQR(plant, stateTolerance, controlTolerance, kDt);
     }
 
-    LinearSystemLoop<N2, N1, N1> loop = new LinearSystemLoop<>(plant, controller, shim, 12.0, kDt);
+    NonlinearSystemLoop<N2, N1, N1> loop = new NonlinearSystemLoop<>(plant, controller, observer, 12.0, kDt);
 
     @Test
     public void testLoop() {
