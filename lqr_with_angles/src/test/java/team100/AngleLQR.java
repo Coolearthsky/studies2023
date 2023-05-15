@@ -2,6 +2,7 @@ package team100;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.LinearQuadraticRegulator;
 import edu.wpi.first.math.numbers.N1;
@@ -18,6 +19,9 @@ import edu.wpi.first.math.system.LinearSystem;
  * output: torque, i guess?
  */
 public class AngleLQR extends LinearQuadraticRegulator<N2, N1, N1> {
+
+    private Matrix<N1, N1> actualU = VecBuilder.fill(0);
+    
     public AngleLQR(
             LinearSystem<N2, N1, N1> plant,
             Vector<N2> qelms,
@@ -33,18 +37,17 @@ public class AngleLQR extends LinearQuadraticRegulator<N2, N1, N1> {
     public Matrix<N1, N1> calculate(Matrix<N2, N1> x) {
         Matrix<N2, N1> error = getR().minus(x);
         error.set(0, 0, MathUtil.angleModulus(error.get(0, 0)));
-        return getK().times(error);
+        actualU =  getK().times(error);
+        return actualU;
     }
 
-    /** Don't use this, use the value returned by calculate(). */
     @Override
     public Matrix<N1, N1> getU() {
-        throw new UnsupportedOperationException();
+        return actualU;
     }
 
-    /** Don't use this, use the value returned by calculate(). */
     @Override
     public double getU(int row) {
-        throw new UnsupportedOperationException();
+        return getU().get(row,0);
     }
 }
