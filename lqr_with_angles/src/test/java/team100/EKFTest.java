@@ -9,7 +9,6 @@ import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.LinearQuadraticRegulator;
-import edu.wpi.first.math.estimator.AngleStatistics;
 import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
@@ -17,51 +16,15 @@ import edu.wpi.first.math.numbers.N2;
 /**
  * Demonstrates ExtendedKalmanFilter in angle-wrapping scenarios, and also a
  * custom LQR that implements wrapping as well.
- * 
- * The model for this test is a 1-DOF arm without gravity.
- * 
- * state: (angle, angular velocity)
- * measurement: angle
- * output: torque, i guess?
  */
 public class EKFTest extends KFTestBase {
 
-    /** EKF allows wrapping using the AngleStatistics functions below. */
-    final ExtendedKalmanFilter<N2, N1, N1> observer = new ExtendedKalmanFilter<>(
-            states,
-            inputs,
-            outputs,
-            EKFTest::f,
-            EKFTest::h,
-            Q, R,
-            AngleStatistics.angleResidual(0),
-            AngleStatistics.angleAdd(0), // zero'th row is the angle
-            kDt);
+    /** AngleEKF wraps correctly. */
+    final ExtendedKalmanFilter<N2, N1, N1> observer = new AngleEKF(stateStdDevs, measurementStdDevs, kDt);
 
-    /** AngleLQR implements wrapping */
+    /** AngleLQR wraps correctly. */
     LinearQuadraticRegulator<N2, N1, N1> newController() {
-        return new AngleLQR<>(
-                plant,
-                stateTolerance,
-                controlTolerance,
-                kDt);
-    }
-
-    /**
-     * f is the derivative of state, like A and B
-     */
-    private static Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        // position derivative is velocity
-        // velocity derivative is control
-        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-    }
-
-    /**
-     * h is the measurement, like C and D
-     */
-    private static Matrix<N1, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        // measurement is position (angle)
-        return VecBuilder.fill(x.get(0, 0));
+        return new AngleLQR(plant, stateTolerance, controlTolerance, kDt);
     }
 
     @Test
@@ -533,23 +496,64 @@ public class EKFTest extends KFTestBase {
     }
 
     @Test
-    public void testObserverWrapping() {
-        // just test the observer across the boundary
+    public void testObserverWrappingWithoutCorrection() {
+        // just test the observer prediction across the boundary
+        // it just predicts over and over.
         // goal is pi-0.01,
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
         observer.reset();
-        // starting point is the only difference
-        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
-
+  
         // initially, state estimate: at zero, motionless
+        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
         Matrix<N2, N1> xhat = observer.getXhat();
         assertEquals(-3.132, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
 
-        // starting point is the only difference
-        observer.correct(VecBuilder.fill(0), VecBuilder.fill(-1.0 * Math.PI + 0.01));
+        // saturate negative-going
+        final Matrix<N1, N1> conU = VecBuilder.fill(-12);
+
+        // update 1
+        observer.predict(conU, kDt);
         xhat = observer.getXhat();
+        assertEquals(-3.134, xhat.get(0, 0), kDelta);
+        assertEquals(-0.240, xhat.get(1, 0), kDelta);
+
+        // update 2
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(-3.141, xhat.get(0, 0), kDelta);
+        assertEquals(-0.480, xhat.get(1, 0), kDelta);
+
+        ////////////////////////////////////////////////////////////////////
+        //
+        // SUCCESS
+        //
+        // update 3: now it wraps around :-)
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(3.130, xhat.get(0, 0), kDelta);
+        assertEquals(-0.720, xhat.get(1, 0), kDelta);
+
+        // update 4:
+        observer.predict(conU, kDt);
+        xhat = observer.getXhat();
+        assertEquals(3.113, xhat.get(0, 0), kDelta);
+        assertEquals(-0.960, xhat.get(1, 0), kDelta);
+    }
+
+    @Test
+    public void testObserverWrappingWithCorrection() {
+        // just test the observer across the boundary
+        // with both predict and correct
+        // goal is pi-0.01,
+        // initial is -pi + 0.01
+        // so delta is -0.02, should push negative across the boundary
+        observer.reset();
+
+        // initially, state estimate: near -pi, motionless
+        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
+        Matrix<N2, N1> xhat = observer.getXhat();
         assertEquals(-3.132, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
 
@@ -576,14 +580,14 @@ public class EKFTest extends KFTestBase {
         //
         // update 3: now it wraps around :-)
         observer.predict(conU, kDt);
-        observer.correct(conU, VecBuilder.fill(-3.153));
+        observer.correct(conU, VecBuilder.fill(3.13));
         xhat = observer.getXhat();
         assertEquals(3.130, xhat.get(0, 0), kDelta);
         assertEquals(-0.720, xhat.get(1, 0), kDelta);
 
-        // update 4: definitely wrong
+        // update 4:
         observer.predict(conU, kDt);
-        observer.correct(conU, VecBuilder.fill(-3.169));
+        observer.correct(conU, VecBuilder.fill(3.113));
         xhat = observer.getXhat();
         assertEquals(3.113, xhat.get(0, 0), kDelta);
         assertEquals(-0.960, xhat.get(1, 0), kDelta);
