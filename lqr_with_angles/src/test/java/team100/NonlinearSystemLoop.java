@@ -1,28 +1,27 @@
 package team100;
 
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Num;
-import edu.wpi.first.math.StateSpaceUtil;
-import edu.wpi.first.math.controller.LinearPlantInversionFeedforward;
-import edu.wpi.first.math.controller.LinearQuadraticRegulator;
-import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.system.LinearSystem;
-
 import java.util.function.Function;
+
 import org.ejml.MatrixDimensionException;
 import org.ejml.simple.SimpleMatrix;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.StateSpaceUtil;
+import edu.wpi.first.math.controller.LinearPlantInversionFeedforward;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.system.LinearSystem;
+
 /**
- * A copy of WPILib LinearSystemLoop that works with EKF.
+ * A copy of WPILib LinearSystemLoop that works with AngleEKF.
  */
-public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
-  private final LinearQuadraticRegulator<States, Inputs, Outputs> m_controller;
-  private final LinearPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
-  private final ExtendedKalmanFilter<States, Inputs, Outputs> m_observer;
-  private Matrix<States, N1> m_nextR;
-  private Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> m_clampFunction;
+public class NonlinearSystemLoop{
+  private final AngleController m_controller;
+  private final LinearPlantInversionFeedforward<N2, N1, N2> m_feedforward;
+  private final AngleEstimator m_observer;
+  private Matrix<N2, N1> m_nextR;
+  private Function<Matrix<N1, N1>, Matrix<N1, N1>> m_clampFunction;
 
   /**
    * Constructs a state-space loop with the given plant, controller, and observer. By default, the
@@ -36,61 +35,14 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    * @param dtSeconds The nominal timestep.
    */
   public NonlinearSystemLoop(
-      LinearSystem<States, Inputs, Outputs> plant,
-      LinearQuadraticRegulator<States, Inputs, Outputs> controller,
-      ExtendedKalmanFilter<States, Inputs, Outputs> observer,
+      LinearSystem<N2, N1, N2> plant,
+      AngleController controller,
+      AngleEstimator observer,
       double maxVoltageVolts,
       double dtSeconds) {
     this(
         controller,
         new LinearPlantInversionFeedforward<>(plant, dtSeconds),
-        observer,
-        u -> StateSpaceUtil.desaturateInputVector(u, maxVoltageVolts));
-  }
-
-  /**
-   * Constructs a state-space loop with the given plant, controller, and observer. By default, the
-   * initial reference is all zeros. Users should call reset with the initial system state before
-   * enabling the loop.
-   *
-   * @param plant State-space plant.
-   * @param controller State-space controller.
-   * @param observer State-space observer.
-   * @param clampFunction The function used to clamp the input U.
-   * @param dtSeconds The nominal timestep.
-   */
-  public NonlinearSystemLoop(
-      LinearSystem<States, Inputs, Outputs> plant,
-      LinearQuadraticRegulator<States, Inputs, Outputs> controller,
-      ExtendedKalmanFilter<States, Inputs, Outputs> observer,
-      Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> clampFunction,
-      double dtSeconds) {
-    this(
-        controller,
-        new LinearPlantInversionFeedforward<>(plant, dtSeconds),
-        observer,
-        clampFunction);
-  }
-
-  /**
-   * Constructs a state-space loop with the given controller, feedforward and observer. By default,
-   * the initial reference is all zeros. Users should call reset with the initial system state
-   * before enabling the loop.
-   *
-   * @param controller State-space controller.
-   * @param feedforward Plant inversion feedforward.
-   * @param observer State-space observer.
-   * @param maxVoltageVolts The maximum voltage that can be applied. Assumes that the inputs are
-   *     voltages.
-   */
-  public NonlinearSystemLoop(
-      LinearQuadraticRegulator<States, Inputs, Outputs> controller,
-      LinearPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-      ExtendedKalmanFilter<States, Inputs, Outputs> observer,
-      double maxVoltageVolts) {
-    this(
-        controller,
-        feedforward,
         observer,
         u -> StateSpaceUtil.desaturateInputVector(u, maxVoltageVolts));
   }
@@ -106,10 +58,10 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    * @param clampFunction The function used to clamp the input U.
    */
   public NonlinearSystemLoop(
-      LinearQuadraticRegulator<States, Inputs, Outputs> controller,
-      LinearPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-      ExtendedKalmanFilter<States, Inputs, Outputs> observer,
-      Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> clampFunction) {
+      AngleController controller,
+      LinearPlantInversionFeedforward<N2, N1, N2> feedforward,
+      AngleEstimator observer,
+      Function<Matrix<N1, N1>, Matrix<N1, N1>> clampFunction) {
     this.m_controller = controller;
     this.m_feedforward = feedforward;
     this.m_observer = observer;
@@ -117,15 +69,6 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
 
     m_nextR = new Matrix<>(new SimpleMatrix(controller.getK().getNumCols(), 1));
     reset(m_nextR);
-  }
-
-  /**
-   * Returns the observer's state estimate x-hat.
-   *
-   * @return the observer's state estimate x-hat.
-   */
-  public Matrix<States, N1> getXHat() {
-    return getObserver().getXhat();
   }
 
   /**
@@ -139,49 +82,11 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
   }
 
   /**
-   * Set the initial state estimate x-hat.
-   *
-   * @param xhat The initial state estimate x-hat.
-   */
-  public void setXHat(Matrix<States, N1> xhat) {
-    getObserver().setXhat(xhat);
-  }
-
-  /**
-   * Set an element of the initial state estimate x-hat.
-   *
-   * @param row Row of x-hat.
-   * @param value Value for element of x-hat.
-   */
-  public void setXHat(int row, double value) {
-    getObserver().setXhat(row, value);
-  }
-
-  /**
-   * Returns an element of the controller's next reference r.
-   *
-   * @param row Row of r.
-   * @return the element i of the controller's next reference r.
-   */
-  public double getNextR(int row) {
-    return getNextR().get(row, 0);
-  }
-
-  /**
-   * Returns the controller's next reference r.
-   *
-   * @return the controller's next reference r.
-   */
-  public Matrix<States, N1> getNextR() {
-    return m_nextR;
-  }
-
-  /**
    * Set the next reference r.
    *
    * @param nextR Next reference.
    */
-  public void setNextR(Matrix<States, N1> nextR) {
+  public void setNextR(Matrix<N2, N1> nextR) {
     m_nextR = nextR;
   }
 
@@ -206,7 +111,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    *
    * @return the calculated control input u.
    */
-  public Matrix<Inputs, N1> getU() {
+  public Matrix<N1, N1> getU() {
     return clampInput(m_controller.getU().plus(m_feedforward.getUff()));
   }
 
@@ -225,7 +130,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    *
    * @return the controller used internally.
    */
-  public LinearQuadraticRegulator<States, Inputs, Outputs> getController() {
+  public AngleController getController() {
     return m_controller;
   }
 
@@ -234,7 +139,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    *
    * @return the feedforward used internally.
    */
-  public LinearPlantInversionFeedforward<States, Inputs, Outputs> getFeedforward() {
+  public LinearPlantInversionFeedforward<N2, N1, N2> getFeedforward() {
     return m_feedforward;
   }
 
@@ -243,7 +148,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    *
    * @return the observer used internally.
    */
-  public ExtendedKalmanFilter<States, Inputs, Outputs> getObserver() {
+  public AngleEstimator getObserver() {
     return m_observer;
   }
 
@@ -254,7 +159,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    *
    * @param initialState The initial state.
    */
-  public void reset(Matrix<States, N1> initialState) {
+  public void reset(Matrix<N2, N1> initialState) {
     m_nextR.fill(0.0);
     m_controller.reset();
     m_feedforward.reset(initialState);
@@ -262,49 +167,16 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
   }
 
   /**
-   * Returns difference between reference r and current state x-hat.
-   *
-   * @return The state error matrix.
-   */
-  public Matrix<States, N1> getError() {
-    return getController().getR().minus(m_observer.getXhat());
-  }
-
-  /**
-   * Returns difference between reference r and current state x-hat.
-   *
-   * @param index The index of the error matrix to return.
-   * @return The error at that index.
-   */
-  public double getError(int index) {
-    return (getController().getR().minus(m_observer.getXhat())).get(index, 0);
-  }
-
-  /**
-   * Get the function used to clamp the input u.
-   *
-   * @return The clamping function.
-   */
-  public Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> getClampFunction() {
-    return m_clampFunction;
-  }
-
-  /**
-   * Set the clamping function used to clamp inputs.
-   *
-   * @param clampFunction The clamping function.
-   */
-  public void setClampFunction(Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> clampFunction) {
-    this.m_clampFunction = clampFunction;
-  }
-
-  /**
    * Correct the state estimate x-hat using the measurements in y.
    *
-   * @param y Measurement vector.
+   * @param y Measurement
    */
-  public void correct(Matrix<Outputs, N1> y) {
-    getObserver().correct(getU(), y);
+  public void correctAngle(double y) {
+    getObserver().correctAngle(getU().get(0,0), y);
+  }
+
+  public void correctVelocity(double y) {
+    getObserver().correctVelocity(getU().get(0,0), y);
   }
 
   /**
@@ -320,7 +192,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
             m_controller
                 .calculate(getObserver().getXhat(), m_nextR)
                 .plus(m_feedforward.calculate(m_nextR)));
-    getObserver().predict(u, dtSeconds);
+    getObserver().predictState(u.get(0,0), dtSeconds);
   }
 
   /**
@@ -329,7 +201,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
    * @param unclampedU The input to clamp.
    * @return The clamped input.
    */
-  public Matrix<Inputs, N1> clampInput(Matrix<Inputs, N1> unclampedU) {
+  public Matrix<N1, N1> clampInput(Matrix<N1, N1> unclampedU) {
     return m_clampFunction.apply(unclampedU);
   }
 }

@@ -12,21 +12,63 @@ import edu.wpi.first.math.controller.LinearQuadraticRegulator;
 import edu.wpi.first.math.estimator.KalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.system.LinearSystem;
 
 /**
  * Demonstrates KalmanFilter in angle-wrapping scenarios, see how the control
  * doesn't work, the kalman filter doesn't work.
  */
-public class KFTest extends KFTestBase {
+public class KFTest {
+
+    static final double kDelta = 0.001;
+    static final double kDt = 0.02;
+
+    // MODEL
+
+    // state: x is (angle (rad), angular_velocity (rad/s))
+    final Nat<N2> states = Nat.N2();
+    // control input: u is (volts)
+    final Nat<N1> inputs = Nat.N1();
+    // measurement output: y is (angle)
+    final Nat<N1> outputs = Nat.N1();
+    // A: angle derivative is velocity
+    final Matrix<N2, N2> A = Matrix.mat(states, states)
+            .fill(0, 1, //
+                    0, 0);
+    // B: control input adds velocity
+    final Matrix<N2, N1> B = Matrix.mat(states, inputs)
+            .fill(0, //
+                    1);
+    // C: measurement output is angle
+    final Matrix<N1, N2> C = Matrix.mat(outputs, states)
+            .fill(1, 0);
+    // D: control input does not affect measurement directly
+    final Matrix<N1, N1> D = Matrix.mat(outputs, inputs)
+            .fill(0);
+    final LinearSystem<N2, N1, N1> plant = new LinearSystem<>(A, B, C, D);
+
+    // OBSERVER
+    // observers are in subclasses; they don't share a superclass. :-(
+
+    // Q: state stdev
+    final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
+    // R: measurement stdev
+    final Vector<N1> measurementStdDevs = VecBuilder.fill(0.01);
+
+    // CONTROLLER
+
+    final Vector<N2> stateTolerance = VecBuilder
+            .fill(0.01, // angle (rad)
+                    0.2); // velocity (rad/s)
+    final Vector<N1> controlTolerance = VecBuilder
+            .fill(12.0); // output (volts)
+
+    final LinearQuadraticRegulator<N2, N1, N1> controller = new LinearQuadraticRegulator<>(plant, stateTolerance,
+            controlTolerance, kDt);
 
     /** Normal KF does not wrap correctly. */
     final KalmanFilter<N2, N1, N1> observer = new KalmanFilter<>(states, outputs, plant, stateStdDevs,
             measurementStdDevs, kDt);
-
-    /** Normal LQR does not wrap correctly */
-    LinearQuadraticRegulator<N2, N1, N1> newController() {
-        return new LinearQuadraticRegulator<>(plant, stateTolerance, controlTolerance, kDt);
-    }
 
     @Test
     public void testObserver() {
@@ -380,7 +422,7 @@ public class KFTest extends KFTestBase {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
         observer.reset();
-  
+
         // initially, state estimate: at zero, motionless
         observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
         Matrix<N2, N1> xhat = observer.getXhat();

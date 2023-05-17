@@ -5,26 +5,70 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.controller.LinearQuadraticRegulator;
-import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.system.LinearSystem;
 
 /**
  * Demonstrates angle-wrapping with LinearSystemLoop.
  */
-public class AngleLoopTest extends KFTestBase {
+public class AngleLoopTest {
+
+    static final double kDelta = 0.001;
+    static final double kDt = 0.02;
+
+    // MODEL
+
+    // state: x is (angle (rad), angular_velocity (rad/s))
+    final Nat<N2> states = Nat.N2();
+    // control input: u is (volts)
+    final Nat<N1> inputs = Nat.N1();
+    // measurement output: y is (angle, velocity)
+    final Nat<N2> outputs = Nat.N2();
+    // A: angle derivative is velocity
+    final Matrix<N2, N2> A = Matrix.mat(states, states)
+            .fill(0, 1, //
+                    0, 0);
+    // B: control input adds velocity
+    final Matrix<N2, N1> B = Matrix.mat(states, inputs)
+            .fill(0, //
+                    1);
+    // C: measurement output is angle, velocity
+    final Matrix<N2, N2> C = Matrix.mat(outputs, states)
+            .fill(1, 0, //
+                    0, 1);
+    // D: control input does not affect measurement directly
+    final Matrix<N2, N1> D = Matrix.mat(outputs, inputs)
+            .fill(0, 0);
+    final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
+
+    // OBSERVER
+    // observers are in subclasses; they don't share a superclass. :-(
+
+    // Q: state stdev
+    final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
+    // R: measurement stdev
+    final Vector<N1> measurementStdDevs = VecBuilder.fill(0.01);
+
+    // CONTROLLER
+
+    final Vector<N2> stateTolerance = VecBuilder
+            .fill(0.01, // angle (rad)
+                    0.2); // velocity (rad/s)
+    final Vector<N1> controlTolerance = VecBuilder
+            .fill(12.0); // output (volts)
+
+    final AngleController controller = new AngleController(plant, stateTolerance, controlTolerance, kDt);
+
+    final Vector<N2> angleMeasurementStdDevs = VecBuilder.fill(0.01, 0.1);
     /** AngleEKF wraps correctly. */
-    final ExtendedKalmanFilter<N2, N1, N1> observer = new AngleEKF(stateStdDevs, measurementStdDevs, kDt);
+    final AngleEstimator observer = new AngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
 
-    /** AngleLQR wraps correctly. */
-    LinearQuadraticRegulator<N2, N1, N1> newController() {
-        return new AngleLQR(plant, stateTolerance, controlTolerance, kDt);
-    }
-
-    NonlinearSystemLoop<N2, N1, N1> loop = new NonlinearSystemLoop<>(plant, controller, observer, 12.0, kDt);
+    NonlinearSystemLoop loop = new NonlinearSystemLoop(plant, controller, observer, 12.0, kDt);
 
     @Test
     public void testLoop() {
@@ -39,7 +83,8 @@ public class AngleLoopTest extends KFTestBase {
         loop.setNextR(setpoint);
 
         // initially, push to get started
-        loop.correct(VecBuilder.fill(0));
+        loop.correctAngle(0);
+        loop.correctVelocity(0);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.002, loop.getXHat(0), kDelta),
@@ -47,47 +92,53 @@ public class AngleLoopTest extends KFTestBase {
                 () -> assertEquals(11.465, loop.getU(0), kDelta));
 
         // update 1: coasting, approx zero output
-        loop.correct(VecBuilder.fill(0.002));
+        loop.correctAngle(0.002);
+        loop.correctVelocity(0.229);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.006, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.229, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.001, loop.getU(0), kDelta));
+                () -> assertEquals(-0.003, loop.getU(0), kDelta));
 
         // update 2
-        loop.correct(VecBuilder.fill(0.006));
+        loop.correctAngle(0.006);
+        loop.correctVelocity(0.229);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.01, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.178, loop.getXHat(1), kDelta),
-                () -> assertEquals(-2.559, loop.getU(0), kDelta));
+                () -> assertEquals(-2.566, loop.getU(0), kDelta));
 
         // update 3
-        loop.correct(VecBuilder.fill(0.01));
+        loop.correctAngle(0.01);
+        loop.correctVelocity(0.178);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.014, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.126, loop.getXHat(1), kDelta),
-                () -> assertEquals(-2.555, loop.getU(0), kDelta));
+                () -> assertEquals(-2.562, loop.getU(0), kDelta));
 
         // update 4
-        loop.correct(VecBuilder.fill(0.014));
+        loop.correctAngle(0.014);
+        loop.correctVelocity(0.126);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.016, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.085, loop.getXHat(1), kDelta),
-                () -> assertEquals(-2.049, loop.getU(0), kDelta));
+                () -> assertEquals(-2.044, loop.getU(0), kDelta));
 
         // update 5
-        loop.correct(VecBuilder.fill(0.016));
+        loop.correctAngle(0.016);
+        loop.correctVelocity(0.085);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.017, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.056, loop.getXHat(1), kDelta),
-                () -> assertEquals(-1.453, loop.getU(0), kDelta));
+                () -> assertEquals(-1.448, loop.getU(0), kDelta));
 
         // update 6
-        loop.correct(VecBuilder.fill(0.017));
+        loop.correctAngle(0.017);
+        loop.correctVelocity(0.056);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.018, loop.getXHat(0), kDelta),
@@ -95,36 +146,40 @@ public class AngleLoopTest extends KFTestBase {
                 () -> assertEquals(-0.951, loop.getU(0), kDelta));
 
         // update 7
-        loop.correct(VecBuilder.fill(0.018));
+        loop.correctAngle(0.018);
+        loop.correctVelocity(0.037);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.019, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.025, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.625, loop.getU(0), kDelta));
+                () -> assertEquals(-0.626, loop.getU(0), kDelta));
 
         // update 8
-        loop.correct(VecBuilder.fill(0.019));
+        loop.correctAngle(0.019);
+        loop.correctVelocity(0.016);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.019, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.016, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.439, loop.getU(0), kDelta));
+                () -> assertEquals(-0.417, loop.getU(0), kDelta));
 
         // update 9
-        loop.correct(VecBuilder.fill(0.02));
+        loop.correctAngle(0.02);
+        loop.correctVelocity(0.009);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.02, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.009, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.342, loop.getU(0), kDelta));
+                () -> assertEquals(-0.318, loop.getU(0), kDelta));
 
         // update 10
-        loop.correct(VecBuilder.fill(0.02));
+        loop.correctAngle(0.02);
+        loop.correctVelocity(0.005);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(0.02, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.005, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.217, loop.getU(0), kDelta));
+                () -> assertEquals(-0.206, loop.getU(0), kDelta));
     }
 
     @Test
@@ -140,7 +195,8 @@ public class AngleLoopTest extends KFTestBase {
         loop.setNextR(setpoint);
 
         // initially, push to get started
-        loop.correct(VecBuilder.fill(-1.0 * Math.PI + 0.01));
+        loop.correctAngle(-1.0 * Math.PI + 0.01);
+        loop.correctVelocity(0);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(-3.133, loop.getXHat(0), kDelta),
@@ -148,75 +204,84 @@ public class AngleLoopTest extends KFTestBase {
                 () -> assertEquals(-8.324, loop.getU(0), kDelta));
 
         // update 1: still pushing
-        loop.correct(VecBuilder.fill(-3.133));
+        loop.correctAngle(-3.133);
+        loop.correctVelocity(-0.166);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(-3.137, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.229, loop.getXHat(1), kDelta),
-                () -> assertEquals(-3.141, loop.getU(0), kDelta));
+                () -> assertEquals(-3.140, loop.getU(0), kDelta));
 
         // update 2: slowing down
-        loop.correct(VecBuilder.fill(-3.137));
+        loop.correctAngle(-3.137);
+        loop.correctVelocity(-0.229);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(-3.141, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.191, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.895, loop.getU(0), kDelta));
+                () -> assertEquals(1.897, loop.getU(0), kDelta));
 
         ////////////////////////////////////////////////////////////////////
         //
         // SUCCESS
         //
-        // update 3, note wrapping
-        loop.correct(VecBuilder.fill(-3.141));
+        // update 3
+        loop.correctAngle(-3.141);
+        loop.correctVelocity(-0.191);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.138, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.139, loop.getXHat(1), kDelta),
-                () -> assertEquals(2.594, loop.getU(0), kDelta));
+                () -> assertEquals(2.596, loop.getU(0), kDelta));
 
         // update 4
-        loop.correct(VecBuilder.fill(3.138));
+        loop.correctAngle(3.138);
+        loop.correctVelocity(-0.139);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.136, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.095, loop.getXHat(1), kDelta),
-                () -> assertEquals(2.230, loop.getU(0), kDelta));
+                () -> assertEquals(2.224, loop.getU(0), kDelta));
 
         // update 5
-        loop.correct(VecBuilder.fill(3.136));
+        loop.correctAngle(3.136);
+        loop.correctVelocity(-0.095);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.134, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.063, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.606, loop.getU(0), kDelta));
+                () -> assertEquals(1.604, loop.getU(0), kDelta));
 
         // update 6
-        loop.correct(VecBuilder.fill(3.134));
+        loop.correctAngle(3.134);
+        loop.correctVelocity(-0.063);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.133, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.04, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.129, loop.getU(0), kDelta));
+                () -> assertEquals(1.125, loop.getU(0), kDelta));
 
         // update 7
-        loop.correct(VecBuilder.fill(3.133));
+        loop.correctAngle(3.133);
+        loop.correctVelocity(-0.04);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.132, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.025, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.756, loop.getU(0), kDelta));
+                () -> assertEquals(0.752, loop.getU(0), kDelta));
 
         // update 8
-        loop.correct(VecBuilder.fill(3.132));
+        loop.correctAngle(3.132);
+        loop.correctVelocity(-0.025);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.132, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.015, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.522, loop.getU(0), kDelta));
+                () -> assertEquals(0.516, loop.getU(0), kDelta));
 
         // update 9
-        loop.correct(VecBuilder.fill(3.132));
+        loop.correctAngle(3.132);
+        loop.correctVelocity(-0.015);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.132, loop.getXHat(0), kDelta),
@@ -224,12 +289,13 @@ public class AngleLoopTest extends KFTestBase {
                 () -> assertEquals(0.313, loop.getU(0), kDelta));
 
         // update 10
-        loop.correct(VecBuilder.fill(3.132));
+        loop.correctAngle(3.132);
+        loop.correctVelocity(-0.009);
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.132, loop.getXHat(0), kDelta),
                 () -> assertEquals(-0.005, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.173, loop.getU(0), kDelta));
+                () -> assertEquals(0.176, loop.getU(0), kDelta));
 
     }
 
