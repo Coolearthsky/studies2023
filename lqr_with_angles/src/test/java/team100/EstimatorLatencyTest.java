@@ -146,8 +146,9 @@ public class EstimatorLatencyTest {
             state.predictedPosition = observer.getXhat(0);
             state.predictedVelocity = observer.getXhat(1);
         }
+
         void updateResidual() {
-                        // the errors should be zero at the *next* filter quantum.
+            // the errors should be zero at the *next* filter quantum.
             // note negative error means the data is below the prediction i.e. prediction
             // should be more negative
             state.residualPosition = MathUtil
@@ -164,7 +165,32 @@ public class EstimatorLatencyTest {
             state.observedPosition = state.actualPosition;
             state.observedVelocity = state.actualVelocity;
             state.observedAcceleration = state.actualAcceleration;
+        }
 
+        /**
+         * correct the observer with current measurements.
+         * right now these measurements represent the current instant
+         * TODO: add measurement delay
+         */
+        void correctObserver() {
+            observer.correctAngle(state.controlU, state.observedPosition);
+            observer.correctVelocity(state.controlU, state.observedVelocity);
+        }
+
+        void calculateOutput(Vector<N2> setpoint) {
+                // this is the predicted future state given the previous control
+                Matrix<N2, N1> nextXhat = observer.getXhat();
+
+                // 4. calculate control output.
+                // compare the desired and expected states, and produce output to nudge the
+                // expectation towards the desire
+                // TODO: actually drive the actual state using this output
+                controller.calculate(nextXhat, setpoint);
+
+                // combine LQR and FF
+                Matrix<N1, N1> u = controller.getU();
+                Matrix<N1, N1> uff = feedforward.calculate(setpoint);
+                state.controlU = u.plus(uff).get(0, 0);
         }
 
         AngleEstimator newObserver(double initialPosition, double initialVelocity) {
@@ -265,17 +291,10 @@ public class EstimatorLatencyTest {
                 // the goal is to decide what to do for the next quantum,
                 // so here we are looking at the future.
 
-                // 1. correct the observer with current measurements.
-                // right now these measurements represent the current instant
-                // TODO: add measurement delay
-                scenario.observer.correctAngle(scenario.state.controlU, scenario.state.observedPosition);
-                scenario.observer.correctVelocity(scenario.state.controlU, scenario.state.observedVelocity);
+                scenario.correctObserver();
 
                 // 2. predict the expected future state.
                 scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
-
-                // this is the predicted future state given the previous control
-                Matrix<N2, N1> nextXhat = scenario.observer.getXhat();
 
                 // 3. specify the desired future state.
                 // (here we expect constant velocity but it could be, say, a trajectory or
@@ -285,16 +304,8 @@ public class EstimatorLatencyTest {
                 double setpointVelocity = 1;
                 Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
 
-                // 4. calculate control output.
-                // compare the desired and expected states, and produce output to nudge the
-                // expectation towards the desire
-                // TODO: actually drive the actual state using this output
-                scenario.controller.calculate(nextXhat, setpoint);
 
-                // combine LQR and FF
-                Matrix<N1, N1> u = scenario.controller.getU();
-                Matrix<N1, N1> uff = scenario.feedforward.calculate(setpoint);
-                scenario.state.controlU = u.plus(uff).get(0, 0);
+                scenario.calculateOutput(setpoint);
             }
             scenario.updatePrediction();
             scenario.updateResidual();
@@ -332,17 +343,10 @@ public class EstimatorLatencyTest {
                 // the goal is to decide what to do for the next quantum,
                 // so here we are looking at the future.
 
-                // 1. correct the observer with current measurements.
-                // right now these measurements represent the current instant
-                // (TODO: add measurement delay)
-                scenario.observer.correctAngle(scenario.state.controlU, scenario.state.observedPosition);
-                scenario.observer.correctVelocity(scenario.state.controlU, scenario.state.observedVelocity);
+                scenario.correctObserver();
 
                 // 2. predict the expected future state.
                 scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
-
-                // this is the predicted future state given the previous control
-                Matrix<N2, N1> nextXhat = scenario.observer.getXhat();
 
                 // 3. specify the desired future state.
                 // (here we magically apply the actual state)
@@ -350,16 +354,7 @@ public class EstimatorLatencyTest {
                 double setpointVelocity = scenario.state.actualTime + filterTimeQuantum;
                 Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
 
-                // 4. calculate control output.
-                // compare the desired and expected states, and produce output to nudge the
-                // expectation towards the desire
-                // TODO: actually drive the actual state using this output
-                scenario.controller.calculate(nextXhat, setpoint);
-
-                // combine LQR and FF
-                Matrix<N1, N1> u = scenario.controller.getU();
-                Matrix<N1, N1> uff = scenario.feedforward.calculate(setpoint);
-                scenario.state.controlU = u.plus(uff).get(0, 0);
+                scenario.calculateOutput(setpoint);
             }
             scenario.updatePrediction();
             scenario.updateResidual();
@@ -396,17 +391,12 @@ public class EstimatorLatencyTest {
                 // the goal is to decide what to do for the next quantum,
                 // so here we are looking at the future.
 
-                // 1. correct the observer with current measurements.
-                // right now these measurements represent the current instant
-                // (TODO: add measurement delay)
-                scenario.observer.correctAngle(scenario.state.controlU, scenario.state.observedPosition);
-                scenario.observer.correctVelocity(scenario.state.controlU, scenario.state.observedVelocity);
+                scenario.correctObserver();
 
                 // 2. predict the expected future state.
                 scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
 
-                // this is the predicted future state given the previous control
-                Matrix<N2, N1> nextXhat = scenario.observer.getXhat();
+
 
                 // 3. specify the desired future state.
                 // (here we magically apply the actual state)
@@ -415,16 +405,7 @@ public class EstimatorLatencyTest {
                 double setpointVelocity = -1.0 * Math.sin(scenario.state.actualTime + filterTimeQuantum);
                 Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
 
-                // 4. calculate control output.
-                // compare the desired and expected states, and produce output to nudge the
-                // expectation towards the desire
-                // TODO: actually drive the actual state using this output
-                scenario.controller.calculate(nextXhat, setpoint);
-
-                // combine LQR and FF
-                Matrix<N1, N1> u = scenario.controller.getU();
-                Matrix<N1, N1> uff = scenario.feedforward.calculate(setpoint);
-                scenario.state.controlU = u.plus(uff).get(0, 0);
+                scenario.calculateOutput(setpoint);
             }
 
             scenario.updatePrediction();
