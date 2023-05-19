@@ -28,6 +28,7 @@ public class AngleEstimator {
     /**
      * Measurement variances.
      */
+    private final Matrix<N2,N2> contR;
     private final Matrix<N1, N1> RAngle;
     private final Matrix<N1, N1> RVelocity;
 
@@ -81,9 +82,9 @@ public class AngleEstimator {
                 // Matrix::plus,
                 AngleStatistics.angleAdd(0),
                 dtSeconds);
-        Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
-        RAngle = m_contR.block(Nat.N1(), Nat.N1(), 0, 0);
-        RVelocity = m_contR.block(Nat.N1(), Nat.N1(), 1, 1);
+        contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
+        RAngle = contR.block(Nat.N1(), Nat.N1(), 0, 0);
+        RVelocity = contR.block(Nat.N1(), Nat.N1(), 1, 1);
     }
 
     /**
@@ -126,6 +127,18 @@ public class AngleEstimator {
                 RVelocity,
                 Matrix::minus,
                 AngleStatistics.angleAdd(0));
+    }
+
+    public void correctBoth(double u, double angle, double velocity) {
+        ekf.correct(
+            Nat.N2(),
+            VecBuilder.fill(u),
+            VecBuilder.fill(angle, velocity),
+            AngleEstimator::h,
+            contR,
+            AngleStatistics.angleResidual(0),
+            AngleStatistics.angleAdd(0)
+        );
     }
 
     public void reset() {
