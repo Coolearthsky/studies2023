@@ -13,7 +13,10 @@ import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.Discretization;
 import edu.wpi.first.math.system.LinearSystem;
 
+
+/** Make sure I know what the plant-inversion feedforward thing is doing.  */
 public class FeedforwardTest {
+    /** This is the constant-acceleration case. */
     @Test
     public void testFeedforward() {
         double dtSeconds = 0.02;
@@ -24,6 +27,7 @@ public class FeedforwardTest {
         final Matrix<N2, N1> D = Matrix.mat(Nat.N2(), Nat.N1()).fill(0, 0);
 
         {
+            // look at how FF works (this is copied from the FF class)
             var discABPair = Discretization.discretizeAB(A, B, dtSeconds);
 
             Matrix<N2, N2> discA = discABPair.getFirst();
@@ -39,7 +43,8 @@ public class FeedforwardTest {
         final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
         LinearPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearPlantInversionFeedforward<>(plant,
                 dtSeconds);
-        // so the feedforward is the exact solution
+        // these setpoints correspond to constant acceleration
+        // so the feedforward provides the exact solution
         assertEquals(1, feedforward.calculate(VecBuilder.fill(0.0002, 0.02)).get(0, 0), 0.001);
         assertEquals(1, feedforward.calculate(VecBuilder.fill(0.001, 0.04)).get(0, 0), 0.001);
         assertEquals(1, feedforward.calculate(VecBuilder.fill(0.002, 0.06)).get(0, 0), 0.001);
