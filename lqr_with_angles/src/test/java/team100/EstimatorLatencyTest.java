@@ -119,6 +119,17 @@ public class EstimatorLatencyTest {
 
         abstract void label();
 
+        /**
+         * Specify the desired future state. (here we expect constant velocity but it
+         * could be, say, a trajectory or trapezoid.)
+         */
+        abstract Vector<N2> nextReference();
+
+        /**
+         * Update the actual state of the physical system.
+         */
+        abstract void updateActual();
+
         CompleteState initial(double initialPosition, double initialVelocity, double initialAcceleration) {
             CompleteState state = new CompleteState();
 
@@ -142,15 +153,32 @@ public class EstimatorLatencyTest {
             return state;
         }
 
+        void execute() {
+            for (state.step = 0; state.step < 2000; ++state.step) {
+                state.actualTime = state.step * actualTimeQuantum;
+                updateActual();
+                updateObservation();
+                rioStep();
+                updatePrediction();
+                updateResidual();
+                print();
+            }
+        }
+
         void updatePrediction() {
             state.predictedPosition = observer.getXhat(0);
             state.predictedVelocity = observer.getXhat(1);
         }
 
+        /**
+         * Update the residuals.
+         * 
+         * The residual should be zero at the *next* filter quantum.
+         * Negative error means the data is below the prediction i.e. prediction should
+         * be more negative.
+         */
         void updateResidual() {
-            // the errors should be zero at the *next* filter quantum.
-            // note negative error means the data is below the prediction i.e. prediction
-            // should be more negative
+
             state.residualPosition = MathUtil
                     .angleModulus(state.actualPosition - state.predictedPosition);
             state.residualVelocity = state.actualVelocity - state.predictedVelocity;
@@ -158,6 +186,21 @@ public class EstimatorLatencyTest {
 
         void print() {
             printRow(state);
+        }
+
+        /**
+         * Run the roborio code if it's the right time.
+         * 
+         * This talks to the observer and controller. the goal is to decide what to do
+         * for the next quantum, so here we are looking at the future.
+         */
+        void rioStep() {
+            if (state.step % stepsPerFilterQuantum == 0) {
+                correctObserver();
+                predict();
+                Vector<N2> nextReference = nextReference();
+                calculateOutput(nextReference);
+            }
         }
 
         /** For now, observations are perfect and instantaneous. */
@@ -177,20 +220,28 @@ public class EstimatorLatencyTest {
             observer.correctVelocity(state.controlU, state.observedVelocity);
         }
 
-        void calculateOutput(Vector<N2> setpoint) {
-                // this is the predicted future state given the previous control
-                Matrix<N2, N1> nextXhat = observer.getXhat();
+        /** predict the expected future state. */
+        void predict() {
+            observer.predictState(state.controlU, filterTimeQuantum);
+        }
 
-                // 4. calculate control output.
-                // compare the desired and expected states, and produce output to nudge the
-                // expectation towards the desire
-                // TODO: actually drive the actual state using this output
-                controller.calculate(nextXhat, setpoint);
-
-                // combine LQR and FF
-                Matrix<N1, N1> u = controller.getU();
-                Matrix<N1, N1> uff = feedforward.calculate(setpoint);
-                state.controlU = u.plus(uff).get(0, 0);
+        /**
+         * Calculate control output.
+         * 
+         * compare the future desired state (the reference) and the future expected
+         * states (xhat), and produce output to nudge the expectation towards the desire
+         *
+         * Combines LQR and FF outputs
+         * 
+         * TODO: actually drive the actual state using this output
+         */
+        void calculateOutput(Vector<N2> nextReference) {
+            // this is the predicted future state given the previous control
+            Matrix<N2, N1> nextXhat = observer.getXhat();
+            controller.calculate(nextXhat, nextReference);
+            Matrix<N1, N1> u = controller.getU();
+            Matrix<N1, N1> uff = feedforward.calculate(nextReference);
+            state.controlU = u.plus(uff).get(0, 0);
         }
 
         AngleEstimator newObserver(double initialPosition, double initialVelocity) {
@@ -269,52 +320,25 @@ public class EstimatorLatencyTest {
             System.out.println("\n\nCONSTANT VELOCITY");
         }
 
-    }
+        void updateActual() {
+            state.actualAcceleration = 0;
+            state.actualVelocity = 1;
+            state.actualPosition = MathUtil
+                    .angleModulus(state.actualVelocity * state.actualTime);
 
-    /** Constant velocity means no torque so no controller output. */
-    @Test
-    public void testConstantVelocity() {
-        Scenario scenario = new ConstantVelocity();
-
-        for (scenario.state.step = 0; scenario.state.step < 2000; ++scenario.state.step) {
-            scenario.state.actualTime = scenario.state.step * actualTimeQuantum;
-
-            scenario.state.actualAcceleration = 0;
-            scenario.state.actualVelocity = 1;
-            scenario.state.actualPosition = MathUtil
-                    .angleModulus(scenario.state.actualVelocity * scenario.state.actualTime);
-
-            scenario.updateObservation();
-
-            if (scenario.state.step % stepsPerFilterQuantum == 0) {
-                // talk to the observer and controller periodically
-                // the goal is to decide what to do for the next quantum,
-                // so here we are looking at the future.
-
-                scenario.correctObserver();
-
-                // 2. predict the expected future state.
-                scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
-
-                // 3. specify the desired future state.
-                // (here we expect constant velocity but it could be, say, a trajectory or
-                // trapezoid.)
-                double setpointPosition = MathUtil
-                        .angleModulus(scenario.state.actualVelocity * (scenario.state.actualTime + filterTimeQuantum));
-                double setpointVelocity = 1;
-                Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-
-
-                scenario.calculateOutput(setpoint);
-            }
-            scenario.updatePrediction();
-            scenario.updateResidual();
-            scenario.print();
         }
+
+        Vector<N2> nextReference() {
+            double setpointPosition = MathUtil
+                    .angleModulus(state.actualVelocity * (state.actualTime + filterTimeQuantum));
+            double setpointVelocity = 1;
+            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
+            return setpoint;
+        }
+
     }
 
     public static class ConstantAcceleration extends Scenario {
-
         public ConstantAcceleration() {
             super(0, 0, 1);
         }
@@ -323,43 +347,19 @@ public class EstimatorLatencyTest {
             System.out.println("\n\nCONSTANT ACCELERATION");
         }
 
-    }
-
-    @Test
-    public void testConstantAcceleration() {
-        Scenario scenario = new ConstantAcceleration();
-
-        for (scenario.state.step = 0; scenario.state.step < 2000; ++scenario.state.step) {
-            scenario.state.actualTime = scenario.state.step * actualTimeQuantum;
-
-            scenario.state.actualAcceleration = 1;
-            scenario.state.actualVelocity = scenario.state.actualAcceleration * scenario.state.actualTime;
-            scenario.state.actualPosition = MathUtil.angleModulus(Math.pow(scenario.state.actualTime, 2) / 2);
-
-            scenario.updateObservation();
-
-            if (scenario.state.step % stepsPerFilterQuantum == 0) {
-                // talk to the observer and controller periodically
-                // the goal is to decide what to do for the next quantum,
-                // so here we are looking at the future.
-
-                scenario.correctObserver();
-
-                // 2. predict the expected future state.
-                scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
-
-                // 3. specify the desired future state.
-                // (here we magically apply the actual state)
-                double setpointPosition = Math.pow(scenario.state.actualTime + filterTimeQuantum, 2) / 2;
-                double setpointVelocity = scenario.state.actualTime + filterTimeQuantum;
-                Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-
-                scenario.calculateOutput(setpoint);
-            }
-            scenario.updatePrediction();
-            scenario.updateResidual();
-            scenario.print();
+        void updateActual() {
+            state.actualAcceleration = 1;
+            state.actualVelocity = state.actualAcceleration * state.actualTime;
+            state.actualPosition = MathUtil.angleModulus(Math.pow(state.actualTime, 2) / 2);
         }
+
+        Vector<N2> nextReference() {
+            double setpointPosition = Math.pow(state.actualTime + filterTimeQuantum, 2) / 2;
+            double setpointVelocity = state.actualTime + filterTimeQuantum;
+            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
+            return setpoint;
+        }
+
     }
 
     public static class Sinusoidal extends Scenario {
@@ -371,47 +371,38 @@ public class EstimatorLatencyTest {
             System.out.println("\n\nSINUSOIDAL");
         }
 
+        void updateActual() {
+            state.actualAcceleration = -1.0 * Math.cos(state.actualTime);
+            state.actualVelocity = -1.0 * Math.sin(state.actualTime);
+            state.actualPosition = MathUtil.angleModulus(Math.cos(state.actualTime));
+        }
+
+        Vector<N2> nextReference() {
+            double setpointPosition = MathUtil
+                    .angleModulus(Math.cos(state.actualTime + filterTimeQuantum));
+            double setpointVelocity = -1.0 * Math.sin(state.actualTime + filterTimeQuantum);
+            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
+            return setpoint;
+        }
+    }
+
+    /** Constant velocity means no torque so no controller output. */
+    @Test
+    public void testConstantVelocity() {
+        Scenario scenario = new ConstantVelocity();
+        scenario.execute();
+    }
+
+    @Test
+    public void testConstantAcceleration() {
+        Scenario scenario = new ConstantAcceleration();
+        scenario.execute();
     }
 
     @Test
     public void testSinusoidal() {
         Scenario scenario = new Sinusoidal();
-
-        for (scenario.state.step = 0; scenario.state.step < 2000; ++scenario.state.step) {
-            scenario.state.actualTime = scenario.state.step * actualTimeQuantum;
-
-            scenario.state.actualAcceleration = -1.0 * Math.cos(scenario.state.actualTime);
-            scenario.state.actualVelocity = -1.0 * Math.sin(scenario.state.actualTime);
-            scenario.state.actualPosition = MathUtil.angleModulus(Math.cos(scenario.state.actualTime));
-
-            scenario.updateObservation();
-
-            if (scenario.state.step % stepsPerFilterQuantum == 0) {
-                // talk to the observer and controller periodically
-                // the goal is to decide what to do for the next quantum,
-                // so here we are looking at the future.
-
-                scenario.correctObserver();
-
-                // 2. predict the expected future state.
-                scenario.observer.predictState(scenario.state.controlU, filterTimeQuantum);
-
-
-
-                // 3. specify the desired future state.
-                // (here we magically apply the actual state)
-                double setpointPosition = MathUtil
-                        .angleModulus(Math.cos(scenario.state.actualTime + filterTimeQuantum));
-                double setpointVelocity = -1.0 * Math.sin(scenario.state.actualTime + filterTimeQuantum);
-                Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-
-                scenario.calculateOutput(setpoint);
-            }
-
-            scenario.updatePrediction();
-            scenario.updateResidual();
-            scenario.print();
-        }
+        scenario.execute();
     }
 
 }
