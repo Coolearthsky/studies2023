@@ -23,7 +23,7 @@ import edu.wpi.first.math.system.LinearSystem;
 public class AngleController {
 
     private final LinearQuadraticRegulator<N2, N1, N2> lqr;
-    private Matrix<N2, N1> actualR = VecBuilder.fill(0,0);
+    private Matrix<N2, N1> actualR = VecBuilder.fill(0, 0);
     private Matrix<N1, N1> actualU = VecBuilder.fill(0);
 
     public AngleController(
@@ -44,10 +44,18 @@ public class AngleController {
         return actualU;
     }
 
+    /**
+     * Output is not aware of actuator limits, that needs to be
+     * handled by the caller.
+     */
     public Matrix<N1, N1> getU() {
         return actualU;
     }
-
+    
+    /**
+     * Output is not aware of actuator limits, that needs to be
+     * handled by the caller.
+     */
     public double getU(int row) {
         return getU().get(row, 0);
     }
@@ -64,7 +72,7 @@ public class AngleController {
         lqr.reset();
     }
 
-    public Matrix<N1, N1> calculate(Matrix<N2, N1> x, Matrix<N2,N1> nextR) {
+    public Matrix<N1, N1> calculate(Matrix<N2, N1> x, Matrix<N2, N1> nextR) {
         actualR = nextR;
         return calculate(x);
     }
