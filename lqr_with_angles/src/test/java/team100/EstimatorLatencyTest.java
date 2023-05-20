@@ -137,6 +137,13 @@ public class EstimatorLatencyTest {
             state.actualAcceleration = acceleration(state.actualTime);
         }
 
+        /** For now, observations are perfect and instantaneous. */
+        void updateObservation() {
+            state.observedPosition = state.actualPosition;
+            state.observedVelocity = state.actualVelocity;
+            state.observedAcceleration = state.actualAcceleration;
+        }
+
         /**
          * Specify the desired future state.
          */
@@ -221,12 +228,6 @@ public class EstimatorLatencyTest {
             }
         }
 
-        /** For now, observations are perfect and instantaneous. */
-        void updateObservation() {
-            state.observedPosition = state.actualPosition;
-            state.observedVelocity = state.actualVelocity;
-            state.observedAcceleration = state.actualAcceleration;
-        }
 
         /**
          * Correct the observer with current measurements.
