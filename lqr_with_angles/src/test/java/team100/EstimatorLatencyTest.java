@@ -70,6 +70,16 @@ import edu.wpi.first.math.system.LinearSystem;
  * 
  * assume that the marshalling delay is zero.
  * 
+ * Another example of measurement delay is the gyro
+ * 
+ * https://pdocs.kauailabs.com/navx-mxp/wp-content/uploads/2019/02/navx-mxp_robotics_navigation_sensor_user_guide.pdf
+ * 
+ * this specifies 1ms latency for the USB interface, and 200Hz sampling, and
+ * also suggests that the on-board filter is EKF, which means it should have
+ * pretty low latency relative to the sampling frequency?
+ * 
+ * TODO: extend this to include acceleration, since the gyro provides cartesian accelerations.
+ * 
  */
 public class EstimatorLatencyTest {
     private static final double kDelta = 0.001;
@@ -227,7 +237,6 @@ public class EstimatorLatencyTest {
                 calculateOutput(nextReference);
             }
         }
-
 
         /**
          * Correct the observer with current measurements.
