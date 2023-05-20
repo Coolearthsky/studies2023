@@ -105,9 +105,12 @@ public class EstimatorLatencyTest {
         final LinearPlantInversionFeedforward<N2, N1, N2> feedforward;
         final AngleController controller;
 
-        public Scenario(double initialPosition, double initialVelocity, double initialAcceleration) {
-            state = initial(initialPosition, initialVelocity, initialAcceleration);
-            observer = newObserver(initialPosition, initialVelocity);
+        public Scenario() {
+            double initialPosition = position(0);
+            double initialVelocity = velocity(0);
+
+            state = initial();
+            observer = newObserver();
             plant = newPlant();
             feedforward = new LinearPlantInversionFeedforward<>(plant, filterTimeQuantum);
             feedforward.calculate(VecBuilder.fill(initialPosition, initialVelocity));
@@ -119,18 +122,35 @@ public class EstimatorLatencyTest {
 
         abstract void label();
 
-        /**
-         * Specify the desired future state. (here we expect constant velocity but it
-         * could be, say, a trajectory or trapezoid.)
-         */
-        abstract Vector<N2> nextReference();
+        abstract double position(double timeSec);
+
+        abstract double velocity(double timeSec);
+
+        abstract double acceleration(double timeSec);
 
         /**
          * Update the actual state of the physical system.
          */
-        abstract void updateActual();
+        void updateActual() {
+            state.actualPosition = position(state.actualTime);
+            state.actualVelocity = velocity(state.actualTime);
+            state.actualAcceleration = acceleration(state.actualTime);
+        }
 
-        CompleteState initial(double initialPosition, double initialVelocity, double initialAcceleration) {
+        /**
+         * Specify the desired future state.
+         */
+        Vector<N2> nextReference() {
+            double futureTimeSec = state.actualTime + filterTimeQuantum;
+            double referencePosition = position(futureTimeSec);
+            double referenceVelocity = velocity(futureTimeSec);
+            return VecBuilder.fill(referencePosition, referenceVelocity);
+        }
+
+        CompleteState initial() {
+            double initialPosition = position(0);
+            double initialVelocity = velocity(0);
+            double initialAcceleration = acceleration(0);
             CompleteState state = new CompleteState();
 
             state.actualTime = 0;
@@ -178,9 +198,7 @@ public class EstimatorLatencyTest {
          * be more negative.
          */
         void updateResidual() {
-
-            state.residualPosition = MathUtil
-                    .angleModulus(state.actualPosition - state.predictedPosition);
+            state.residualPosition = MathUtil.angleModulus(state.actualPosition - state.predictedPosition);
             state.residualVelocity = state.actualVelocity - state.predictedVelocity;
         }
 
@@ -211,8 +229,9 @@ public class EstimatorLatencyTest {
         }
 
         /**
-         * correct the observer with current measurements.
-         * right now these measurements represent the current instant
+         * Correct the observer with current measurements.
+         * 
+         * Right now these measurements represent the current instant
          * TODO: add measurement delay
          */
         void correctObserver() {
@@ -220,7 +239,7 @@ public class EstimatorLatencyTest {
             observer.correctVelocity(state.controlU, state.observedVelocity);
         }
 
-        /** predict the expected future state. */
+        /** Predict the expected future state. */
         void predict() {
             observer.predictState(state.controlU, filterTimeQuantum);
         }
@@ -244,7 +263,9 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        AngleEstimator newObserver(double initialPosition, double initialVelocity) {
+        AngleEstimator newObserver() {
+            double initialPosition = position(0);
+            double initialVelocity = velocity(0);
             final AngleEstimator observer = new AngleEstimator(
                     VecBuilder.fill(0.1, 0.1),
                     VecBuilder.fill(0.01, 0.01),
@@ -312,97 +333,76 @@ public class EstimatorLatencyTest {
     }
 
     public static class ConstantVelocity extends Scenario {
-        public ConstantVelocity() {
-            super(0, 1, 0);
+        private static final double kVelocity = 1.0;
+
+        double position(double timeSec) {
+            return MathUtil.angleModulus(kVelocity * timeSec);
+        }
+
+        double velocity(double timeSec) {
+            return kVelocity;
+        }
+
+        double acceleration(double timeSec) {
+            return 0;
         }
 
         void label() {
             System.out.println("\n\nCONSTANT VELOCITY");
         }
-
-        void updateActual() {
-            state.actualAcceleration = 0;
-            state.actualVelocity = 1;
-            state.actualPosition = MathUtil
-                    .angleModulus(state.actualVelocity * state.actualTime);
-
-        }
-
-        Vector<N2> nextReference() {
-            double setpointPosition = MathUtil
-                    .angleModulus(state.actualVelocity * (state.actualTime + filterTimeQuantum));
-            double setpointVelocity = 1;
-            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-            return setpoint;
-        }
-
     }
 
     public static class ConstantAcceleration extends Scenario {
-        public ConstantAcceleration() {
-            super(0, 0, 1);
+        private static final double kAcceleration = 1.0;
+
+        double position(double timeSec) {
+            return MathUtil.angleModulus(Math.pow(timeSec, 2) / 2);
+        }
+
+        double velocity(double timeSec) {
+            return kAcceleration * timeSec;
+        }
+
+        double acceleration(double timeSec) {
+            return kAcceleration;
         }
 
         void label() {
             System.out.println("\n\nCONSTANT ACCELERATION");
         }
-
-        void updateActual() {
-            state.actualAcceleration = 1;
-            state.actualVelocity = state.actualAcceleration * state.actualTime;
-            state.actualPosition = MathUtil.angleModulus(Math.pow(state.actualTime, 2) / 2);
-        }
-
-        Vector<N2> nextReference() {
-            double setpointPosition = Math.pow(state.actualTime + filterTimeQuantum, 2) / 2;
-            double setpointVelocity = state.actualTime + filterTimeQuantum;
-            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-            return setpoint;
-        }
-
     }
 
     public static class Sinusoidal extends Scenario {
-        public Sinusoidal() {
-            super(1, 0, -1);
+        double position(double timeSec) {
+            return MathUtil.angleModulus(Math.cos(timeSec));
+        }
+
+        double velocity(double timeSec) {
+            return -1.0 * Math.sin(timeSec);
+        }
+
+        double acceleration(double timeSec) {
+            return -1.0 * Math.cos(timeSec);
         }
 
         void label() {
             System.out.println("\n\nSINUSOIDAL");
         }
-
-        void updateActual() {
-            state.actualAcceleration = -1.0 * Math.cos(state.actualTime);
-            state.actualVelocity = -1.0 * Math.sin(state.actualTime);
-            state.actualPosition = MathUtil.angleModulus(Math.cos(state.actualTime));
-        }
-
-        Vector<N2> nextReference() {
-            double setpointPosition = MathUtil
-                    .angleModulus(Math.cos(state.actualTime + filterTimeQuantum));
-            double setpointVelocity = -1.0 * Math.sin(state.actualTime + filterTimeQuantum);
-            Vector<N2> setpoint = VecBuilder.fill(setpointPosition, setpointVelocity);
-            return setpoint;
-        }
     }
 
-    /** Constant velocity means no torque so no controller output. */
     @Test
     public void testConstantVelocity() {
-        Scenario scenario = new ConstantVelocity();
-        scenario.execute();
+        new ConstantVelocity().execute();
     }
 
     @Test
     public void testConstantAcceleration() {
-        Scenario scenario = new ConstantAcceleration();
-        scenario.execute();
+        new ConstantAcceleration().execute();
     }
 
     @Test
     public void testSinusoidal() {
-        Scenario scenario = new Sinusoidal();
-        scenario.execute();
+        new Sinusoidal().execute();
     }
 
 }
