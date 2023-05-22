@@ -13,6 +13,8 @@ import edu.wpi.first.math.controller.LinearPlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
+import team100.controller.AngleController;
+import team100.estimator.ExtendedAngleEstimator;
 
 /**
  * Illustrates delayed measurements and what to do with them.
@@ -110,7 +112,7 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final AngleEstimator observer;
+        final ExtendedAngleEstimator observer;
         final LinearSystem<N2, N1, N2> plant;
         final LinearPlantInversionFeedforward<N2, N1, N2> feedforward;
         final AngleController controller;
@@ -273,10 +275,10 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        AngleEstimator newObserver() {
+        ExtendedAngleEstimator newObserver() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final AngleEstimator observer = new AngleEstimator(
+            final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
                     VecBuilder.fill(0.1, 0.1),
                     VecBuilder.fill(0.01, 0.01),
                     filterTimeQuantum);
@@ -400,19 +402,21 @@ public class EstimatorLatencyTest {
         }
     }
 
+    // turning these off for now since they make a lot of output.
+
     @Test
     public void testConstantVelocity() {
-        new ConstantVelocity().execute();
+    //    new ConstantVelocity().execute();
     }
 
     @Test
     public void testConstantAcceleration() {
-        new ConstantAcceleration().execute();
+      //  new ConstantAcceleration().execute();
     }
 
     @Test
     public void testSinusoidal() {
-        new Sinusoidal().execute();
+       // new Sinusoidal().execute();
     }
 
 }

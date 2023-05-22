@@ -12,6 +12,8 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
+import team100.controller.AngleController;
+import team100.estimator.ExtendedAngleEstimator;
 
 /**
  * Demonstrates ExtendedKalmanFilter in angle-wrapping scenarios, and also a
@@ -65,7 +67,7 @@ public class EKFTest {
     final AngleController controller = new AngleController(plant, stateTolerance, controlTolerance, kDt);
 
     /** AngleEKF wraps correctly. */
-    AngleEstimator observer = new AngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
 
     @Test
     public void testObserver() {
@@ -585,7 +587,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectVelocityOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.1, 0.00001);
-        observer = new AngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory
@@ -617,7 +619,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectPositionOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.00001, 0.1);
-        observer = new AngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory

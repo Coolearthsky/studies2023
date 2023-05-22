@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N2;
+import team100.estimator.ExtendedAngleEstimator;
 
 /** Illustrates multiple measurement sources. */
 public class EKFMultiCorrectTest {
@@ -14,7 +15,7 @@ public class EKFMultiCorrectTest {
     static final double kDt = 0.02;
     final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
     final Vector<N2> measurementStdDevs = VecBuilder.fill(0.01, 0.1);
-    final AngleEstimator observer = new AngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
 
     @Test
     public void testMultipleSensors() {

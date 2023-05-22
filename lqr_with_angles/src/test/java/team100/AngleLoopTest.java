@@ -12,6 +12,9 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
+import team100.controller.AngleController;
+import team100.estimator.ExtendedAngleEstimator;
+import team100.system.NonlinearSystemLoop;
 
 /**
  * Demonstrates angle-wrapping with LinearSystemLoop.
@@ -66,7 +69,7 @@ public class AngleLoopTest {
 
     final Vector<N2> angleMeasurementStdDevs = VecBuilder.fill(0.01, 0.1);
     /** AngleEKF wraps correctly. */
-    final AngleEstimator observer = new AngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
 
     NonlinearSystemLoop loop = new NonlinearSystemLoop(plant, controller, observer, 12.0, kDt);
 
