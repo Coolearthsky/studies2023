@@ -1,4 +1,4 @@
-package team100;
+package org.team100.estimator;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
@@ -22,7 +22,7 @@ import edu.wpi.first.math.numbers.N2;
  * together)
  * output: torque, i guess?
  */
-public class AngleEstimator {
+public class ExtendedAngleEstimator {
     private final ExtendedKalmanFilter<N2, N1, N2> ekf;
 
     /**
@@ -66,7 +66,7 @@ public class AngleEstimator {
     /**
      * @param measurementStdDevs vector of std deviations per measurement
      */
-    public AngleEstimator(
+    public ExtendedAngleEstimator(
             Matrix<N2, N1> stateStdDevs,
             Matrix<N2, N1> measurementStdDevs,
             double dtSeconds) {
@@ -74,8 +74,8 @@ public class AngleEstimator {
                 Nat.N2(),
                 Nat.N1(),
                 Nat.N2(),
-                AngleEstimator::f,
-                AngleEstimator::h,
+                ExtendedAngleEstimator::f,
+                ExtendedAngleEstimator::h,
                 stateStdDevs,
                 measurementStdDevs,
                 AngleStatistics.angleResidual(0),
@@ -94,7 +94,7 @@ public class AngleEstimator {
      * @param dt time quantum
      */
     public void predictState(double u, double dt) {
-        ekf.predict(VecBuilder.fill(u), AngleEstimator::f, dt);
+        ekf.predict(VecBuilder.fill(u), ExtendedAngleEstimator::f, dt);
         Matrix<N2, N1> xhat = ekf.getXhat();
         xhat.set(0, 0, MathUtil.angleModulus(xhat.get(0, 0)));
         ekf.setXhat(xhat);
@@ -112,7 +112,7 @@ public class AngleEstimator {
                 Nat.N1(),
                 VecBuilder.fill(u),
                 VecBuilder.fill(y),
-                AngleEstimator::hPosition,
+                ExtendedAngleEstimator::hPosition,
                 RAngle,
                 AngleStatistics.angleResidual(0),
                 AngleStatistics.angleAdd(0));
@@ -123,7 +123,7 @@ public class AngleEstimator {
                 Nat.N1(),
                 VecBuilder.fill(u),
                 VecBuilder.fill(y),
-                AngleEstimator::hVelocity,
+                ExtendedAngleEstimator::hVelocity,
                 RVelocity,
                 Matrix::minus,
                 AngleStatistics.angleAdd(0));
@@ -134,7 +134,7 @@ public class AngleEstimator {
             Nat.N2(),
             VecBuilder.fill(u),
             VecBuilder.fill(angle, velocity),
-            AngleEstimator::h,
+            ExtendedAngleEstimator::h,
             contR,
             AngleStatistics.angleResidual(0),
             AngleStatistics.angleAdd(0)

@@ -1,4 +1,4 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -14,7 +14,7 @@ public class EKFMultiCorrectTest {
     static final double kDt = 0.02;
     final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
     final Vector<N2> measurementStdDevs = VecBuilder.fill(0.01, 0.1);
-    final AngleEstimator observer = new AngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
 
     @Test
     public void testMultipleSensors() {

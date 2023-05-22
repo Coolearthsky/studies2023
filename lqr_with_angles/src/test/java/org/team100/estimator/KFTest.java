@@ -1,4 +1,4 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -1,9 +1,11 @@
-package team100;
+package org.team100.system;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.controller.AngleController;
+import org.team100.estimator.ExtendedAngleEstimator;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -66,7 +68,7 @@ public class AngleLoopTest {
 
     final Vector<N2> angleMeasurementStdDevs = VecBuilder.fill(0.01, 0.1);
     /** AngleEKF wraps correctly. */
-    final AngleEstimator observer = new AngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
 
     NonlinearSystemLoop loop = new NonlinearSystemLoop(plant, controller, observer, 12.0, kDt);
 

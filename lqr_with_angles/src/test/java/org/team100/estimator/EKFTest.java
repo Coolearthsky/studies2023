@@ -1,9 +1,10 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.controller.AngleController;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -65,7 +66,7 @@ public class EKFTest {
     final AngleController controller = new AngleController(plant, stateTolerance, controlTolerance, kDt);
 
     /** AngleEKF wraps correctly. */
-    AngleEstimator observer = new AngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
 
     @Test
     public void testObserver() {
@@ -585,7 +586,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectVelocityOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.1, 0.00001);
-        observer = new AngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory
@@ -617,7 +618,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectPositionOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.00001, 0.1);
-        observer = new AngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory

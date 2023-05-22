@@ -1,4 +1,4 @@
-package team100;
+package org.team100.controller;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;

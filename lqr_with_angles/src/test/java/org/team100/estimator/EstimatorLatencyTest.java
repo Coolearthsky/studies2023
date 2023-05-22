@@ -1,8 +1,9 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.controller.AngleController;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
@@ -110,7 +111,7 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final AngleEstimator observer;
+        final ExtendedAngleEstimator observer;
         final LinearSystem<N2, N1, N2> plant;
         final LinearPlantInversionFeedforward<N2, N1, N2> feedforward;
         final AngleController controller;
@@ -273,10 +274,10 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        AngleEstimator newObserver() {
+        ExtendedAngleEstimator newObserver() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final AngleEstimator observer = new AngleEstimator(
+            final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
                     VecBuilder.fill(0.1, 0.1),
                     VecBuilder.fill(0.01, 0.01),
                     filterTimeQuantum);
@@ -400,19 +401,21 @@ public class EstimatorLatencyTest {
         }
     }
 
+    // turning these off for now since they make a lot of output.
+
     @Test
     public void testConstantVelocity() {
-        new ConstantVelocity().execute();
+    //    new ConstantVelocity().execute();
     }
 
     @Test
     public void testConstantAcceleration() {
-        new ConstantAcceleration().execute();
+      //  new ConstantAcceleration().execute();
     }
 
     @Test
     public void testSinusoidal() {
-        new Sinusoidal().execute();
+       // new Sinusoidal().execute();
     }
 
 }
