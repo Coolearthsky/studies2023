@@ -1,4 +1,4 @@
-package team100;
+package org.team100.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -11,7 +11,6 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
-import team100.controller.AngleController;
 
 public class AngleControllerTest {
     static final double kDelta = 0.001;

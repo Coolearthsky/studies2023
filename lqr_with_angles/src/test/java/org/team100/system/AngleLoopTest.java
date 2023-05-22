@@ -1,9 +1,11 @@
-package team100;
+package org.team100.system;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.controller.AngleController;
+import org.team100.estimator.ExtendedAngleEstimator;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -12,9 +14,6 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
-import team100.controller.AngleController;
-import team100.estimator.ExtendedAngleEstimator;
-import team100.system.NonlinearSystemLoop;
 
 /**
  * Demonstrates angle-wrapping with LinearSystemLoop.

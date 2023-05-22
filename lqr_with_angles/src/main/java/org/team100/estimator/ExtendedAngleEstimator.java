@@ -1,4 +1,4 @@
-package team100.estimator;
+package org.team100.estimator;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;

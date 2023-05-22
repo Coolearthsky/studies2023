@@ -1,6 +1,4 @@
-package team100;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+package org.team100;
 
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +15,8 @@ public class PerformanceTest {
         Matrix<N2,N1> B = VecBuilder.fill(0,1);
         Matrix<N2,N1> k = VecBuilder.fill(50,5);
         for (int i =0; i < iterations; ++i) {
-           Matrix<N1,N1> u = B.solve(k);
+           //Matrix<N1,N1> u = 
+           B.solve(k);
            // assertEquals(5, u.get(0,0));
         }
         long end = System.currentTimeMillis();
@@ -30,10 +29,11 @@ public class PerformanceTest {
     public void testExplicit() {
         long start = System.currentTimeMillis();
         int iterations = 1000;
-        Matrix<N2,N1> B = VecBuilder.fill(0,1);
+        //Matrix<N2,N1> B = VecBuilder.fill(0,1);
         Matrix<N2,N1> k = VecBuilder.fill(50,5);
         for (int i =0; i < iterations; ++i) {
-           Matrix<N1,N1> u = VecBuilder.fill(k.get(1,0));
+           //Matrix<N1,N1> u = 
+           VecBuilder.fill(k.get(1,0));
            // assertEquals(5, u.get(0,0));
         }
         long end = System.currentTimeMillis();

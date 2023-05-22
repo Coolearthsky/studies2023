@@ -1,9 +1,10 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.controller.AngleController;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -12,8 +13,6 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
-import team100.controller.AngleController;
-import team100.estimator.ExtendedAngleEstimator;
 
 /**
  * Demonstrates ExtendedKalmanFilter in angle-wrapping scenarios, and also a

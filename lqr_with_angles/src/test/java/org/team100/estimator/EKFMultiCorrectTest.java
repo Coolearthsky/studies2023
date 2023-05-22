@@ -1,4 +1,4 @@
-package team100;
+package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N2;
-import team100.estimator.ExtendedAngleEstimator;
 
 /** Illustrates multiple measurement sources. */
 public class EKFMultiCorrectTest {

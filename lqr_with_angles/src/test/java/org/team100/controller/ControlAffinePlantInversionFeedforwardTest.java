@@ -1,4 +1,4 @@
-package team100;
+package org.team100.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -22,7 +22,7 @@ public class ControlAffinePlantInversionFeedforwardTest {
      * so the u jacobian should just be [0, 1]
      */
     Matrix<N2, N1> newton1d(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        double p = xmat.get(0, 0);
+        //double p = xmat.get(0, 0);
         double v = xmat.get(1, 0);
         double u = umat.get(0, 0);
         double pdot = v;
