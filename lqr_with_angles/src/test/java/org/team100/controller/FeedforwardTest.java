@@ -1,4 +1,4 @@
-package team100;
+package org.team100.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

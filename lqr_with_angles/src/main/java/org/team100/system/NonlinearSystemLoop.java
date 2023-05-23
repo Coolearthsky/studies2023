@@ -1,10 +1,12 @@
-package team100;
+package org.team100.system;
 
 
 import java.util.function.Function;
 
 import org.ejml.MatrixDimensionException;
 import org.ejml.simple.SimpleMatrix;
+import org.team100.controller.AngleController;
+import org.team100.estimator.ExtendedAngleEstimator;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.StateSpaceUtil;
@@ -19,7 +21,7 @@ import edu.wpi.first.math.system.LinearSystem;
 public class NonlinearSystemLoop{
   private final AngleController m_controller;
   private final LinearPlantInversionFeedforward<N2, N1, N2> m_feedforward;
-  private final AngleEstimator m_observer;
+  private final ExtendedAngleEstimator m_observer;
   private Matrix<N2, N1> m_nextR;
   private Function<Matrix<N1, N1>, Matrix<N1, N1>> m_clampFunction;
 
@@ -37,7 +39,7 @@ public class NonlinearSystemLoop{
   public NonlinearSystemLoop(
       LinearSystem<N2, N1, N2> plant,
       AngleController controller,
-      AngleEstimator observer,
+      ExtendedAngleEstimator observer,
       double maxVoltageVolts,
       double dtSeconds) {
     this(
@@ -60,7 +62,7 @@ public class NonlinearSystemLoop{
   public NonlinearSystemLoop(
       AngleController controller,
       LinearPlantInversionFeedforward<N2, N1, N2> feedforward,
-      AngleEstimator observer,
+      ExtendedAngleEstimator observer,
       Function<Matrix<N1, N1>, Matrix<N1, N1>> clampFunction) {
     this.m_controller = controller;
     this.m_feedforward = feedforward;
@@ -148,7 +150,7 @@ public class NonlinearSystemLoop{
    *
    * @return the observer used internally.
    */
-  public AngleEstimator getObserver() {
+  public ExtendedAngleEstimator getObserver() {
     return m_observer;
   }
 
