@@ -9,11 +9,11 @@ import java.util.concurrent.ConcurrentSkipListMap;
 /**
  * Bitemporal Buffer
  * 
- * Implements the Temporal Database concepts of "valid time" and "transaction
+ * Implements the Temporal Database concepts of "valid time" and "record
  * time" for point-in-time measurements. Valid time represents the real-world
- * instant that an item refers to. Transaction time represents the instant that
+ * instant that an item refers to. Record time represents the instant that
  * a data record was added to the buffer. Consumers are expected to use
- * transaction time to fetch new data, which might refer to valid times
+ * record time to fetch new data, which might refer to valid times
  * arbitrarily long ago.
  * 
  * For example, this buffer could be used to store measurements with various
@@ -34,25 +34,25 @@ import java.util.concurrent.ConcurrentSkipListMap;
  *
  */
 public class BitemporalBuffer<Value> {
-    NavigableMap<Long, Entry<Double, Value>> transaction = new ConcurrentSkipListMap<Long, Entry<Double, Value>>();
+    NavigableMap<Long, Entry<Double, Value>> record = new ConcurrentSkipListMap<Long, Entry<Double, Value>>();
     NavigableMap<Double, Entry<Long, Value>> valid = new ConcurrentSkipListMap<Double, Entry<Long, Value>>();
 
     public synchronized void put(long tt, double vt, Value v) {
         // fix the keys to avoid overwriting anything.
         // these are tiny increments, won't affect the consumer.
         // synchronized so these increments are applied consistently.
-        while (transaction.containsKey(tt)) {
+        while (record.containsKey(tt)) {
             tt++; // add one microsecond
         }
         while (valid.containsKey(vt)) {
             vt = Math.nextUp(vt); // add one epsilon
         }
-        transaction.put(tt, new AbstractMap.SimpleImmutableEntry<>(vt, v));
+        record.put(tt, new AbstractMap.SimpleImmutableEntry<>(vt, v));
         valid.put(vt, new AbstractMap.SimpleImmutableEntry<>(tt, v));
     }
 
-    public SortedMap<Long, Entry<Double, Value>> transactionTailMap(long tt) {
-        return transaction.tailMap(tt);
+    public SortedMap<Long, Entry<Double, Value>> recordTailMap(long tt) {
+        return record.tailMap(tt);
     }
 
     public SortedMap<Double, Entry<Long, Value>> validTailMap(double vt) {

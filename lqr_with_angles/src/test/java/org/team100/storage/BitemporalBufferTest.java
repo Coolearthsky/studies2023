@@ -14,7 +14,7 @@ public class BitemporalBufferTest {
     public void testTailMapInclusion() {
         BitemporalBuffer<String> buf = new BitemporalBuffer<>();
         buf.put(0l, 0.0, "hello");
-        SortedMap<Long, Entry<Double, String>> s1 = buf.transactionTailMap(0l);
+        SortedMap<Long, Entry<Double, String>> s1 = buf.recordTailMap(0l);
         assertEquals(1, s1.size());
         assertEquals("hello", s1.get(0l).getValue());
         SortedMap<Double, Entry<Long, String>> s2 = buf.validTailMap(0l);
@@ -26,7 +26,7 @@ public class BitemporalBufferTest {
     public void testTailMapExclusion() {
         BitemporalBuffer<String> buf = new BitemporalBuffer<>();
         buf.put(0l, 0.0, "hello");
-        SortedMap<Long, Entry<Double, String>> s3 = buf.transactionTailMap(1l);
+        SortedMap<Long, Entry<Double, String>> s3 = buf.recordTailMap(1l);
         assertEquals(0, s3.size());
         SortedMap<Double, Entry<Long, String>> s4 = buf.validTailMap(1l);
         assertEquals(0, s4.size());
@@ -39,23 +39,23 @@ public class BitemporalBufferTest {
         buf.put(0l, 0.0, "hello");
         buf.put(0l, 0.0, "duplicate");
 
-        SortedMap<Long, Entry<Double, String>> s1 = buf.transactionTailMap(0l);
+        SortedMap<Long, Entry<Double, String>> s1 = buf.recordTailMap(0l);
         assertEquals(2, s1.size());
-        Iterator<Entry<Long,Entry<Double,String>>> transactions = s1.entrySet().iterator();
+        Iterator<Entry<Long,Entry<Double,String>>> records = s1.entrySet().iterator();
 
         // the first entry is here as entered
-        Entry<Long,Entry<Double,String>> transactionEntry = transactions.next();
-        assertEquals(0l, transactionEntry.getKey());
-        Entry<Double, String> transactionValue = transactionEntry.getValue();
-        assertEquals(0.0, transactionValue.getKey());
-        assertEquals("hello", transactionValue.getValue());
+        Entry<Long,Entry<Double,String>> recordEntry = records.next();
+        assertEquals(0l, recordEntry.getKey());
+        Entry<Double, String> recordValue = recordEntry.getValue();
+        assertEquals(0.0, recordValue.getKey());
+        assertEquals("hello", recordValue.getValue());
 
         // the second entry has incremented keys
-        transactionEntry = transactions.next();
-        assertEquals(1l, transactionEntry.getKey());
-        transactionValue = transactionEntry.getValue();
-        assertEquals(4.9E-324, transactionValue.getKey());
-        assertEquals("duplicate", transactionValue.getValue());
+        recordEntry = records.next();
+        assertEquals(1l, recordEntry.getKey());
+        recordValue = recordEntry.getValue();
+        assertEquals(4.9E-324, recordValue.getKey());
+        assertEquals("duplicate", recordValue.getValue());
 
         // the keys are the same in both maps
         SortedMap<Double, Entry<Long, String>> s2 = buf.validTailMap(0l);
