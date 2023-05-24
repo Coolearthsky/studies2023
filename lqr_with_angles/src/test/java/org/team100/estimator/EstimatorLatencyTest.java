@@ -79,27 +79,42 @@ import edu.wpi.first.math.system.LinearSystem;
  * also suggests that the on-board filter is EKF, which means it should have
  * pretty low latency relative to the sampling frequency?
  * 
- * TODO: extend this to include acceleration, since the gyro provides cartesian accelerations.
+ * TODO: extend this to include acceleration, since the gyro provides cartesian
+ * accelerations.
  * 
  */
 public class EstimatorLatencyTest {
     private static final double kDelta = 0.001;
-    private static final double actualTimeQuantum = 0.002;
-    private static final int stepsPerFilterQuantum = 10;
-    private static final double filterTimeQuantum = actualTimeQuantum * stepsPerFilterQuantum;
+
+    private static final long kUsecPerSimLoop = 2000; // 2 ms per simulation loop
+    private static final long kUsecPerRioLoop = 20000; // 20 ms per rio loop
+    private static final double kSecPerUsec = 1e-6;
+    private static final double kSecPerRioLoop = kUsecPerRioLoop * kSecPerUsec;
+
+    // private static final double actualTimeQuantumSec = 0.002;
+    // private static final int stepsPerFilterQuantumSec = 10;
+    // private static final double filterTimeQuantumSec = actualTimeQuantumSec *
+    // stepsPerFilterQuantumSec;
 
     public static class CompleteState {
-        int step;
-        double actualTime;
+        // int step;
+        long systemTimeMicrosec; // from FPGAtime
 
+        double actualTimeSec() {
+            return systemTimeMicrosec * kSecPerUsec;
+        }
+
+        // double actualTimeSec;
         double actualPosition;
         double actualVelocity;
         double actualAcceleration;
 
+        double observationTimeSec; // valid time this observation represents
         double observedPosition;
         double observedVelocity;
-        double observedAcceleration;
+        double observedAcceleration; // for these tests this is intended to match u.
 
+        double predictionTimeSec; // time in the future this prediction is intended for
         double predictedPosition;
         double predictedVelocity;
 
@@ -113,6 +128,7 @@ public class EstimatorLatencyTest {
         final CompleteState state;
         final ExtendedAngleEstimator observer;
         final LinearSystem<N2, N1, N2> plant;
+        // TODO replace this with control affine
         final LinearPlantInversionFeedforward<N2, N1, N2> feedforward;
         final AngleController controller;
 
@@ -123,7 +139,7 @@ public class EstimatorLatencyTest {
             state = initial();
             observer = newObserver();
             plant = newPlant();
-            feedforward = new LinearPlantInversionFeedforward<>(plant, filterTimeQuantum);
+            feedforward = new LinearPlantInversionFeedforward<>(plant, kSecPerRioLoop);
             feedforward.calculate(VecBuilder.fill(initialPosition, initialVelocity));
             controller = newController(plant);
 
@@ -143,9 +159,9 @@ public class EstimatorLatencyTest {
          * Update the actual state of the physical system.
          */
         void updateActual() {
-            state.actualPosition = position(state.actualTime);
-            state.actualVelocity = velocity(state.actualTime);
-            state.actualAcceleration = acceleration(state.actualTime);
+            state.actualPosition = position(state.actualTimeSec());
+            state.actualVelocity = velocity(state.actualTimeSec());
+            state.actualAcceleration = acceleration(state.actualTimeSec());
         }
 
         /** For now, observations are perfect and instantaneous. */
@@ -159,7 +175,8 @@ public class EstimatorLatencyTest {
          * Specify the desired future state.
          */
         Vector<N2> nextReference() {
-            double futureTimeSec = state.actualTime + filterTimeQuantum;
+            // TODO: make this dt/2 for midpoint actuation
+            double futureTimeSec = state.actualTimeSec() + kSecPerRioLoop;
             double referencePosition = position(futureTimeSec);
             double referenceVelocity = velocity(futureTimeSec);
             return VecBuilder.fill(referencePosition, referenceVelocity);
@@ -171,7 +188,8 @@ public class EstimatorLatencyTest {
             double initialAcceleration = acceleration(0);
             CompleteState state = new CompleteState();
 
-            state.actualTime = 0;
+            state.systemTimeMicrosec = 0l;
+            // state.actualTimeSec = 0;
 
             state.actualPosition = initialPosition;
             state.actualVelocity = initialVelocity;
@@ -192,8 +210,9 @@ public class EstimatorLatencyTest {
         }
 
         void execute() {
-            for (state.step = 0; state.step < 2000; ++state.step) {
-                state.actualTime = state.step * actualTimeQuantum;
+            for (long step = 0; step < 2000; ++step) {
+                state.systemTimeMicrosec = step * kUsecPerSimLoop;
+                // state.actualTimeSec = state.step * actualTimeQuantumSec;
                 updateActual();
                 updateObservation();
                 rioStep();
@@ -231,7 +250,7 @@ public class EstimatorLatencyTest {
          * for the next quantum, so here we are looking at the future.
          */
         void rioStep() {
-            if (state.step % stepsPerFilterQuantum == 0) {
+            if (state.systemTimeMicrosec % kUsecPerRioLoop == 0) {
                 correctObserver();
                 predict();
                 Vector<N2> nextReference = nextReference();
@@ -252,7 +271,7 @@ public class EstimatorLatencyTest {
 
         /** Predict the expected future state. */
         void predict() {
-            observer.predictState(state.controlU, filterTimeQuantum);
+            observer.predictState(state.controlU, kSecPerRioLoop);
         }
 
         /**
@@ -280,7 +299,7 @@ public class EstimatorLatencyTest {
             final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
                     VecBuilder.fill(0.1, 0.1),
                     VecBuilder.fill(0.01, 0.01),
-                    filterTimeQuantum);
+                    kSecPerRioLoop);
             observer.reset();
             observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
             assertEquals(initialPosition, observer.getXhat(0), kDelta);
@@ -304,7 +323,7 @@ public class EstimatorLatencyTest {
                     plant,
                     stateTolerance,
                     controlTolerance,
-                    filterTimeQuantum);
+                    kSecPerRioLoop);
             controller.reset();
             assertEquals(49, controller.getK().get(0, 0), 1.0);
             assertEquals(50, controller.getK().get(0, 1), 1.0);
@@ -322,8 +341,8 @@ public class EstimatorLatencyTest {
 
         void printRow(CompleteState state) {
             System.out.printf("%12d, %12.3f, ",
-                    state.step,
-                    state.actualTime);
+                    state.systemTimeMicrosec,
+                    state.actualTimeSec());
             System.out.printf("%12.3f, %12.3f, %12.3f, ",
                     state.actualPosition,
                     state.actualVelocity,
@@ -405,17 +424,17 @@ public class EstimatorLatencyTest {
 
     @Test
     public void testConstantVelocity() {
-    //    new ConstantVelocity().execute();
+        // new ConstantVelocity().execute();
     }
 
     @Test
     public void testConstantAcceleration() {
-      //  new ConstantAcceleration().execute();
+        // new ConstantAcceleration().execute();
     }
 
     @Test
     public void testSinusoidal() {
-       // new Sinusoidal().execute();
+        // new Sinusoidal().execute();
     }
 
 }

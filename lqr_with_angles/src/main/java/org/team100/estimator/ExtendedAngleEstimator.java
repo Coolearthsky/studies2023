@@ -91,10 +91,10 @@ public class ExtendedAngleEstimator {
      * Predict state, wrapping the angle if required.
      * 
      * @param u  control output
-     * @param dt time quantum
+     * @param dtSec time quantum (sec)
      */
-    public void predictState(double u, double dt) {
-        ekf.predict(VecBuilder.fill(u), ExtendedAngleEstimator::f, dt);
+    public void predictState(double u, double dtSec) {
+        ekf.predict(VecBuilder.fill(u), ExtendedAngleEstimator::f, dtSec);
         Matrix<N2, N1> xhat = ekf.getXhat();
         xhat.set(0, 0, MathUtil.angleModulus(xhat.get(0, 0)));
         ekf.setXhat(xhat);
