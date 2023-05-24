@@ -36,9 +36,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class BitemporalBuffer<Value> {
     private final int capacity;
-    // package private for testing
-    final NavigableMap<Long, Entry<Double, Value>> record;
-    final NavigableMap<Double, Entry<Long, Value>> valid;
+    private final NavigableMap<Long, Entry<Double, Value>> record;
+    private final NavigableMap<Double, Entry<Long, Value>> valid;
     private int size;
 
     public BitemporalBuffer(int capacity) {
@@ -46,7 +45,6 @@ public class BitemporalBuffer<Value> {
         size = 0;
         record = new ConcurrentSkipListMap<Long, Entry<Double, Value>>();
         valid = new ConcurrentSkipListMap<Double, Entry<Long, Value>>();
-
     }
 
     /**
