@@ -7,11 +7,10 @@ import org.junit.jupiter.api.Test;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.ControlAffinePlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
-public class ControlAffinePlantInversionFeedforwardTest {
+public class ImmutableControlAffinePlantInversionFeedforwardTest {
     private static final double kDelta = 0.0001;
 
     /**
@@ -51,7 +50,7 @@ public class ControlAffinePlantInversionFeedforwardTest {
         // the model is trivial
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
-        ControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ControlAffinePlantInversionFeedforward<N2, N1>(
+        ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ImmutableControlAffinePlantInversionFeedforward<N2, N1>(
                 Nat.N2(), Nat.N1(), this::doubleIntegrator, 0.02);
         // position does not matter here.
         Matrix<N2, N1> r = VecBuilder.fill(0, 2);
@@ -65,7 +64,7 @@ public class ControlAffinePlantInversionFeedforwardTest {
         // pendulum model vdot includes position dependence
         // the r and nextR differ by 1
         // so u should be 1/dt or 50.
-        ControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ControlAffinePlantInversionFeedforward<N2, N1>(
+        ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ImmutableControlAffinePlantInversionFeedforward<N2, N1>(
                 Nat.N2(), Nat.N1(), this::pendulum, 0.02);
         {
             // r position 0 means maximum gravity so u = 1

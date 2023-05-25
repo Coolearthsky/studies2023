@@ -6,16 +6,15 @@ import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
 import org.team100.controller.AngleController;
+import org.team100.controller.ImmutableControlAffinePlantInversionFeedforward;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.controller.ControlAffinePlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.math.system.LinearSystem;
 
 /**
  * Illustrates delayed measurements and what to do with them.
@@ -124,8 +123,7 @@ public class EstimatorLatencyTest {
     public static abstract class Scenario {
         final CompleteState state;
         final ExtendedAngleEstimator observer;
-        final LinearSystem<N2, N1, N2> plant;
-        final ControlAffinePlantInversionFeedforward<N2, N1> feedforward;
+        final ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward;
         final AngleController controller;
 
         /**
@@ -151,8 +149,7 @@ public class EstimatorLatencyTest {
 
             state = initial();
             observer = newObserver();
-            plant = newPlant();
-            feedforward = new ControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), this::f, kSecPerRioLoop);
+            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), this::f, kSecPerRioLoop);
             feedforward.calculate(VecBuilder.fill(initialPosition, initialVelocity));
             controller = newController(this::f);
 
@@ -277,8 +274,10 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         void correctObserver() {
-            observer.correctAngle(state.controlU, state.observedPosition);
-            observer.correctVelocity(state.controlU, state.observedVelocity);
+//            observer.correctAngle(state.controlU, state.observedPosition);
+  //          observer.correctVelocity(state.controlU, state.observedVelocity);
+            observer.correctAngle( state.observedPosition);
+            observer.correctVelocity( state.observedVelocity);
         }
 
         /** Predict the expected future state. */
@@ -299,8 +298,8 @@ public class EstimatorLatencyTest {
         void calculateOutput(Vector<N2> nextReference, double dtSec) {
             // this is the predicted future state given the previous control
             Matrix<N2, N1> nextXhat = observer.getXhat();
-            controller.calculate(nextXhat, nextReference, dtSec);
-            Matrix<N1, N1> u = controller.getU();
+            Matrix<N1,N1> u =  controller.calculate(nextXhat, nextReference, dtSec);
+            // Matrix<N1, N1> u = controller.getU();
             Matrix<N1, N1> uff = feedforward.calculate(nextReference);
             state.controlU = u.plus(uff).get(0, 0);
         }
@@ -321,28 +320,13 @@ public class EstimatorLatencyTest {
             return observer;
         }
 
-        LinearSystem<N2, N1, N2> newPlant() {
-            final Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, 0, 0);
-            final Matrix<N2, N1> B = Matrix.mat(Nat.N2(), Nat.N1()).fill(0, 1);
-            final Matrix<N2, N2> C = Matrix.mat(Nat.N2(), Nat.N2()).fill(1, 0, 0, 1);
-            final Matrix<N2, N1> D = Matrix.mat(Nat.N2(), Nat.N1()).fill(0, 0);
-            final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
-            return plant;
-        }
-
         AngleController newController(BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f) {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            final AngleController controller = new AngleController(f,
+            return new AngleController(f,
                     stateTolerance,
                     controlTolerance,
                     kSecPerRioLoop);
-         //   controller.reset();
-            Matrix<N2,N1> x = VecBuilder.fill(0,0);
-            Matrix<N1,N1> u = VecBuilder.fill(0);
-            assertEquals(49, controller.calculateK(x,u,kSecPerRioLoop).get(0, 0), 1.0);
-            assertEquals(50, controller.calculateK(x,u,kSecPerRioLoop).get(0, 1), 1.0);
-            return controller;
         }
 
         void printHeader() {

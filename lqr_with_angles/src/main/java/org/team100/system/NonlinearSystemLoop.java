@@ -3,24 +3,31 @@ package org.team100.system;
 import java.util.function.Function;
 
 import org.team100.controller.AngleController;
+import org.team100.controller.ImmutableControlAffinePlantInversionFeedforward;
 import org.team100.estimator.ExtendedAngleEstimator;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.controller.ControlAffinePlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 /**
- * A copy of WPILib LinearSystemLoop that works with AngleEKF.
+ * a better version of the loop thing.
+ * 
+ * this should do two completely asynchronous things
+ * 
+ * 1. accept measurements, whenever, timestamped.
+ * 2. when you want to actuate something at some time, find the oldest
+ * measurement you haven't handled, find the state estimate from that time, and
+ * replay all the measurements you have, predicting in between. then finally
+ * predict one more time to the chosen actuation time. then calculate the total
+ * control output (system input) to achieve the refernce.
  */
 public class NonlinearSystemLoop {
     private final AngleController m_controller;
-    // private final LinearPlantInversionFeedforward<N2, N1, N2> m_feedforward;
-    private final ControlAffinePlantInversionFeedforward<N2,N1> m_feedforward;
+    private final ImmutableControlAffinePlantInversionFeedforward<N2, N1> m_feedforward;
     private final ExtendedAngleEstimator m_observer;
-    private Matrix<N2, N1> m_nextR;
-    private Function<Matrix<N1, N1>, Matrix<N1, N1>> m_clampFunction;
+    private final Function<Matrix<N1, N1>, Matrix<N1, N1>> m_clampFunction;
 
     /**
      * Constructs a state-space loop with the given controller, feedforward, and
@@ -36,16 +43,14 @@ public class NonlinearSystemLoop {
      */
     public NonlinearSystemLoop(
             AngleController controller,
-            ControlAffinePlantInversionFeedforward<N2,N1> feedforward,
+            ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward,
             ExtendedAngleEstimator observer,
             Function<Matrix<N1, N1>, Matrix<N1, N1>> clampFunction) {
         this.m_controller = controller;
         this.m_feedforward = feedforward;
         this.m_observer = observer;
         this.m_clampFunction = clampFunction;
-
-        m_nextR = VecBuilder.fill(0,0);
-        reset(m_nextR);
+        reset(VecBuilder.fill(0,0));
     }
 
     /**
@@ -59,37 +64,6 @@ public class NonlinearSystemLoop {
     }
 
     /**
-     * Set the next reference r.
-     *
-     * @param nextR Next reference.
-     */
-    public void setNextR(Matrix<N2, N1> nextR) {
-        m_nextR = nextR;
-    }
-
-    /**
-     * Returns the controller's calculated control input u plus the calculated
-     * feedforward u_ff.
-     *
-     * @return the calculated control input u.
-     */
-    public Matrix<N1, N1> getU() {
-        return m_clampFunction.apply(
-                m_controller.getU().plus(
-                        m_feedforward.getUff()));
-    }
-
-    /**
-     * Returns an element of the controller's calculated control input u.
-     *
-     * @param row Row of u.
-     * @return the calculated control input u at the row i.
-     */
-    public double getU(int row) {
-        return getU().get(row, 0);
-    }
-
-    /**
      * Zeroes reference r and controller output u. The previous reference of the
      * PlantInversionFeedforward and the initial state estimate of the KalmanFilter
      * are set to the initial state provided.
@@ -97,39 +71,41 @@ public class NonlinearSystemLoop {
      * @param initialState The initial state.
      */
     public void reset(Matrix<N2, N1> initialState) {
-        m_nextR.fill(0.0);
-        //m_controller.reset();
         m_feedforward.reset(initialState);
         m_observer.setXhat(initialState);
     }
 
     /**
      * Correct the state estimate x-hat using the measurements in y.
+     * 
+     * these should allow time travel, measurement from the past.
+     * 
+     * also the "U" value here is not useful; the real "h" functions we use never
+     * involve a "u" term
      *
      * @param y Measurement
      */
     public void correctAngle(double y) {
-        m_observer.correctAngle(getU().get(0, 0), y);
+        m_observer.correctAngle(y);
     }
 
     public void correctVelocity(double y) {
-        m_observer.correctVelocity(getU().get(0, 0), y);
+        m_observer.correctVelocity(y);
     }
 
-    /**
-     * Sets new controller output, projects model forward, and runs observer
-     * prediction.
-     *
-     * <p>
-     * After calling this, the user should send the elements of u to the actuators.
-     *
-     * @param dtSeconds Timestep for model update.
+    /** integrate forward dt.
+     * TODO: use absolute time
      */
-    public void predict(double dtSeconds) {
-        var u = m_clampFunction.apply(
-                m_controller.calculate(m_observer.getXhat(), m_nextR, dtSeconds)
-                        .plus(
-                                m_feedforward.calculate(m_nextR)));
-        m_observer.predictState(u.get(0, 0), dtSeconds);
+    public void predictState(Matrix<N1, N1> calculatedU, double dtSeconds) {
+        m_observer.predictState(calculatedU.get(0, 0), dtSeconds);
+    }
+
+    /** find controller output to get to reference at dt; uses observer xhat.
+     * TODO: use absolute time
+     */
+    public Matrix<N1, N1> calculateTotalU(Matrix<N2, N1> r, double dtSeconds) {
+        Matrix<N1, N1> controllerU = m_controller.calculate(m_observer.getXhat(), r, dtSeconds);
+        Matrix<N1, N1> feedforwardU = m_feedforward.calculate(r);
+        return m_clampFunction.apply(controllerU.plus(feedforwardU));
     }
 }

@@ -106,7 +106,7 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.002);
+        observer.correctAngle(0.002);
         xhat = observer.getXhat();
         assertEquals(0.002, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
@@ -115,7 +115,7 @@ public class EKFTest {
 
         // update 2: slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.006);
+        observer.correctAngle(0.006);
         xhat = observer.getXhat();
         assertEquals(0.006, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
@@ -124,7 +124,7 @@ public class EKFTest {
 
         // update 3: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.01);
+        observer.correctAngle(0.01);
         xhat = observer.getXhat();
         assertEquals(0.010, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
@@ -133,7 +133,7 @@ public class EKFTest {
 
         // update 4: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.013);
+        observer.correctAngle(0.013);
         xhat = observer.getXhat();
         assertEquals(0.013, xhat.get(0, 0), kDelta);
         assertEquals(0.126, xhat.get(1, 0), kDelta);
@@ -142,7 +142,7 @@ public class EKFTest {
 
         // update 5: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.015);
+        observer.correctAngle(0.015);
         xhat = observer.getXhat();
         assertEquals(0.015, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
@@ -151,7 +151,7 @@ public class EKFTest {
 
         // update 6: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.017);
+        observer.correctAngle(0.017);
         xhat = observer.getXhat();
         assertEquals(0.017, xhat.get(0, 0), kDelta);
         assertEquals(0.059, xhat.get(1, 0), kDelta);
@@ -160,7 +160,7 @@ public class EKFTest {
 
         // update 7: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.018);
+        observer.correctAngle(0.018);
         xhat = observer.getXhat();
         assertEquals(0.018, xhat.get(0, 0), kDelta);
         assertEquals(0.039, xhat.get(1, 0), kDelta);
@@ -169,7 +169,7 @@ public class EKFTest {
 
         // update 8: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.019);
+        observer.correctAngle(0.019);
         xhat = observer.getXhat();
         assertEquals(0.019, xhat.get(0, 0), kDelta);
         assertEquals(0.026, xhat.get(1, 0), kDelta);
@@ -178,7 +178,7 @@ public class EKFTest {
 
         // update 9: passing through the setpoint (slowly)
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.017, xhat.get(1, 0), kDelta);
@@ -187,7 +187,7 @@ public class EKFTest {
 
         // update 10: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.01, xhat.get(1, 0), kDelta);
@@ -196,7 +196,7 @@ public class EKFTest {
 
         // update 11: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
@@ -205,7 +205,7 @@ public class EKFTest {
 
         // update 12: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
@@ -214,7 +214,7 @@ public class EKFTest {
 
         // update 13: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.001, xhat.get(1, 0), kDelta);
@@ -223,7 +223,7 @@ public class EKFTest {
 
         // update 14: pretty much done
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 0.02);
+        observer.correctAngle(0.02);
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
@@ -246,7 +246,7 @@ public class EKFTest {
         assertEquals(3.112, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
 
-        observer.correctAngle(0, Math.PI - 0.03);
+        observer.correctAngle(Math.PI - 0.03);
         xhat = observer.getXhat();
         assertEquals(3.112, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
@@ -260,7 +260,7 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.114);
+        observer.correctAngle( 3.114);
         xhat = observer.getXhat();
         assertEquals(3.114, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
@@ -269,7 +269,7 @@ public class EKFTest {
 
         // update 2: slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.118);
+        observer.correctAngle( 3.118);
         xhat = observer.getXhat();
         assertEquals(3.118, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
@@ -278,7 +278,7 @@ public class EKFTest {
 
         // update 3: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.122);
+        observer.correctAngle(3.122);
         xhat = observer.getXhat();
         assertEquals(3.122, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
@@ -287,7 +287,7 @@ public class EKFTest {
 
         // update 4: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.125);
+        observer.correctAngle(3.125);
         xhat = observer.getXhat();
         assertEquals(3.125, xhat.get(0, 0), kDelta);
         assertEquals(0.125, xhat.get(1, 0), kDelta);
@@ -296,7 +296,7 @@ public class EKFTest {
 
         // update 5: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.128);
+        observer.correctAngle( 3.128);
         xhat = observer.getXhat();
         assertEquals(3.128, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
@@ -305,7 +305,7 @@ public class EKFTest {
 
         // update 6: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.13);
+        observer.correctAngle( 3.13);
         xhat = observer.getXhat();
         assertEquals(3.13, xhat.get(0, 0), kDelta);
         assertEquals(0.056, xhat.get(1, 0), kDelta);
@@ -314,7 +314,7 @@ public class EKFTest {
 
         // update 7: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.035, xhat.get(1, 0), kDelta);
@@ -323,7 +323,7 @@ public class EKFTest {
 
         // update 8: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.021, xhat.get(1, 0), kDelta);
@@ -332,7 +332,7 @@ public class EKFTest {
 
         // update 9: passing through the setpoint (slowly)
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle(3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.012, xhat.get(1, 0), kDelta);
@@ -341,7 +341,7 @@ public class EKFTest {
 
         // update 10: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.007, xhat.get(1, 0), kDelta);
@@ -350,7 +350,7 @@ public class EKFTest {
 
         // update 11: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
@@ -359,7 +359,7 @@ public class EKFTest {
 
         // update 12: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
@@ -368,7 +368,7 @@ public class EKFTest {
 
         // update 13: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
@@ -377,7 +377,7 @@ public class EKFTest {
 
         // update 14: pretty much done
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.131);
+        observer.correctAngle( 3.131);
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
@@ -402,7 +402,7 @@ public class EKFTest {
         assertEquals(0, xhat.get(1, 0), kDelta);
 
         // starting point is the only difference
-        observer.correctAngle(0, -1.0 * Math.PI + 0.01);
+        observer.correctAngle(-1.0 * Math.PI + 0.01);
         xhat = observer.getXhat();
         assertEquals(-3.132, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
@@ -416,7 +416,7 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), -3.133);
+        observer.correctAngle( -3.133);
         xhat = observer.getXhat();
         conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-3.133, xhat.get(0, 0), kDelta);
@@ -425,7 +425,7 @@ public class EKFTest {
 
         // update 2: slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), -3.138);
+        observer.correctAngle( -3.138);
         xhat = observer.getXhat();
         assertEquals(-3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.229, xhat.get(1, 0), kDelta);
@@ -439,7 +439,7 @@ public class EKFTest {
         // update 3: still slowing down
         // note boundary crossing here
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.141);
+        observer.correctAngle( 3.141);
         xhat = observer.getXhat();
         assertEquals(3.141, xhat.get(0, 0), kDelta);
         assertEquals(-0.177, xhat.get(1, 0), kDelta);
@@ -448,7 +448,7 @@ public class EKFTest {
 
         // update 4: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.138);
+        observer.correctAngle(3.138);
         xhat = observer.getXhat();
         assertEquals(3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.125, xhat.get(1, 0), kDelta);
@@ -457,7 +457,7 @@ public class EKFTest {
 
         // update 5: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.135);
+        observer.correctAngle(3.135);
         xhat = observer.getXhat();
         assertEquals(3.135, xhat.get(0, 0), kDelta);
         assertEquals(-0.086, xhat.get(1, 0), kDelta);
@@ -466,7 +466,7 @@ public class EKFTest {
 
         // update 6: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.134);
+        observer.correctAngle( 3.134);
         xhat = observer.getXhat();
         assertEquals(3.134, xhat.get(0, 0), kDelta);
         assertEquals(-0.056, xhat.get(1, 0), kDelta);
@@ -475,7 +475,7 @@ public class EKFTest {
 
         // update 7: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.133);
+        observer.correctAngle( 3.133);
         xhat = observer.getXhat();
         assertEquals(3.133, xhat.get(0, 0), kDelta);
         assertEquals(-0.036, xhat.get(1, 0), kDelta);
@@ -484,7 +484,7 @@ public class EKFTest {
 
         // update 8: still slowing down
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.023, xhat.get(1, 0), kDelta);
@@ -493,7 +493,7 @@ public class EKFTest {
 
         // update 9: passing through the setpoint (slowly)
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.014, xhat.get(1, 0), kDelta);
@@ -502,7 +502,7 @@ public class EKFTest {
 
         // update 10: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.008, xhat.get(1, 0), kDelta);
@@ -511,7 +511,7 @@ public class EKFTest {
 
         // update 11: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.005, xhat.get(1, 0), kDelta);
@@ -520,7 +520,7 @@ public class EKFTest {
 
         // update 12: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
@@ -529,7 +529,7 @@ public class EKFTest {
 
         // update 13: almost there
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
@@ -538,7 +538,7 @@ public class EKFTest {
 
         // update 14: pretty much done
         observer.predictState(conU.get(0, 0), kDt);
-        observer.correctAngle(conU.get(0, 0), 3.132);
+        observer.correctAngle( 3.132);
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
@@ -606,21 +606,21 @@ public class EKFTest {
                 () -> assertEquals(-3.132, observer.getXhat(0), kDelta),
                 () -> assertEquals(0, observer.getXhat(1), kDelta));
 
-        final double conU = -12;
+       //final double conU = -12;
 
         // note that velocity corrections don't affect position
         // because we're never predicting i.e. time does not pass.
-        observer.correctVelocity(conU, -0.240);
+        observer.correctVelocity( -0.240);
         assertAll(
                 () -> assertEquals(-3.134, observer.getXhat(0), kDelta),
                 () -> assertEquals(-0.239, observer.getXhat(1), kDelta));
 
-        observer.correctVelocity(conU, -0.480);
+        observer.correctVelocity(-0.480);
         assertAll(
                 () -> assertEquals(-3.135, observer.getXhat(0), kDelta),
                 () -> assertEquals(-0.360, observer.getXhat(1), kDelta));
 
-        observer.correctVelocity(conU, -0.720);
+        observer.correctVelocity(-0.720);
         assertAll(
                 () -> assertEquals(-3.136, observer.getXhat(0), kDelta),
                 () -> assertEquals(-0.480, observer.getXhat(1), kDelta));
@@ -638,16 +638,16 @@ public class EKFTest {
                 () -> assertEquals(-3.132, observer.getXhat(0), kDelta),
                 () -> assertEquals(0, observer.getXhat(1), kDelta));
 
-        final double conU = -12;
+       // final double conU = -12;
 
         // supply unwrapped corrections
-        observer.correctAngle(conU, -3.3);
+        observer.correctAngle(-3.3);
         // filter wraps it
         assertAll(
                 () -> assertEquals(2.983, observer.getXhat(0), kDelta),
                 () -> assertEquals(-1.692, observer.getXhat(1), kDelta));
 
-        observer.correctAngle(conU, -3.5);
+        observer.correctAngle( -3.5);
         assertAll(
                 () -> assertEquals(2.883, observer.getXhat(0), kDelta),
                 () -> assertEquals(-2.698, observer.getXhat(1), kDelta));
@@ -673,14 +673,14 @@ public class EKFTest {
 
         // update 1
         observer.predictState(conU, kDt);
-        observer.correctAngle(conU, -3.134);
+        observer.correctAngle(-3.134);
         xhat = observer.getXhat();
         assertEquals(-3.134, xhat.get(0, 0), kDelta);
         assertEquals(-0.240, xhat.get(1, 0), kDelta);
 
         // update 2
         observer.predictState(conU, kDt);
-        observer.correctAngle(conU, -3.141);
+        observer.correctAngle(-3.141);
         xhat = observer.getXhat();
         assertEquals(-3.141, xhat.get(0, 0), kDelta);
         assertEquals(-0.480, xhat.get(1, 0), kDelta);
@@ -691,14 +691,14 @@ public class EKFTest {
         //
         // update 3: now it wraps around :-)
         observer.predictState(conU, kDt);
-        observer.correctAngle(conU, 3.13);
+        observer.correctAngle(3.13);
         xhat = observer.getXhat();
         assertEquals(3.130, xhat.get(0, 0), kDelta);
         assertEquals(-0.720, xhat.get(1, 0), kDelta);
 
         // update 4:
         observer.predictState(conU, kDt);
-        observer.correctAngle(conU, 3.113);
+        observer.correctAngle(3.113);
         xhat = observer.getXhat();
         assertEquals(3.113, xhat.get(0, 0), kDelta);
         assertEquals(-0.960, xhat.get(1, 0), kDelta);

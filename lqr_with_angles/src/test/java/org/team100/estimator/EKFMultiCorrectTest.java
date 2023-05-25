@@ -52,26 +52,26 @@ public class EKFMultiCorrectTest {
         double u = -12;
 
         observer.predictState(u, kDt);
-        observer.correctAngle(u, -3.134);
-        observer.correctVelocity(u, -0.240);
+        observer.correctAngle(-3.134);
+        observer.correctVelocity(-0.240);
         assertEquals(-3.134, observer.getXhat(0), kDelta);
         assertEquals(-0.240, observer.getXhat(1), kDelta);
 
         observer.predictState(u, kDt);
-        observer.correctAngle(u, -3.141);
-        observer.correctVelocity(u, -0.480);
+        observer.correctAngle(-3.141);
+        observer.correctVelocity(-0.480);
         assertEquals(-3.141, observer.getXhat(0), kDelta);
         assertEquals(-0.480, observer.getXhat(1), kDelta);
 
         observer.predictState(u, kDt);
-        observer.correctAngle(u, 3.13);
-        observer.correctVelocity(u, -0.720);
+        observer.correctAngle(3.13);
+        observer.correctVelocity(-0.720);
         assertEquals(3.130, observer.getXhat(0), kDelta);
         assertEquals(-0.720, observer.getXhat(1), kDelta);
 
         observer.predictState(u, kDt);
-        observer.correctAngle(u, 3.113);
-        observer.correctVelocity(u, -0.960);
+        observer.correctAngle(3.113);
+        observer.correctVelocity(-0.960);
         assertEquals(3.113, observer.getXhat(0), kDelta);
         assertEquals(-0.960, observer.getXhat(1), kDelta);
     }
