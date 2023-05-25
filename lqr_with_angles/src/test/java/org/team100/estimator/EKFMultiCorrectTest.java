@@ -4,17 +4,42 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 /** Illustrates multiple measurement sources. */
 public class EKFMultiCorrectTest {
     static final double kDelta = 0.001;
     static final double kDt = 0.02;
+
+    /**
+     * The derivative of state.
+     * 
+     * x = (position, velocity)
+     * xdot = (velocity, control)
+     */
+    Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+    }
+
+    /**
+     * Both measurements: (position, velocity)
+     */
+    Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
     final Vector<N2> stateStdDevs = VecBuilder.fill(0.015, 0.17);
     final Vector<N2> measurementStdDevs = VecBuilder.fill(0.01, 0.1);
-    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
+            this::f,
+            this::h,
+            stateStdDevs,
+            measurementStdDevs,
+            kDt);
 
     @Test
     public void testMultipleSensors() {

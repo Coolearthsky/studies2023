@@ -4,7 +4,6 @@ import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**

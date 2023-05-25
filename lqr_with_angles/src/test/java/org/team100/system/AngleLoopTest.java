@@ -9,11 +9,12 @@ import org.team100.estimator.ExtendedAngleEstimator;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.controller.ControlAffinePlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.math.system.LinearSystem;
 
 /**
  * Demonstrates angle-wrapping with LinearSystemLoop.
@@ -23,30 +24,22 @@ public class AngleLoopTest {
     static final double kDelta = 0.001;
     static final double kDt = 0.02;
 
-    // MODEL
-
-    // state: x is (angle (rad), angular_velocity (rad/s))
-    final Nat<N2> states = Nat.N2();
-    // control input: u is (volts)
-    final Nat<N1> inputs = Nat.N1();
-    // measurement output: y is (angle, velocity)
-    final Nat<N2> outputs = Nat.N2();
-    // A: angle derivative is velocity
-    final Matrix<N2, N2> A = Matrix.mat(states, states)
-            .fill(0, 1, //
-                    0, 0);
-    // B: control input adds velocity
-    final Matrix<N2, N1> B = Matrix.mat(states, inputs)
-            .fill(0, //
-                    1);
-    // C: measurement output is angle, velocity
-    final Matrix<N2, N2> C = Matrix.mat(outputs, states)
-            .fill(1, 0, //
-                    0, 1);
-    // D: control input does not affect measurement directly
-    final Matrix<N2, N1> D = Matrix.mat(outputs, inputs)
-            .fill(0, 0);
-    final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
+    /**
+     * xdot = f(x,u)
+     * pdot = v
+     * vdot = u
+     * 
+     * the x jacobian should be constant [0 1 0 0]
+     * the u jacobian should be constant [0, 1]
+     */
+    Matrix<N2, N1> doubleIntegrator(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
+        // double p = xmat.get(0, 0);
+        double v = xmat.get(1, 0);
+        double u = umat.get(0, 0);
+        double pdot = v;
+        double vdot = u;
+        return VecBuilder.fill(pdot, vdot);
+    }
 
     // OBSERVER
     // observers are in subclasses; they don't share a superclass. :-(
@@ -64,13 +57,46 @@ public class AngleLoopTest {
     final Vector<N1> controlTolerance = VecBuilder
             .fill(12.0); // output (volts)
 
-    final AngleController controller = new AngleController(plant, stateTolerance, controlTolerance, kDt);
+    final AngleController controller = new AngleController(this::doubleIntegrator, stateTolerance, controlTolerance,
+            kDt);
 
     final Vector<N2> angleMeasurementStdDevs = VecBuilder.fill(0.01, 0.1);
-    /** AngleEKF wraps correctly. */
-    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, angleMeasurementStdDevs, kDt);
 
-    NonlinearSystemLoop loop = new NonlinearSystemLoop(plant, controller, observer, 12.0, kDt);
+    /**
+     * The derivative of state.
+     * 
+     * x = (position, velocity)
+     * xdot = (velocity, control)
+     */
+    Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+    }
+
+    /**
+     * Both measurements: (position, velocity)
+     */
+    Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
+    Matrix<N1, N1> desaturate(Matrix<N1, N1> u) {
+        return StateSpaceUtil.desaturateInputVector(u, 12.0);
+    }
+
+    /** AngleEKF wraps correctly. */
+    final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
+            this::f,
+            this::h,
+            stateStdDevs,
+            angleMeasurementStdDevs,
+            kDt);
+
+    ControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ControlAffinePlantInversionFeedforward<>(
+            Nat.N2(),
+            Nat.N1(),
+            this::f,
+            kDt);
+    NonlinearSystemLoop loop = new NonlinearSystemLoop(controller, feedforward, observer, this::desaturate);
 
     @Test
     public void testLoop() {
@@ -91,7 +117,7 @@ public class AngleLoopTest {
         assertAll(
                 () -> assertEquals(0.002, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.229, loop.getXHat(1), kDelta),
-                () -> assertEquals(11.465, loop.getU(0), kDelta));
+                () -> assertEquals(11.455, loop.getU(0), kDelta));
 
         // update 1: coasting, approx zero output
         loop.correctAngle(0.002);
@@ -100,7 +126,7 @@ public class AngleLoopTest {
         assertAll(
                 () -> assertEquals(0.006, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.229, loop.getXHat(1), kDelta),
-                () -> assertEquals(-0.003, loop.getU(0), kDelta));
+                () -> assertEquals(0.006, loop.getU(0), kDelta));
 
         // update 2
         loop.correctAngle(0.006);
@@ -109,7 +135,7 @@ public class AngleLoopTest {
         assertAll(
                 () -> assertEquals(0.01, loop.getXHat(0), kDelta),
                 () -> assertEquals(0.178, loop.getXHat(1), kDelta),
-                () -> assertEquals(-2.566, loop.getU(0), kDelta));
+                () -> assertEquals(-2.564, loop.getU(0), kDelta));
 
         // update 3
         loop.correctAngle(0.01);
@@ -202,26 +228,26 @@ public class AngleLoopTest {
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(-3.133, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.166, loop.getXHat(1), kDelta),
-                () -> assertEquals(-8.324, loop.getU(0), kDelta));
+                () -> assertEquals(-0.229, loop.getXHat(1), kDelta),
+                () -> assertEquals(-11.455, loop.getU(0), kDelta));
 
         // update 1: still pushing
         loop.correctAngle(-3.133);
         loop.correctVelocity(-0.166);
         loop.predict(kDt);
         assertAll(
-                () -> assertEquals(-3.137, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.229, loop.getXHat(1), kDelta),
-                () -> assertEquals(-3.140, loop.getU(0), kDelta));
+                () -> assertEquals(-3.138, loop.getXHat(0), kDelta),
+                () -> assertEquals(-0.232, loop.getXHat(1), kDelta),
+                () -> assertEquals(-0.194, loop.getU(0), kDelta));
 
         // update 2: slowing down
         loop.correctAngle(-3.137);
         loop.correctVelocity(-0.229);
         loop.predict(kDt);
         assertAll(
-                () -> assertEquals(-3.141, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.191, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.897, loop.getU(0), kDelta));
+                () -> assertEquals(3.141, loop.getXHat(0), kDelta),
+                () -> assertEquals(-0.181, loop.getXHat(1), kDelta),
+                () -> assertEquals(2.518, loop.getU(0), kDelta));
 
         ////////////////////////////////////////////////////////////////////
         //
@@ -233,8 +259,8 @@ public class AngleLoopTest {
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.138, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.139, loop.getXHat(1), kDelta),
-                () -> assertEquals(2.596, loop.getU(0), kDelta));
+                () -> assertEquals(-0.129, loop.getXHat(1), kDelta),
+                () -> assertEquals(2.584, loop.getU(0), kDelta));
 
         // update 4
         loop.correctAngle(3.138);
@@ -242,8 +268,8 @@ public class AngleLoopTest {
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.136, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.095, loop.getXHat(1), kDelta),
-                () -> assertEquals(2.224, loop.getU(0), kDelta));
+                () -> assertEquals(-0.087, loop.getXHat(1), kDelta),
+                () -> assertEquals(2.089, loop.getU(0), kDelta));
 
         // update 5
         loop.correctAngle(3.136);
@@ -251,8 +277,8 @@ public class AngleLoopTest {
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.134, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.063, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.604, loop.getU(0), kDelta));
+                () -> assertEquals(-0.058, loop.getXHat(1), kDelta),
+                () -> assertEquals(1.480, loop.getU(0), kDelta));
 
         // update 6
         loop.correctAngle(3.134);
@@ -260,44 +286,8 @@ public class AngleLoopTest {
         loop.predict(kDt);
         assertAll(
                 () -> assertEquals(3.133, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.04, loop.getXHat(1), kDelta),
-                () -> assertEquals(1.125, loop.getU(0), kDelta));
-
-        // update 7
-        loop.correctAngle(3.133);
-        loop.correctVelocity(-0.04);
-        loop.predict(kDt);
-        assertAll(
-                () -> assertEquals(3.132, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.025, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.752, loop.getU(0), kDelta));
-
-        // update 8
-        loop.correctAngle(3.132);
-        loop.correctVelocity(-0.025);
-        loop.predict(kDt);
-        assertAll(
-                () -> assertEquals(3.132, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.015, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.516, loop.getU(0), kDelta));
-
-        // update 9
-        loop.correctAngle(3.132);
-        loop.correctVelocity(-0.015);
-        loop.predict(kDt);
-        assertAll(
-                () -> assertEquals(3.132, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.009, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.313, loop.getU(0), kDelta));
-
-        // update 10
-        loop.correctAngle(3.132);
-        loop.correctVelocity(-0.009);
-        loop.predict(kDt);
-        assertAll(
-                () -> assertEquals(3.132, loop.getXHat(0), kDelta),
-                () -> assertEquals(-0.005, loop.getXHat(1), kDelta),
-                () -> assertEquals(0.176, loop.getU(0), kDelta));
+                () -> assertEquals(-0.037, loop.getXHat(1), kDelta),
+                () -> assertEquals(1.036, loop.getU(0), kDelta));
 
     }
 

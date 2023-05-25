@@ -1,5 +1,7 @@
 package org.team100.estimator;
 
+import java.util.function.BiFunction;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -28,7 +30,7 @@ public class ExtendedAngleEstimator {
     /**
      * Measurement variances.
      */
-    private final Matrix<N2,N2> contR;
+    private final Matrix<N2, N2> contR;
     private final Matrix<N1, N1> RAngle;
     private final Matrix<N1, N1> RVelocity;
 
@@ -67,6 +69,8 @@ public class ExtendedAngleEstimator {
      * @param measurementStdDevs vector of std deviations per measurement
      */
     public ExtendedAngleEstimator(
+            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f,
+            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> h,
             Matrix<N2, N1> stateStdDevs,
             Matrix<N2, N1> measurementStdDevs,
             double dtSeconds) {
@@ -74,12 +78,11 @@ public class ExtendedAngleEstimator {
                 Nat.N2(),
                 Nat.N1(),
                 Nat.N2(),
-                ExtendedAngleEstimator::f,
-                ExtendedAngleEstimator::h,
+                f,
+                h,
                 stateStdDevs,
                 measurementStdDevs,
                 AngleStatistics.angleResidual(0),
-                // Matrix::plus,
                 AngleStatistics.angleAdd(0),
                 dtSeconds);
         contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
@@ -90,7 +93,7 @@ public class ExtendedAngleEstimator {
     /**
      * Predict state, wrapping the angle if required.
      * 
-     * @param u  control output
+     * @param u     control output
      * @param dtSec time quantum (sec)
      */
     public void predictState(double u, double dtSec) {
@@ -131,14 +134,13 @@ public class ExtendedAngleEstimator {
 
     public void correctBoth(double u, double angle, double velocity) {
         ekf.correct(
-            Nat.N2(),
-            VecBuilder.fill(u),
-            VecBuilder.fill(angle, velocity),
-            ExtendedAngleEstimator::h,
-            contR,
-            AngleStatistics.angleResidual(0),
-            AngleStatistics.angleAdd(0)
-        );
+                Nat.N2(),
+                VecBuilder.fill(u),
+                VecBuilder.fill(angle, velocity),
+                ExtendedAngleEstimator::h,
+                contR,
+                AngleStatistics.angleResidual(0),
+                AngleStatistics.angleAdd(0));
     }
 
     public void reset() {

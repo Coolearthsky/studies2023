@@ -21,7 +21,7 @@ public class ControlAffinePlantInversionFeedforwardTest {
      * 
      * so the u jacobian should just be [0, 1]
      */
-    Matrix<N2, N1> newton1d(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
+    Matrix<N2, N1> doubleIntegrator(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
         //double p = xmat.get(0, 0);
         double v = xmat.get(1, 0);
         double u = umat.get(0, 0);
@@ -47,12 +47,12 @@ public class ControlAffinePlantInversionFeedforwardTest {
     }
 
     @Test
-    public void testNewton() {
+    public void testDoubleIntegrator() {
         // the model is trivial
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
         ControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ControlAffinePlantInversionFeedforward<N2, N1>(
-                Nat.N2(), Nat.N1(), this::newton1d, 0.02);
+                Nat.N2(), Nat.N1(), this::doubleIntegrator, 0.02);
         // position does not matter here.
         Matrix<N2, N1> r = VecBuilder.fill(0, 2);
         Matrix<N2, N1> nextR = VecBuilder.fill(1, 3);
@@ -68,12 +68,19 @@ public class ControlAffinePlantInversionFeedforwardTest {
         ControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ControlAffinePlantInversionFeedforward<N2, N1>(
                 Nat.N2(), Nat.N1(), this::pendulum, 0.02);
         {
-            // r position zero means 90 degrees which means maximum gravity
-            // note nextR is irrelevant for the constant part of ff
+            // r position 0 means maximum gravity so u = 1
             Matrix<N2, N1> r = VecBuilder.fill(0, 0);
-            Matrix<N2, N1> nextR = VecBuilder.fill(1000, 0);
+            Matrix<N2, N1> nextR = VecBuilder.fill(0, 0);
             Matrix<N1, N1> uff = feedforward.calculate(r, nextR);
             assertEquals(1, uff.get(0, 0), kDelta);
+        }
+        {
+            // r position pi/2 means no gravity so u = 0
+            // note nextR is irrelevant for the constant part of ff
+            Matrix<N2, N1> r = VecBuilder.fill(Math.PI / 2, 0);
+            Matrix<N2, N1> nextR = VecBuilder.fill(Math.PI / 2, 0);
+            Matrix<N1, N1> uff = feedforward.calculate(r, nextR);
+            assertEquals(0, uff.get(0, 0), kDelta);
         }
         {
             // it's easy to construct nonsensical trajectories

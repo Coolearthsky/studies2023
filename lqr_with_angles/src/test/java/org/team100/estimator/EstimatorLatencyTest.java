@@ -2,6 +2,8 @@ package org.team100.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.function.BiFunction;
+
 import org.junit.jupiter.api.Test;
 import org.team100.controller.AngleController;
 
@@ -10,7 +12,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.controller.LinearPlantInversionFeedforward;
+import edu.wpi.first.math.controller.ControlAffinePlantInversionFeedforward;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.LinearSystem;
@@ -91,11 +93,6 @@ public class EstimatorLatencyTest {
     private static final double kSecPerUsec = 1e-6;
     private static final double kSecPerRioLoop = kUsecPerRioLoop * kSecPerUsec;
 
-    // private static final double actualTimeQuantumSec = 0.002;
-    // private static final int stepsPerFilterQuantumSec = 10;
-    // private static final double filterTimeQuantumSec = actualTimeQuantumSec *
-    // stepsPerFilterQuantumSec;
-
     public static class CompleteState {
         // int step;
         long systemTimeMicrosec; // from FPGAtime
@@ -128,9 +125,25 @@ public class EstimatorLatencyTest {
         final CompleteState state;
         final ExtendedAngleEstimator observer;
         final LinearSystem<N2, N1, N2> plant;
-        // TODO replace this with control affine
-        final LinearPlantInversionFeedforward<N2, N1, N2> feedforward;
+        final ControlAffinePlantInversionFeedforward<N2, N1> feedforward;
         final AngleController controller;
+
+        /**
+         * The derivative of state.
+         * 
+         * x = (position, velocity)
+         * xdot = (velocity, control)
+         */
+        Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+        }
+
+        /**
+         * Both measurements: (position, velocity)
+         */
+        Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+            return x;
+        }
 
         public Scenario() {
             double initialPosition = position(0);
@@ -139,9 +152,9 @@ public class EstimatorLatencyTest {
             state = initial();
             observer = newObserver();
             plant = newPlant();
-            feedforward = new LinearPlantInversionFeedforward<>(plant, kSecPerRioLoop);
+            feedforward = new ControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), this::f, kSecPerRioLoop);
             feedforward.calculate(VecBuilder.fill(initialPosition, initialVelocity));
-            controller = newController(plant);
+            controller = newController(this::f);
 
             label();
             printHeader();
@@ -212,7 +225,6 @@ public class EstimatorLatencyTest {
         void execute() {
             for (long step = 0; step < 2000; ++step) {
                 state.systemTimeMicrosec = step * kUsecPerSimLoop;
-                // state.actualTimeSec = state.step * actualTimeQuantumSec;
                 updateActual();
                 updateObservation();
                 rioStep();
@@ -254,7 +266,7 @@ public class EstimatorLatencyTest {
                 correctObserver();
                 predict();
                 Vector<N2> nextReference = nextReference();
-                calculateOutput(nextReference);
+                calculateOutput(nextReference, kSecPerRioLoop);
             }
         }
 
@@ -284,10 +296,10 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Vector<N2> nextReference) {
+        void calculateOutput(Vector<N2> nextReference, double dtSec) {
             // this is the predicted future state given the previous control
             Matrix<N2, N1> nextXhat = observer.getXhat();
-            controller.calculate(nextXhat, nextReference);
+            controller.calculate(nextXhat, nextReference, dtSec);
             Matrix<N1, N1> u = controller.getU();
             Matrix<N1, N1> uff = feedforward.calculate(nextReference);
             state.controlU = u.plus(uff).get(0, 0);
@@ -297,6 +309,8 @@ public class EstimatorLatencyTest {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
             final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
+                    this::f,
+                    this::h,
                     VecBuilder.fill(0.1, 0.1),
                     VecBuilder.fill(0.01, 0.01),
                     kSecPerRioLoop);
@@ -316,22 +330,23 @@ public class EstimatorLatencyTest {
             return plant;
         }
 
-        AngleController newController(LinearSystem<N2, N1, N2> plant) {
+        AngleController newController(BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f) {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            final AngleController controller = new AngleController(
-                    plant,
+            final AngleController controller = new AngleController(f,
                     stateTolerance,
                     controlTolerance,
                     kSecPerRioLoop);
-            controller.reset();
-            assertEquals(49, controller.getK().get(0, 0), 1.0);
-            assertEquals(50, controller.getK().get(0, 1), 1.0);
+         //   controller.reset();
+            Matrix<N2,N1> x = VecBuilder.fill(0,0);
+            Matrix<N1,N1> u = VecBuilder.fill(0);
+            assertEquals(49, controller.calculateK(x,u,kSecPerRioLoop).get(0, 0), 1.0);
+            assertEquals(50, controller.calculateK(x,u,kSecPerRioLoop).get(0, 1), 1.0);
             return controller;
         }
 
         void printHeader() {
-            System.out.print("        step,   actualTime, ");
+            System.out.print("     sysTime,   actualTime, ");
             System.out.print("   actualPos,    actualVel,    actualAcc, ");
             System.out.print(" observedPos,  observedVel,  observedAcc, ");
             System.out.print("predictedPos, predictedVel, ");

@@ -12,7 +12,6 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.math.system.LinearSystem;
 
 /**
  * Demonstrates ExtendedKalmanFilter in angle-wrapping scenarios, and also a
@@ -23,29 +22,22 @@ public class EKFTest {
     static final double kDelta = 0.001;
     static final double kDt = 0.02;
 
-    // MODEL
-
-    // state: x is (angle (rad), angular_velocity (rad/s))
-    final Nat<N2> states = Nat.N2();
-    // control input: u is (volts)
-    final Nat<N1> inputs = Nat.N1();
-    // measurement output: y is (angle, velocity)
-    final Nat<N2> outputs = Nat.N2();
-    // A: angle derivative is velocity
-    final Matrix<N2, N2> A = Matrix.mat(states, states)
-            .fill(0, 1, //
-                    0, 0);
-    // B: control input adds velocity
-    final Matrix<N2, N1> B = Matrix.mat(states, inputs)
-            .fill(0, //
-                    1);
-    // C: measurement output is angle, velocity
-    final Matrix<N2, N2> C = Matrix.mat(outputs, states)
-            .fill(1, 0, 0, 1);
-    // D: control input does not affect measurement directly
-    final Matrix<N2, N1> D = Matrix.mat(outputs, inputs)
-            .fill(0, 0);
-    final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
+    /**
+     * xdot = f(x,u)
+     * pdot = v
+     * vdot = u
+     * 
+     * the x jacobian should be constant [0 1 0 0]
+     * the u jacobian should be constant [0, 1]
+     */
+    Matrix<N2, N1> doubleIntegrator(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
+        // double p = xmat.get(0, 0);
+        double v = xmat.get(1, 0);
+        double u = umat.get(0, 0);
+        double pdot = v;
+        double vdot = u;
+        return VecBuilder.fill(pdot, vdot);
+    }
 
     // OBSERVER
     // observers are in subclasses; they don't share a superclass. :-(
@@ -63,10 +55,29 @@ public class EKFTest {
     final Vector<N1> controlTolerance = VecBuilder
             .fill(12.0); // output (volts)
 
-    final AngleController controller = new AngleController(plant, stateTolerance, controlTolerance, kDt);
+    final AngleController controller = new AngleController(this::doubleIntegrator, stateTolerance, controlTolerance,
+            kDt);
+
+    /**
+     * The derivative of state.
+     * 
+     * x = (position, velocity)
+     * xdot = (velocity, control)
+     */
+    Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+    }
+
+    /**
+     * Both measurements: (position, velocity)
+     */
+    Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
+        return x;
+    }
 
     /** AngleEKF wraps correctly. */
-    ExtendedAngleEstimator observer = new ExtendedAngleEstimator(stateStdDevs, measurementStdDevs, kDt);
+    ExtendedAngleEstimator observer = new ExtendedAngleEstimator(this::f, this::h, stateStdDevs, measurementStdDevs,
+            kDt);
 
     @Test
     public void testObserver() {
@@ -79,7 +90,7 @@ public class EKFTest {
     public void testNearZero() {
         // positive setpoint, delta +0.02, push positive
 
-        controller.reset();
+        // controller.reset();
         observer.reset();
 
         // initially, state estimate: at zero, motionless
@@ -90,7 +101,7 @@ public class EKFTest {
         Vector<N2> setpoint = VecBuilder.fill(0.02, 0);
 
         // initial: push hard to get started
-        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint);
+        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(11.455, conU.get(0, 0), kDelta);
 
         // update 1: coasting, approx zero output
@@ -99,7 +110,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.002, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.008, conU.get(0, 0), kDelta);
 
         // update 2: slowing down
@@ -108,7 +119,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.006, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-2.558, conU.get(0, 0), kDelta);
 
         // update 3: still slowing down
@@ -117,7 +128,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.010, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-2.556, conU.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -126,7 +137,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.013, xhat.get(0, 0), kDelta);
         assertEquals(0.126, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-1.971, conU.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -135,7 +146,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.015, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-1.38, conU.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -144,7 +155,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.017, xhat.get(0, 0), kDelta);
         assertEquals(0.059, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.976, conU.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -153,7 +164,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.018, xhat.get(0, 0), kDelta);
         assertEquals(0.039, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.663, conU.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -162,7 +173,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.019, xhat.get(0, 0), kDelta);
         assertEquals(0.026, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.467, conU.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -171,7 +182,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.017, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.359, conU.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -180,7 +191,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.01, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.228, conU.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -189,7 +200,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.131, conU.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -198,7 +209,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.071, conU.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -207,7 +218,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.001, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.037, conU.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -216,7 +227,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.019, conU.get(0, 0), kDelta);
     }
 
@@ -226,7 +237,7 @@ public class EKFTest {
         // goal is pi-0.01,
         // initial is pi - 0.03
         // so delta is +0.02, should push positive
-        controller.reset();
+        // controller.reset();
         observer.reset();
         observer.setXhat(VecBuilder.fill(Math.PI - 0.03, 0));
 
@@ -241,9 +252,9 @@ public class EKFTest {
         assertEquals(0, xhat.get(1, 0), kDelta);
 
         // try to move +0.02
-        Matrix<N2, N1> setpoint = Matrix.mat(states, Nat.N1()).fill(Math.PI - 0.01, 0);
+        Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
-        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint);
+        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint, kDt);
         // should be same output as above since the motion is the same
         assertEquals(11.455, conU.get(0, 0), kDelta);
 
@@ -253,7 +264,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.114, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.024, conU.get(0, 0), kDelta);
 
         // update 2: slowing down
@@ -262,7 +273,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.118, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-2.591, conU.get(0, 0), kDelta);
 
         // update 3: still slowing down
@@ -271,7 +282,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.122, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-2.58, conU.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -280,7 +291,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.125, xhat.get(0, 0), kDelta);
         assertEquals(0.125, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-1.987, conU.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -289,7 +300,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.128, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-1.465, conU.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -298,7 +309,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.13, xhat.get(0, 0), kDelta);
         assertEquals(0.056, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-1.052, conU.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -307,7 +318,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.035, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.719, conU.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -316,7 +327,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.021, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.431, conU.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -325,7 +336,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.012, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.240, conU.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -334,7 +345,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.007, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.126, conU.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -343,7 +354,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.062, conU.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -352,7 +363,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.028, conU.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -361,7 +372,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.01, conU.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -370,7 +381,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-0.001, conU.get(0, 0), kDelta);
     }
 
@@ -380,7 +391,7 @@ public class EKFTest {
         // goal is pi-0.01,
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
-        controller.reset();
+        // controller.reset();
         observer.reset();
         // starting point is the only difference
         observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
@@ -397,9 +408,9 @@ public class EKFTest {
         assertEquals(0, xhat.get(1, 0), kDelta);
 
         // try to move +0.02
-        Matrix<N2, N1> setpoint = Matrix.mat(states, Nat.N1()).fill(Math.PI - 0.01, 0);
+        Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
-        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint);
+        Matrix<N1, N1> conU = controller.calculate(xhat, setpoint, kDt);
         // using the EKF this is the correct negative number
         assertEquals(-11.455, conU.get(0, 0), kDelta);
 
@@ -407,7 +418,7 @@ public class EKFTest {
         observer.predictState(conU.get(0, 0), kDt);
         observer.correctAngle(conU.get(0, 0), -3.133);
         xhat = observer.getXhat();
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(-3.133, xhat.get(0, 0), kDelta);
         assertEquals(-0.229, xhat.get(1, 0), kDelta);
         assertEquals(-0.048, conU.get(0, 0), kDelta);
@@ -418,7 +429,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(-3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.229, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(2.594, conU.get(0, 0), kDelta);
 
         ////////////////////////////////////////////////////////////////////
@@ -432,7 +443,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.141, xhat.get(0, 0), kDelta);
         assertEquals(-0.177, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(2.612, conU.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -441,7 +452,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.125, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(2.016, conU.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -450,7 +461,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.135, xhat.get(0, 0), kDelta);
         assertEquals(-0.086, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(1.485, conU.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -459,7 +470,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.134, xhat.get(0, 0), kDelta);
         assertEquals(-0.056, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.991, conU.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -468,7 +479,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.133, xhat.get(0, 0), kDelta);
         assertEquals(-0.036, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.656, conU.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -477,7 +488,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.023, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.460, conU.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -486,7 +497,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.014, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.279, conU.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -495,7 +506,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.008, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.155, conU.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -504,7 +515,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.005, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.082, conU.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -513,7 +524,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.040, conU.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -522,7 +533,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.018, conU.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -531,7 +542,7 @@ public class EKFTest {
         xhat = observer.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        conU = controller.calculate(xhat, setpoint);
+        conU = controller.calculate(xhat, setpoint, kDt);
         assertEquals(0.006, conU.get(0, 0), kDelta);
     }
 
@@ -586,7 +597,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectVelocityOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.1, 0.00001);
-        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(this::f, this::h, stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory
@@ -618,7 +629,7 @@ public class EKFTest {
     @Test
     public void testObserverWrappingCorrectPositionOnly() {
         Vector<N2> stdevs = VecBuilder.fill(0.00001, 0.1);
-        observer = new ExtendedAngleEstimator(stateStdDevs, stdevs, kDt);
+        observer = new ExtendedAngleEstimator(this::f, this::h, stateStdDevs, stdevs, kDt);
         observer.reset();
 
         // start in negative territory
