@@ -1,5 +1,6 @@
 package org.team100.system;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.BiFunction;
@@ -21,10 +22,11 @@ public class NumericalJacobianTest {
      * pdot = v
      * vdot = u
      * 
-     * so the u jacobian should just be [0, 1]
+     * the x jacobian should be constant [0 1 0 0]
+     * the u jacobian should be constant [0, 1]
      */
-    Matrix<N2, N1> newton1d(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        //double p = xmat.get(0, 0);
+    Matrix<N2, N1> doubleIntegrator(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
+        // double p = xmat.get(0, 0);
         double v = xmat.get(1, 0);
         double u = umat.get(0, 0);
         double pdot = v;
@@ -37,7 +39,8 @@ public class NumericalJacobianTest {
      * pdot = v
      * vdot = u - cos(p)
      * 
-     * so vdot itself depends on p but it is still linear in u.
+     * the x jacobian should be [0 1 sin(p) 0]
+     * the u jacobian should be constant [0 1]
      */
     Matrix<N2, N1> pendulum(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
         double p = xmat.get(0, 0);
@@ -48,49 +51,167 @@ public class NumericalJacobianTest {
         return VecBuilder.fill(pdot, vdot);
     }
 
+    /**
+     * A = [0 1 0 0] constant
+     */
     @Test
-    public void testNewton() {
+    public void testDoubleIntegratorA() {
         Nat<N2> rows = Nat.N2();
-        Nat<N1> inputs = Nat.N1();
-        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = this::newton1d;
-        Matrix<N2, N1> x = new Matrix<>(Nat.N2(), Nat.N1()); // zero
-        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1()); // zero
-        // calculates the continuous B linearized around x and u.
-        // so this is linearizing around x=0 and u=0
-        // but B is constant anyway.
+        Nat<N2> states = Nat.N2();
+        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = this::doubleIntegrator;
         {
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
-            assertEquals(0, B.get(0, 0), kDelta);
-            assertEquals(1, B.get(1, 0), kDelta);
+            // at zero
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
         }
-        x.set(0, 0, 1); // different position
         {
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
-            assertEquals(0, B.get(0, 0), kDelta);
-            assertEquals(1, B.get(1, 0), kDelta);
+            // different position, same A
+            Matrix<N2, N1> x = VecBuilder.fill(1, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
+        }
+        {
+            // different u, same A
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(10000);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
         }
     }
 
+    /**
+     * B = [0 1] constant
+     */
     @Test
-    public void testPendulum() {
+    public void testDoubleIntegratorB() {
+        Nat<N2> rows = Nat.N2();
+        Nat<N1> inputs = Nat.N1();
+        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = this::doubleIntegrator;
+        {
+            // at zero
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, B.get(0, 0), kDelta),
+                    () -> assertEquals(1, B.get(1, 0), kDelta));
+        }
+        {
+            // different position, same B
+            Matrix<N2, N1> x = VecBuilder.fill(1, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, B.get(0, 0), kDelta),
+                    () -> assertEquals(1, B.get(1, 0), kDelta));
+        }
+        {
+            // different u, same B
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(10000);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, B.get(0, 0), kDelta),
+                    () -> assertEquals(1, B.get(1, 0), kDelta));
+        }
+    }
+
+    /**
+     * A = [0 1 sin(p) 0]
+     */
+    @Test
+    public void testPendulumA() {
+        Nat<N2> rows = Nat.N2();
+        Nat<N2> states = Nat.N2();
+        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = this::pendulum;
+        {
+            // at zero degrees the gravity force doesn't change much with position
+            // so the jacobian is zero
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
+        }
+        {
+            // at 30 degrees the gravity force changes a little with position
+            Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 6, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0.5, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
+        }
+        {
+            // at 60 degrees the gravity force changes a lot with position
+            Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 3, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(0.866, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
+        }
+        {
+            // at 90 degrees the gravity force is about proportional with position
+            Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, f, x, u);
+            assertAll(
+                    () -> assertEquals(0, A.get(0, 0), kDelta),
+                    () -> assertEquals(1, A.get(0, 1), kDelta),
+                    () -> assertEquals(1, A.get(1, 0), kDelta),
+                    () -> assertEquals(0, A.get(1, 1), kDelta));
+        }
+    }
+
+    /**
+     * B = [0 1] constant because while the model is nonlinear the control response
+     * is linear.
+     */
+    @Test
+    public void testPendulumB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = this::pendulum;
-        Matrix<N2, N1> x = new Matrix<>(Nat.N2(), Nat.N1()); // zero
-        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1()); // zero
-        // calculates the continuous B linearized around x and u.
-        // so this is linearizing around x=0 and u=0
-        // but B is constant anyway.
         {
+            // at zero
+            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
-            assertEquals(0, B.get(0, 0), kDelta);
-            assertEquals(1, B.get(1, 0), kDelta);
+            assertAll(
+                    () -> assertEquals(0, B.get(0, 0), kDelta),
+                    () -> assertEquals(1, B.get(1, 0), kDelta));
         }
-        x.set(0, 0, 1); // different position
         {
+            // different position, same B
+            Matrix<N2, N1> x = VecBuilder.fill(1, 0);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, f, x, u);
-            assertEquals(0, B.get(0, 0), kDelta);
-            assertEquals(1, B.get(1, 0), kDelta);
+            assertAll(
+                    () -> assertEquals(0, B.get(0, 0), kDelta),
+                    () -> assertEquals(1, B.get(1, 0), kDelta));
         }
     }
 
