@@ -33,6 +33,10 @@ public class AngleController {
     private final Matrix<N1, N1> m_R;
 
     /**
+     * TODO: i think that we can require B to be constant, since all the real
+     * systems we use are like that.
+     * in any case it should match the feedforward.
+     * 
      * @param f model dynamics. must be control-affine, which means that B can
      *          depend on x but not u, so we don't have to pass u to calculate.
      */

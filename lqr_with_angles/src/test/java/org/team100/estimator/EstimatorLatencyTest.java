@@ -100,7 +100,6 @@ public class EstimatorLatencyTest {
             return systemTimeMicrosec * kSecPerUsec;
         }
 
-        // double actualTimeSec;
         double actualPosition;
         double actualVelocity;
         double actualAcceleration;
@@ -144,15 +143,11 @@ public class EstimatorLatencyTest {
         }
 
         public Scenario() {
-            double initialPosition = position(0);
-            double initialVelocity = velocity(0);
-
             state = initial();
             observer = newObserver();
-            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), this::f, kSecPerRioLoop);
-            feedforward.calculate(VecBuilder.fill(initialPosition, initialVelocity));
+            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(
+                    Nat.N2(), Nat.N1(), this::f);
             controller = newController(this::f);
-
             label();
             printHeader();
         }
@@ -174,7 +169,9 @@ public class EstimatorLatencyTest {
             state.actualAcceleration = acceleration(state.actualTimeSec());
         }
 
-        /** For now, observations are perfect and instantaneous. */
+        /**
+         * For now, observations are perfect and instantaneous.
+         */
         void updateObservation() {
             state.observedPosition = state.actualPosition;
             state.observedVelocity = state.actualVelocity;
@@ -190,6 +187,16 @@ public class EstimatorLatencyTest {
             double referencePosition = position(futureTimeSec);
             double referenceVelocity = velocity(futureTimeSec);
             return VecBuilder.fill(referencePosition, referenceVelocity);
+        }
+
+        /**
+         * analytical future state derivative
+         */
+        Vector<N2> nextRDot() {
+            double futureTimeSec = state.actualTimeSec() + kSecPerRioLoop;
+            double referenceVelocity = velocity(futureTimeSec);
+            double referenceAcceleration = acceleration(futureTimeSec);
+            return VecBuilder.fill(referenceVelocity, referenceAcceleration);
         }
 
         CompleteState initial() {
@@ -263,7 +270,8 @@ public class EstimatorLatencyTest {
                 correctObserver();
                 predict();
                 Vector<N2> nextReference = nextReference();
-                calculateOutput(nextReference, kSecPerRioLoop);
+                Vector<N2> nextRDot = nextRDot();
+                calculateOutput(nextReference, nextRDot, kSecPerRioLoop);
             }
         }
 
@@ -274,10 +282,8 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         void correctObserver() {
-//            observer.correctAngle(state.controlU, state.observedPosition);
-  //          observer.correctVelocity(state.controlU, state.observedVelocity);
-            observer.correctAngle( state.observedPosition);
-            observer.correctVelocity( state.observedVelocity);
+            observer.correctAngle(state.observedPosition);
+            observer.correctVelocity(state.observedVelocity);
         }
 
         /** Predict the expected future state. */
@@ -295,12 +301,12 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Vector<N2> nextReference, double dtSec) {
+        void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot, double dtSec) {
             // this is the predicted future state given the previous control
             Matrix<N2, N1> nextXhat = observer.getXhat();
-            Matrix<N1,N1> u =  controller.calculate(nextXhat, nextReference, dtSec);
+            Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference, dtSec);
             // Matrix<N1, N1> u = controller.getU();
-            Matrix<N1, N1> uff = feedforward.calculate(nextReference);
+            Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
         }
 

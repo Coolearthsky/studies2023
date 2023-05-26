@@ -50,7 +50,7 @@ public class NonlinearSystemLoop {
         this.m_feedforward = feedforward;
         this.m_observer = observer;
         this.m_clampFunction = clampFunction;
-        reset(VecBuilder.fill(0,0));
+        setXhat(VecBuilder.fill(0, 0));
     }
 
     /**
@@ -64,15 +64,10 @@ public class NonlinearSystemLoop {
     }
 
     /**
-     * Zeroes reference r and controller output u. The previous reference of the
-     * PlantInversionFeedforward and the initial state estimate of the KalmanFilter
-     * are set to the initial state provided.
-     *
-     * @param initialState The initial state.
+     * Forces the observer estimate to the provided state.
      */
-    public void reset(Matrix<N2, N1> initialState) {
-        m_feedforward.reset(initialState);
-        m_observer.setXhat(initialState);
+    public void setXhat(Matrix<N2, N1> state) {
+        m_observer.setXhat(state);
     }
 
     /**
@@ -93,19 +88,21 @@ public class NonlinearSystemLoop {
         m_observer.correctVelocity(y);
     }
 
-    /** integrate forward dt.
+    /**
+     * integrate forward dt.
      * TODO: use absolute time
      */
     public void predictState(Matrix<N1, N1> calculatedU, double dtSeconds) {
         m_observer.predictState(calculatedU.get(0, 0), dtSeconds);
     }
 
-    /** find controller output to get to reference at dt; uses observer xhat.
+    /**
+     * find controller output to get to reference at dt; uses observer xhat.
      * TODO: use absolute time
      */
-    public Matrix<N1, N1> calculateTotalU(Matrix<N2, N1> r, double dtSeconds) {
+    public Matrix<N1, N1> calculateTotalU(Matrix<N2, N1> r, Matrix<N2, N1> rDot, double dtSeconds) {
         Matrix<N1, N1> controllerU = m_controller.calculate(m_observer.getXhat(), r, dtSeconds);
-        Matrix<N1, N1> feedforwardU = m_feedforward.calculate(r);
+        Matrix<N1, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_clampFunction.apply(controllerU.plus(feedforwardU));
     }
 }

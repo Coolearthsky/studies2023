@@ -20,7 +20,6 @@ import edu.wpi.first.math.numbers.N2;
  * Demonstrates angle-wrapping with LinearSystemLoop.
  */
 public class AngleLoopTest {
-
     static final double kDelta = 0.001;
     static final double kDt = 0.02;
 
@@ -94,37 +93,42 @@ public class AngleLoopTest {
     ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(
             Nat.N2(),
             Nat.N1(),
-            this::f,
-            kDt);
+            this::f);
     NonlinearSystemLoop loop = new NonlinearSystemLoop(controller, feedforward, observer, this::desaturate);
 
     @Test
     public void testLoop() {
         // initially, state estimate: at zero, motionless
-        loop.reset(VecBuilder.fill(0, 0));
+        loop.setXhat(VecBuilder.fill(0, 0));
         assertAll(
                 () -> assertEquals(0, loop.getXHat(0), kDelta),
                 () -> assertEquals(0, loop.getXHat(1), kDelta));
 
         // try to get to 0.02
         Vector<N2> setpoint = VecBuilder.fill(0.02, 0);
+        // for this example we're doing a step function
+        // in reality we would use a constrained trajectory
+        Vector<N2> rDot = VecBuilder.fill(1, 0);
 
         {
             // initially, push to get started
             loop.correctAngle(0);
             loop.correctVelocity(0);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.002, loop.getXHat(0), kDelta),
                     () -> assertEquals(0.229, loop.getXHat(1), kDelta),
                     () -> assertEquals(11.455, totalU.get(0, 0), kDelta));
         }
+        // no more change in setpoint after this.
+        rDot = VecBuilder.fill(0, 0);
+
         {
             // update 1: coasting, approx zero output
             loop.correctAngle(0.002);
             loop.correctVelocity(0.229);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.006, loop.getXHat(0), kDelta),
@@ -135,7 +139,7 @@ public class AngleLoopTest {
             // update 2
             loop.correctAngle(0.006);
             loop.correctVelocity(0.229);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.01, loop.getXHat(0), kDelta),
@@ -146,7 +150,7 @@ public class AngleLoopTest {
             // update 3
             loop.correctAngle(0.01);
             loop.correctVelocity(0.178);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.014, loop.getXHat(0), kDelta),
@@ -157,7 +161,7 @@ public class AngleLoopTest {
             // update 4
             loop.correctAngle(0.014);
             loop.correctVelocity(0.126);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.016, loop.getXHat(0), kDelta),
@@ -168,7 +172,7 @@ public class AngleLoopTest {
             // update 5
             loop.correctAngle(0.016);
             loop.correctVelocity(0.085);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.017, loop.getXHat(0), kDelta),
@@ -179,7 +183,7 @@ public class AngleLoopTest {
             // update 6
             loop.correctAngle(0.017);
             loop.correctVelocity(0.056);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.018, loop.getXHat(0), kDelta),
@@ -190,7 +194,7 @@ public class AngleLoopTest {
             // update 7
             loop.correctAngle(0.018);
             loop.correctVelocity(0.037);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.019, loop.getXHat(0), kDelta),
@@ -201,7 +205,7 @@ public class AngleLoopTest {
             // update 8
             loop.correctAngle(0.019);
             loop.correctVelocity(0.016);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.019, loop.getXHat(0), kDelta),
@@ -212,7 +216,7 @@ public class AngleLoopTest {
             // update 9
             loop.correctAngle(0.02);
             loop.correctVelocity(0.009);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.02, loop.getXHat(0), kDelta),
@@ -223,7 +227,7 @@ public class AngleLoopTest {
             // update 10
             loop.correctAngle(0.02);
             loop.correctVelocity(0.005);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(0.02, loop.getXHat(0), kDelta),
@@ -235,30 +239,34 @@ public class AngleLoopTest {
     @Test
     public void testWrapping() {
         // start = -pi+0.01
-        loop.reset(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
+        loop.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
         assertAll(
                 () -> assertEquals(-3.132, loop.getXHat(0), kDelta),
                 () -> assertEquals(0, loop.getXHat(1), kDelta));
 
         // goal = pi - 0.01
         Vector<N2> setpoint = VecBuilder.fill(Math.PI - 0.01, 0);
+        // for this example we're doing a step function
+        // in reality we would use a constrained trajectory
+        Vector<N2> rDot = VecBuilder.fill((Math.PI - 0.01) / 0.02, 0);
 
         {
             // initially, push to get started
             loop.correctAngle(-1.0 * Math.PI + 0.01);
             loop.correctVelocity(0);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(-3.133, loop.getXHat(0), kDelta),
                     () -> assertEquals(-0.229, loop.getXHat(1), kDelta),
                     () -> assertEquals(-11.455, totalU.get(0, 0), kDelta));
         }
+        rDot = VecBuilder.fill(0, 0);
         {
             // update 1: still pushing
             loop.correctAngle(-3.133);
             loop.correctVelocity(-0.166);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(-3.138, loop.getXHat(0), kDelta),
@@ -269,7 +277,7 @@ public class AngleLoopTest {
             // update 2: slowing down
             loop.correctAngle(-3.137);
             loop.correctVelocity(-0.229);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(3.141, loop.getXHat(0), kDelta),
@@ -284,7 +292,7 @@ public class AngleLoopTest {
             // update 3
             loop.correctAngle(-3.141);
             loop.correctVelocity(-0.191);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(3.138, loop.getXHat(0), kDelta),
@@ -295,7 +303,7 @@ public class AngleLoopTest {
             // update 4
             loop.correctAngle(3.138);
             loop.correctVelocity(-0.139);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(3.136, loop.getXHat(0), kDelta),
@@ -306,7 +314,7 @@ public class AngleLoopTest {
             // update 5
             loop.correctAngle(3.136);
             loop.correctVelocity(-0.095);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(3.134, loop.getXHat(0), kDelta),
@@ -317,7 +325,7 @@ public class AngleLoopTest {
             // update 6
             loop.correctAngle(3.134);
             loop.correctVelocity(-0.063);
-            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, kDt);
+            Matrix<N1, N1> totalU = loop.calculateTotalU(setpoint, rDot, kDt);
             loop.predictState(totalU, kDt);
             assertAll(
                     () -> assertEquals(3.133, loop.getXHat(0), kDelta),
