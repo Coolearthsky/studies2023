@@ -102,7 +102,6 @@ public class BitemporalBufferTest {
         {
             NavigableMap<Long, Entry<Double, String>> recordTailMap = buf.recordTailMap(Long.MIN_VALUE);
             var recordValues = new ArrayList<>(recordTailMap.values());
-            assertEquals(4, buf.record.size());
             assertEquals(4, recordValues.size());
             // these should be in record order
             assertAll(
@@ -114,7 +113,6 @@ public class BitemporalBufferTest {
         {
             NavigableMap<Double, Entry<Long, String>> validTailMap = buf.validTailMap(-Double.MAX_VALUE);
             var validValues = new ArrayList<>(validTailMap.values());
-            assertEquals(4, buf.valid.size());
             assertEquals(4, validValues.size());
             assertAll(
                     // these should be in valid order
