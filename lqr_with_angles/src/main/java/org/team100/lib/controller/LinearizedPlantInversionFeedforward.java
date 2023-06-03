@@ -21,7 +21,7 @@ import edu.wpi.first.math.system.NumericalJacobian;
  *
  * This is similar to the WPI version but it's immutable.
  */
-public class ImmutableControlAffinePlantInversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
+public class LinearizedPlantInversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Nat<States> m_states;
     private final Nat<Inputs> m_inputs;
     private final Matrix<Inputs, N1> uZero;
@@ -30,7 +30,7 @@ public class ImmutableControlAffinePlantInversionFeedforward<States extends Num,
     /**
      * @param f the full dynamics f(x,u)
      */
-    public ImmutableControlAffinePlantInversionFeedforward(
+    public LinearizedPlantInversionFeedforward(
             Nat<States> states,
             Nat<Inputs> inputs,
             NonlinearPlant<States, Inputs, Outputs> plant) {

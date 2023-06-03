@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
@@ -9,6 +10,10 @@ import edu.wpi.first.math.numbers.N1;
  * interface.
  */
 public interface Sensor<States extends Num, Inputs extends Num, Rows extends Num> {
+
+    /** Dimensionality of this sensor */
+    public Nat<Rows> rows();
+    
     /** A sensor can return any number of measurement Rows at once. */
     public Matrix<Rows, N1> h(Matrix<States, N1> x, Matrix<Inputs, N1> u);
 

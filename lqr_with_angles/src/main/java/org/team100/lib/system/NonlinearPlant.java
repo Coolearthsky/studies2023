@@ -16,6 +16,11 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     public Matrix<States, N1> xAdd(Matrix<States, N1> a, Matrix<States, N1> b);
 
     /**
+     * Normalize state, used by predict, e.g. for angle wrapping.
+     */
+    public Matrix<States, N1> xNormalize(Matrix<States, N1> x);
+
+    /**
      * State residual, e.g. subtraction, used by the controller to compare the
      * reference with the estimate.
      */

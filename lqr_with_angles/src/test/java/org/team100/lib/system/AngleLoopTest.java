@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.AngleController;
-import org.team100.lib.controller.ImmutableControlAffinePlantInversionFeedforward;
-import org.team100.lib.estimator.ExtendedAngleEstimator;
+import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.estimator.NonlinearEstimator;
 import org.team100.lib.system.examples.DoubleIntegrator1D;
 
 import edu.wpi.first.math.Matrix;
@@ -34,17 +34,20 @@ public class AngleLoopTest {
 
     final DoubleIntegrator1D system = new DoubleIntegrator1D(0.01, 0.1, 0.015, 0.17);
 
-    final AngleController<N2> controller = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
+    final LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system,
+            stateTolerance, controlTolerance);
 
     Matrix<N1, N1> desaturate(Matrix<N1, N1> u) {
         return StateSpaceUtil.desaturateInputVector(u, 12.0);
     }
 
-    final ExtendedAngleEstimator<N2, N1> observer = new ExtendedAngleEstimator<N2, N1>(Nat.N2(), Nat.N1(), system, kDt);
+    final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(Nat.N2(), Nat.N1(),
+            Nat.N2(), system, kDt);
 
-    ImmutableControlAffinePlantInversionFeedforward<N2, N1, N2> feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(
+    LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(
             Nat.N2(), Nat.N1(), system);
-    NonlinearSystemLoop loop = new NonlinearSystemLoop(controller, feedforward, observer, this::desaturate);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<N2, N1, N2>(Nat.N2(), controller, feedforward,
+            observer,  this::desaturate);
 
     @Test
     public void testLoop() {

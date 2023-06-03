@@ -18,7 +18,7 @@ public class EKFMultiCorrectTest {
 
     final DoubleIntegrator1D system = new DoubleIntegrator1D(0.01, 0.1, 0.015, 0.17);
 
-    final ExtendedAngleEstimator<N2, N1> observer = new ExtendedAngleEstimator<N2, N1>(Nat.N2(), Nat.N1(), system, kDt);
+    final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(Nat.N2(), Nat.N1(), Nat.N2(), system, kDt);
 
     @Test
     public void testMultipleSensors() {
