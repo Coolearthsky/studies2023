@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.LinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
@@ -121,7 +122,36 @@ public class EstimatorLatencyTest {
         final DoubleIntegratorRotary1D system;
 
         public Scenario() {
-            system = new DoubleIntegratorRotary1D(0.01, 0.01, 0.1, 0.1);
+            system = new DoubleIntegratorRotary1D() {
+
+                public Matrix<N2, N1> stdev() {
+                    return VecBuilder.fill(0.1, 0.1);
+                }
+
+                public Sensor<N2, N1, N2> newFull() {
+                    return new FullSensor() {
+                        public Matrix<N2, N1> stdev() {
+                            return VecBuilder.fill(0.01, 0.01);
+                        }
+                    };
+                }
+
+                public Sensor<N2, N1, N1> newPosition() {
+                    return new PositionSensor() {
+                        public Matrix<N1, N1> stdev() {
+                            return VecBuilder.fill(0.01);
+                        }
+                    };
+                }
+
+                public Sensor<N2, N1, N1> newVelocity() {
+                    return new VelocitySensor() {
+                        public Matrix<N1, N1> stdev() {
+                            return VecBuilder.fill(0.01);
+                        }
+                    };
+                }
+            };
             state = initial();
             observer = newObserver();
             feedforward = new LinearizedPlantInversionFeedforward<>(system);

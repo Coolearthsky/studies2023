@@ -12,14 +12,7 @@ import edu.wpi.first.math.numbers.N2;
  * 
  * In this case, we're modeling rotation, i.e. a wheel.
  */
-public class DoubleIntegratorRotary1D extends RotaryPlant1D {
-    // TODO: remove these stdevs, put them in the sensor only
-    public DoubleIntegratorRotary1D(double positionMeasurementStdev, double velocityMeasurementStdev,
-            double positionStateStdev, double velocityStateStdev) {
-        super(positionMeasurementStdev, velocityMeasurementStdev, positionStateStdev,
-                velocityStateStdev);
-    }
-
+public abstract class DoubleIntegratorRotary1D extends RotaryPlant1D {
     /**
      * xdot = f(x,u)
      * pdot = v

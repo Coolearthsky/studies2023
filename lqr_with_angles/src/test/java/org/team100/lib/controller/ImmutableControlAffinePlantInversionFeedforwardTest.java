@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
+import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Matrix;
@@ -22,7 +22,7 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
 
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegratorRotary1D(0, 0, 0, 0);
+        NonlinearPlant<N2, N1, N2> system = new NormalDoubleIntegratorRotary1D();
         LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
 
         // position does not matter here.
@@ -39,7 +39,7 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the r and nextR differ by 1
         // so u should be 1/dt or 50.
 
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
+        NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
         LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
 
         {

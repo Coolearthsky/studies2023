@@ -8,6 +8,7 @@ import org.team100.lib.controller.LinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
+import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -26,7 +27,7 @@ public class AngleLoopTest {
             0.2); // velocity (rad/s)
     final Vector<N1> controlTolerance = VecBuilder.fill(12.0); // output (volts)
 
-    DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+    DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
     LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
     NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);

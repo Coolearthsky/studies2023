@@ -9,12 +9,7 @@ import edu.wpi.first.math.numbers.N2;
  * One-dimensional double-integrator with friction force proportional to
  * velocity.
  */
-public class FrictionCartesian1D extends CartesianPlant1D {
-    public FrictionCartesian1D(double positionMeasurementStdev, double velocityMeasurementStdev,
-            double positionStateStdev, double velocityStateStdev) {
-        super(positionMeasurementStdev, velocityMeasurementStdev, positionStateStdev, velocityStateStdev);
-    }
-
+public abstract class FrictionCartesian1D extends CartesianPlant1D {
     /**
      * xdot = f(x,u)
      * pdot = v

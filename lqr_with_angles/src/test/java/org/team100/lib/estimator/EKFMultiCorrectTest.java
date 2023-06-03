@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
+import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -17,7 +18,7 @@ public class EKFMultiCorrectTest {
 
     @Test
     public void testMultipleSensors() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
 
         observer.reset();

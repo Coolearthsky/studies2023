@@ -40,6 +40,8 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     public Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
     public Nat<States> states();
+
     public Nat<Inputs> inputs();
+
     public Nat<Outputs> outputs();
 }

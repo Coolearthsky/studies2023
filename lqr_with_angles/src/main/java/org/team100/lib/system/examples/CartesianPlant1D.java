@@ -12,15 +12,11 @@ import edu.wpi.first.math.numbers.N2;
 
 /** Base class for one-dimensional cartesian plants. */
 public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
-       private final double positionMeasurementStdev;
-    private final double velocityMeasurementStdev;
-    private final double positionStateStdev;
-    private final double velocityStateStdev;
     private final Sensor<N2, N1, N2> full;
     private final Sensor<N2, N1, N1> position;
     private final Sensor<N2, N1, N1> velocity;
 
-    public class FullSensor implements Sensor<N2, N1, N2> {
+    public abstract class FullSensor implements Sensor<N2, N1, N2> {
         public Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
             return x;
         }
@@ -29,16 +25,12 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
             return a.minus(b);
         }
 
-        public Matrix<N2, N1> stdev() {
-            return VecBuilder.fill(positionMeasurementStdev, velocityMeasurementStdev);
-        }
-
         public Nat<N2> rows() {
             return Nat.N2();
         }
     }
 
-    public class PositionSensor implements Sensor<N2, N1, N1> {
+    public abstract class PositionSensor implements Sensor<N2, N1, N1> {
         public Matrix<N1, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
             return VecBuilder.fill(x.get(0, 0));
         }
@@ -47,17 +39,12 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
             return a.minus(b);
         }
 
-        public Matrix<N1, N1> stdev() {
-            return VecBuilder.fill(positionMeasurementStdev);
-        }
-
-        @Override
         public Nat<N1> rows() {
             return Nat.N1();
         }
     }
 
-    public class VelocitySensor implements Sensor<N2, N1, N1> {
+    public abstract class VelocitySensor implements Sensor<N2, N1, N1> {
         public Matrix<N1, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
             return VecBuilder.fill(x.get(1, 0));
         }
@@ -66,26 +53,16 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
             return a.minus(b);
         }
 
-        public Matrix<N1, N1> stdev() {
-            return VecBuilder.fill(velocityMeasurementStdev);
-        }
-
-        @Override
         public Nat<N1> rows() {
             return Nat.N1();
         }
     }
 
-    // TODO: remove these stdevs, put them in the sensor only
-    public CartesianPlant1D(double positionMeasurementStdev, double velocityMeasurementStdev,
-            double positionStateStdev, double velocityStateStdev) {
-        this.positionMeasurementStdev = positionMeasurementStdev;
-        this.velocityMeasurementStdev = velocityMeasurementStdev;
-        this.positionStateStdev = positionStateStdev;
-        this.velocityStateStdev = velocityStateStdev;
-        full = new FullSensor();
-        position = new PositionSensor();
-        velocity = new VelocitySensor();
+
+    public CartesianPlant1D() {
+        full = newFull();
+        position = newPosition();
+        velocity = newVelocity();
     }
 
     /**
@@ -115,10 +92,6 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
     public Sensor<N2, N1, N2> full() {
         return full;
     }
-
-    public Matrix<N2, N1> stdev() {
-        return VecBuilder.fill(positionStateStdev, velocityStateStdev);
-    }
     
     public Matrix<N2, N1> xNormalize(Matrix<N2, N1> xmat) {
         return xmat;
@@ -140,5 +113,9 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2>  {
         return Nat.N2();
     }
 
-    
+    public abstract Sensor<N2, N1, N2> newFull();
+
+    public abstract Sensor<N2, N1, N1> newPosition();
+
+    public abstract Sensor<N2, N1, N1> newVelocity();    
 }

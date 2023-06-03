@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
+import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -30,7 +32,7 @@ public class EKFTest {
 
     @Test
     public void testObserver() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
         // obsP: error covariance
         assertEquals(0.00064, observer.getP(0, 0), 0.0001);
@@ -41,7 +43,7 @@ public class EKFTest {
     public void testNearZero() {
         // positive setpoint, delta +0.02, push positive
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
         LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
 
@@ -190,7 +192,7 @@ public class EKFTest {
         // initial is pi - 0.03
         // so delta is +0.02, should push positive
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
         LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
 
@@ -347,7 +349,7 @@ public class EKFTest {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
         LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
 
@@ -512,7 +514,7 @@ public class EKFTest {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
 
         // initially, state estimate: at zero, motionless
@@ -557,7 +559,31 @@ public class EKFTest {
 
     @Test
     public void testObserverWrappingCorrectVelocityOnly() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.1, 0.00001, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D() {
+            public Sensor<N2, N1, N2> newFull() {
+                return new FullSensor() {
+                    public Matrix<N2, N1> stdev() {
+                        return VecBuilder.fill(0.1, 0.00001);
+                    }
+                };
+            }
+
+            public Sensor<N2, N1, N1> newPosition() {
+                return new PositionSensor() {
+                    public Matrix<N1, N1> stdev() {
+                        return VecBuilder.fill(0.1);
+                    }
+                };
+            }
+
+            public Sensor<N2, N1, N1> newVelocity() {
+                return new VelocitySensor() {
+                    public Matrix<N1, N1> stdev() {
+                        return VecBuilder.fill(0.00001);
+                    }
+                };
+            }
+        };
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
 
         // start in negative territory
@@ -586,7 +612,31 @@ public class EKFTest {
 
     @Test
     public void testObserverWrappingCorrectPositionOnly() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.00001, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D() {
+            public Sensor<N2, N1, N2> newFull() {
+                return new FullSensor() {
+                    public Matrix<N2, N1> stdev() {
+                        return VecBuilder.fill(0.00001, 0.1);
+                    }
+                };
+            }
+
+            public Sensor<N2, N1, N1> newPosition() {
+                return new PositionSensor() {
+                    public Matrix<N1, N1> stdev() {
+                        return VecBuilder.fill(0.00001);
+                    }
+                };
+            }
+
+            public Sensor<N2, N1, N1> newVelocity() {
+                return new VelocitySensor() {
+                    public Matrix<N1, N1> stdev() {
+                        return VecBuilder.fill(0.1);
+                    }
+                };
+            }
+        };
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
 
         // start in negative territory
@@ -616,7 +666,7 @@ public class EKFTest {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
 
         // initially, state estimate: near -pi, motionless
