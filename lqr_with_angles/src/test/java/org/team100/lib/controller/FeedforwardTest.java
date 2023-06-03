@@ -13,8 +13,7 @@ import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.Discretization;
 import edu.wpi.first.math.system.LinearSystem;
 
-
-/** Make sure I know what the plant-inversion feedforward thing is doing.  */
+/** Make sure I know what the plant-inversion feedforward thing is doing. */
 public class FeedforwardTest {
     /** This is the constant-acceleration case. */
     @Test

@@ -21,6 +21,7 @@ public class EKFCorrectionTest {
         return VecBuilder.fill(x.get(1, 0));
     }
 
+    /** This is code copied from the WPI EKF class. */
     @Test
     public void testCorrect() {
         // this is velocity correction.

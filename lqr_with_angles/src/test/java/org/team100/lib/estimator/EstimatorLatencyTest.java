@@ -2,11 +2,10 @@ package org.team100.lib.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.function.BiFunction;
-
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.AngleController;
 import org.team100.lib.controller.ImmutableControlAffinePlantInversionFeedforward;
+import org.team100.lib.system.examples.DoubleIntegrator1D;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
@@ -121,33 +120,17 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final ExtendedAngleEstimator observer;
-        final ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward;
-        final AngleController controller;
-
-        /**
-         * The derivative of state.
-         * 
-         * x = (position, velocity)
-         * xdot = (velocity, control)
-         */
-        Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-        }
-
-        /**
-         * Both measurements: (position, velocity)
-         */
-        Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-            return x;
-        }
+        final ExtendedAngleEstimator<N2, N1> observer;
+        final ImmutableControlAffinePlantInversionFeedforward<N2, N1, N2> feedforward;
+        final AngleController<N2> controller;
+        final DoubleIntegrator1D system;
 
         public Scenario() {
+            system = new DoubleIntegrator1D(0.01, 0.01, 0.1, 0.1);
             state = initial();
             observer = newObserver();
-            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(
-                    Nat.N2(), Nat.N1(), this::f);
-            controller = newController(this::f);
+            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
+            controller = newController();
             label();
             printHeader();
         }
@@ -282,13 +265,13 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         void correctObserver() {
-            observer.correctAngle(state.observedPosition);
-            observer.correctVelocity(state.observedVelocity);
+            observer.correct(VecBuilder.fill(state.observedPosition), system.position());
+            observer.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
         }
 
         /** Predict the expected future state. */
         void predict() {
-            observer.predictState(state.controlU, kSecPerRioLoop);
+            observer.predictState((Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
         /**
@@ -305,19 +288,16 @@ public class EstimatorLatencyTest {
             // this is the predicted future state given the previous control
             Matrix<N2, N1> nextXhat = observer.getXhat();
             Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference, dtSec);
-            // Matrix<N1, N1> u = controller.getU();
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        ExtendedAngleEstimator newObserver() {
+        ExtendedAngleEstimator<N2, N1> newObserver() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final ExtendedAngleEstimator observer = new ExtendedAngleEstimator(
-                    this::f,
-                    this::h,
-                    VecBuilder.fill(0.1, 0.1),
-                    VecBuilder.fill(0.01, 0.01),
+            final ExtendedAngleEstimator<N2, N1> observer = new ExtendedAngleEstimator<N2, N1>(
+                    Nat.N2(), Nat.N1(),
+                    system,
                     kSecPerRioLoop);
             observer.reset();
             observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
@@ -326,13 +306,10 @@ public class EstimatorLatencyTest {
             return observer;
         }
 
-        AngleController newController(BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f) {
+        AngleController<N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new AngleController(f,
-                    stateTolerance,
-                    controlTolerance,
-                    kSecPerRioLoop);
+            return new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
         }
 
         void printHeader() {

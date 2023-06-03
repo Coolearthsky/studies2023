@@ -1,11 +1,11 @@
 package org.team100.lib.controller;
 
-import java.util.function.BiFunction;
+import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Drake;
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.Num;
 import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
@@ -25,37 +25,41 @@ import edu.wpi.first.math.system.NumericalJacobian;
  * (e.g. remembering the last U calculated), because immutability is good.
  * If you want to retain results returned, do it yourself.
  */
-public class AngleController {
+public class AngleController<States extends Num> {
     /** u value for calculating K, which is required to be u-invariant. */
     private static final Matrix<N1, N1> kUZero = VecBuilder.fill(0);
-    private final BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> m_f;
-    private final Matrix<N2, N2> m_Q;
+    private final Nat<States> m_states;
+    private final Matrix<States, States> m_Q;
     private final Matrix<N1, N1> m_R;
+    private final NonlinearPlant<States, N1, N2> m_plant;
 
     /**
      * TODO: i think that we can require B to be constant, since all the real
      * systems we use are like that.
      * in any case it should match the feedforward.
-     * 
-     * @param f model dynamics. must be control-affine, which means that B can
-     *          depend on x but not u, so we don't have to pass u to calculate.
      */
     public AngleController(
-            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f,
-            Vector<N2> qelms,
-            Vector<N1> relms,
-            double dtSeconds) {
-        m_f = f;
+            Nat<States> states,
+            NonlinearPlant<States, N1, N2> plant,
+            Vector<States> qelms,
+            Vector<N1> relms) {
+        m_states = states;
+        m_plant = plant;
         m_Q = StateSpaceUtil.makeCostMatrix(qelms);
         m_R = StateSpaceUtil.makeCostMatrix(relms);
     }
 
     /**
      * Calculate gains by linearizing around (x,u).
+     * 
+     * @param x         actual state, e.g. xhat
+     * @param u         actual control
+     * @param dtSeconds how far in the future
+     * @return K
      */
-    Matrix<N1, N2> calculateK(Matrix<N2, N1> x, Matrix<N1, N1> u, double dtSeconds) {
-        Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(Nat.N2(), Nat.N2(), m_f, x, u);
-        Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(Nat.N2(), Nat.N1(), m_f, x, u);
+    Matrix<N1, States> calculateK(Matrix<States, N1> x, Matrix<N1, N1> u, double dtSeconds) {
+        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_states, m_states, m_plant::f, x, u);
+        Matrix<States, N1> B = NumericalJacobian.numericalJacobianU(m_states, Nat.N1(), m_plant::f, x, u);
 
         var discABPair = Discretization.discretizeAB(A, B, dtSeconds);
         var discA = discABPair.getFirst();
@@ -73,7 +77,7 @@ public class AngleController {
         var S = Drake.discreteAlgebraicRiccatiEquation(discA, discB, m_Q, m_R);
 
         // K = (BᵀSB + R)⁻¹BᵀSA
-        Matrix<N1, N2> m_K = discB
+        Matrix<N1, States> m_K = discB
                 .transpose()
                 .times(S)
                 .times(discB)
@@ -94,13 +98,18 @@ public class AngleController {
      * 
      * TODO: extract the wrapping function
      * 
+     * @param x         the actual state, xhat from the estimator
+     * @param r         the desired reference state from the trajectory
+     * @param dtSeconds how far in the future
      * @return the controller u value. if you want to use this later, e.g. for
      *         correction, you need to remember it.
      */
-    public Matrix<N1, N1> calculate(Matrix<N2, N1> x, Matrix<N2, N1> r, double dtSeconds) {
-        Matrix<N1, N2> K = calculateK(x, kUZero, dtSeconds);
-        Matrix<N2, N1> error = r.minus(x);
-        error.set(0, 0, MathUtil.angleModulus(error.get(0, 0)));
+    public Matrix<N1, N1> calculate(
+            Matrix<States, N1> x,
+            Matrix<States, N1> r,
+            double dtSeconds) {
+        Matrix<N1, States> K = calculateK(x, kUZero, dtSeconds);
+        Matrix<States, N1> error = m_plant.xResidual(r, x);
         return K.times(error);
     }
 }

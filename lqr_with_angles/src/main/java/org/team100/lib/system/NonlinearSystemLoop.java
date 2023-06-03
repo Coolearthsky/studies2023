@@ -24,9 +24,9 @@ import edu.wpi.first.math.numbers.N2;
  * control output (system input) to achieve the refernce.
  */
 public class NonlinearSystemLoop {
-    private final AngleController m_controller;
-    private final ImmutableControlAffinePlantInversionFeedforward<N2, N1> m_feedforward;
-    private final ExtendedAngleEstimator m_observer;
+    private final AngleController<N2> m_controller;
+    private final ImmutableControlAffinePlantInversionFeedforward<N2, N1, N2> m_feedforward;
+    private final ExtendedAngleEstimator<N2, N1> m_observer;
     private final Function<Matrix<N1, N1>, Matrix<N1, N1>> m_clampFunction;
 
     /**
@@ -42,9 +42,9 @@ public class NonlinearSystemLoop {
      * @param clampFunction The function used to clamp the input U.
      */
     public NonlinearSystemLoop(
-            AngleController controller,
-            ImmutableControlAffinePlantInversionFeedforward<N2, N1> feedforward,
-            ExtendedAngleEstimator observer,
+            AngleController<N2> controller,
+            ImmutableControlAffinePlantInversionFeedforward<N2, N1, N2> feedforward,
+            ExtendedAngleEstimator<N2, N1> observer,
             Function<Matrix<N1, N1>, Matrix<N1, N1>> clampFunction) {
         this.m_controller = controller;
         this.m_feedforward = feedforward;
@@ -73,19 +73,13 @@ public class NonlinearSystemLoop {
     /**
      * Correct the state estimate x-hat using the measurements in y.
      * 
-     * these should allow time travel, measurement from the past.
+     * TODO: allow time travel, measurement from the past.
      * 
-     * also the "U" value here is not useful; the real "h" functions we use never
-     * involve a "u" term
-     *
-     * @param y Measurement
+     * @param y      measurement
+     * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public void correctAngle(double y) {
-        m_observer.correctAngle(y);
-    }
-
-    public void correctVelocity(double y) {
-        m_observer.correctVelocity(y);
+    public void correct(Matrix<N1, N1> y, Sensor<N2, N1, N1> sensor) {
+        m_observer.correct(y, sensor);
     }
 
     /**
@@ -93,7 +87,7 @@ public class NonlinearSystemLoop {
      * TODO: use absolute time
      */
     public void predictState(Matrix<N1, N1> calculatedU, double dtSeconds) {
-        m_observer.predictState(calculatedU.get(0, 0), dtSeconds);
+        m_observer.predictState(calculatedU, dtSeconds);
     }
 
     /**

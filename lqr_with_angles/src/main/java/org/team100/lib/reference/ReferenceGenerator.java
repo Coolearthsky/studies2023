@@ -2,6 +2,9 @@ package org.team100.lib.reference;
 
 import org.team100.lib.estimator.ExtendedAngleEstimator;
 
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+
 /**
  * ReferenceGenerator provides feasible trajectories of full state references
  * for control, based on full, partial, and/or infeasible state input, and a
@@ -37,9 +40,9 @@ public class ReferenceGenerator {
 
     }
 
-    private final ExtendedAngleEstimator estimator;
+    private final ExtendedAngleEstimator<N2, N1> estimator;
 
-    public ReferenceGenerator(ExtendedAngleEstimator estimator) {
+    public ReferenceGenerator(ExtendedAngleEstimator<N2, N1> estimator) {
         this.estimator = estimator;
     }
 
