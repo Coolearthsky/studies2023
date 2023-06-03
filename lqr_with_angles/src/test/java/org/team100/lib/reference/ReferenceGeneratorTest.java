@@ -2,22 +2,17 @@ package org.team100.lib.reference;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.estimator.ExtendedAngleEstimator;
+import org.team100.lib.system.NonlinearPlant;
+import org.team100.lib.system.examples.DoubleIntegrator1D;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 public class ReferenceGeneratorTest {
-    /**
-     * The derivative of state.
-     * 
-     * x = (position, velocity)
-     * xdot = (velocity, control)
-     */
-    Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-    }
+    NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
 
     /**
      * Both measurements: (position, velocity)
@@ -30,10 +25,12 @@ public class ReferenceGeneratorTest {
     public void testSimple() {
         Matrix<N2, N1> stateStdDevs = VecBuilder.fill(1, 1);
         Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(1, 1);
+
         double dtSeconds = 0.02;
-        ExtendedAngleEstimator eae = new ExtendedAngleEstimator(
-                this::f,
-                this::h,
+        ExtendedAngleEstimator<N2, N1> eae = new ExtendedAngleEstimator<N2, N1>(
+                Nat.N2(),
+                Nat.N1(),
+                system,
                 stateStdDevs,
                 measurementStdDevs,
                 dtSeconds);

@@ -3,6 +3,10 @@ package org.team100.lib.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.system.NonlinearPlant;
+import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.Friction1D;
+import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Drake;
 import edu.wpi.first.math.Matrix;
@@ -19,57 +23,6 @@ import edu.wpi.first.math.system.LinearSystem;
 public class KTest {
     static final double kDelta = 0.001;
     static final double kDt = 0.02;
-
-    /**
-     * xdot = f(x,u)
-     * pdot = v
-     * vdot = u
-     * 
-     * the x jacobian should be constant [0 1 0 0]
-     * the u jacobian should be constant [0, 1]
-     */
-    Matrix<N2, N1> doubleIntegrator(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        // double p = xmat.get(0, 0);
-        double v = xmat.get(1, 0);
-        double u = umat.get(0, 0);
-        double pdot = v;
-        double vdot = u;
-        return VecBuilder.fill(pdot, vdot);
-    }
-
-    /**
-     * xdot = f(x,u)
-     * pdot = v
-     * vdot = u
-     * 
-     * the x jacobian should be constant [0 1 0 -1]
-     * the u jacobian should be constant [0 1]
-     */
-    Matrix<N2, N1> friction(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        // double p = xmat.get(0, 0);
-        double v = xmat.get(1, 0);
-        double u = umat.get(0, 0);
-        double pdot = v;
-        double vdot = u - v;
-        return VecBuilder.fill(pdot, vdot);
-    }
-
-    /**
-     * xdot = f(x,u)
-     * pdot = v
-     * vdot = u - cos(p)
-     * 
-     * the x jacobian should be [0 1 sin(p) 0]
-     * the u jacobian should be constant [0 1]
-     */
-    Matrix<N2, N1> pendulum(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        double p = xmat.get(0, 0);
-        double v = xmat.get(1, 0);
-        double u = umat.get(0, 0);
-        double pdot = v;
-        double vdot = u - Math.cos(p);
-        return VecBuilder.fill(pdot, vdot);
-    }
 
     /**
      * exactly from the LQR constructor, for comparison
@@ -132,8 +85,8 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        AngleController angleController = new AngleController(this::doubleIntegrator, stateTolerance, controlTolerance,
-                kDt);
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
+        AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
         assertEquals(572.773, K.get(0, 0), kDelta);
         assertEquals(44.336, K.get(0, 1), kDelta);
@@ -148,7 +101,9 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        AngleController angleController = new AngleController(this::friction, stateTolerance, controlTolerance, kDt);
+        NonlinearPlant<N2, N1, N2> system = new Friction1D();
+
+        AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
         assertEquals(578.494, K.get(0, 0), kDelta);
         assertEquals(43.763, K.get(0, 1), kDelta);
@@ -164,8 +119,9 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            AngleController angleController = new AngleController(this::pendulum, stateTolerance, controlTolerance,
-                    kDt);
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             // same as double integrator when gravity is max
             assertEquals(572.773, K.get(0, 0), kDelta);
@@ -174,8 +130,9 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 4, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            AngleController angleController = new AngleController(this::pendulum, stateTolerance, controlTolerance,
-                    kDt);
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
 
             assertEquals(573.425, K.get(0, 0), kDelta);// very slightly higher
@@ -184,8 +141,9 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            AngleController angleController = new AngleController(this::pendulum, stateTolerance, controlTolerance,
-                    kDt);
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             assertEquals(573.695, K.get(0, 0), kDelta); // a tiny bit higher
             assertEquals(44.346, K.get(0, 1), kDelta);// a tiny bit higher

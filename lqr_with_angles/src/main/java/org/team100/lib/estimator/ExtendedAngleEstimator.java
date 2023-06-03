@@ -1,13 +1,13 @@
 package org.team100.lib.estimator;
 
-import java.util.function.BiFunction;
+import org.team100.lib.system.NonlinearPlant;
+import org.team100.lib.system.Sensor;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.Num;
 import edu.wpi.first.math.StateSpaceUtil;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.estimator.AngleStatistics;
 import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
@@ -24,8 +24,10 @@ import edu.wpi.first.math.numbers.N2;
  * together)
  * output: torque, i guess?
  */
-public class ExtendedAngleEstimator {
-    private final ExtendedKalmanFilter<N2, N1, N2> ekf;
+public class ExtendedAngleEstimator<States extends Num, Inputs extends Num> {
+    private final Matrix<Inputs, N1> m_uZero;
+    private final NonlinearPlant<States, Inputs, N2> m_system;
+    private final ExtendedKalmanFilter<States, Inputs, N2> ekf;
 
     /**
      * Measurement variances.
@@ -35,57 +37,30 @@ public class ExtendedAngleEstimator {
     private final Matrix<N1, N1> RVelocity;
 
     /**
-     * The derivative of state.
-     * 
-     * x = (position, velocity)
-     * xdot = (velocity, control)
-     */
-    private static Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-    }
-
-    /**
-     * Both measurements: (position, velocity). u-invariant.
-     */
-    private static Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        return x;
-    }
-
-    /**
-     * Measures angular position. u-invariant.
-     */
-    private static Matrix<N1, N1> hPosition(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        return VecBuilder.fill(x.get(0, 0));
-    }
-
-    /**
-     * Measures angular velocity. u-invariant.
-     */
-    private static Matrix<N1, N1> hVelocity(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-        return VecBuilder.fill(x.get(1, 0));
-    }
-
-    /**
-     * @param f                  system dynamics, must be control-affine
-     * @param h                  measurement, must be u-invariant (TODO: enforce)
+     * @param system             system dynamics, must be control-affine
+     * @param stateStdDevs       vector of std deviations of state estimates
      * @param measurementStdDevs vector of std deviations per measurement
+     * @param residualFuncY      subtract measurements
      */
     public ExtendedAngleEstimator(
-            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f,
-            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> h,
-            Matrix<N2, N1> stateStdDevs,
+            Nat<States> states,
+            Nat<Inputs> inputs,
+            NonlinearPlant<States, Inputs, N2> system,
+            Matrix<States, N1> stateStdDevs,
             Matrix<N2, N1> measurementStdDevs,
             double dtSeconds) {
-        ekf = new ExtendedKalmanFilter<N2, N1, N2>(
+        m_uZero = new Matrix<>(inputs, Nat.N1());
+        m_system = system;
+        ekf = new ExtendedKalmanFilter<States, Inputs, N2>(
+                states,
+                inputs,
                 Nat.N2(),
-                Nat.N1(),
-                Nat.N2(),
-                f,
-                h,
+                system::f,
+                system.full()::h,
                 stateStdDevs,
                 measurementStdDevs,
-                AngleStatistics.angleResidual(0),
-                AngleStatistics.angleAdd(0),
+                system.full()::yResidual,
+                system::xAdd,
                 dtSeconds);
         contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
         RAngle = contR.block(Nat.N1(), Nat.N1(), 0, 0);
@@ -98,9 +73,9 @@ public class ExtendedAngleEstimator {
      * @param u     total control output
      * @param dtSec time quantum (sec)
      */
-    public void predictState(double u, double dtSec) {
-        ekf.predict(VecBuilder.fill(u), ExtendedAngleEstimator::f, dtSec);
-        Matrix<N2, N1> xhat = ekf.getXhat();
+    public void predictState(Matrix<Inputs, N1> u, double dtSec) {
+        ekf.predict(u, dtSec);
+        Matrix<States, N1> xhat = ekf.getXhat();
         xhat.set(0, 0, MathUtil.angleModulus(xhat.get(0, 0)));
         ekf.setXhat(xhat);
     }
@@ -109,52 +84,38 @@ public class ExtendedAngleEstimator {
      * Update with specified position and zero u (because u doesn't affect state
      * updates)
      */
-    public void correctAngle(double y) {
+    // TODO replace this with a single correct() method
+    public void correctAngle(Matrix<N1, N1> y, Sensor<States, Inputs, N1> sensor) {
         ekf.correct(
                 Nat.N1(),
-                VecBuilder.fill(0),
-                VecBuilder.fill(y),
-                ExtendedAngleEstimator::hPosition,
+                m_uZero,
+                y,
+                sensor::h,
                 RAngle,
-                AngleStatistics.angleResidual(0),
-                AngleStatistics.angleAdd(0));
+                sensor::yResidual,
+                m_system::xAdd);
     }
 
     /**
      * Update with specified velocity and zero u (because u doesn't affect state
      * updates)
      */
-    public void correctVelocity(double y) {
+    public void correctVelocity(Matrix<N1, N1> y, Sensor<States, Inputs, N1> sensor) {
         ekf.correct(
                 Nat.N1(),
-                VecBuilder.fill(0),
-                VecBuilder.fill(y),
-                ExtendedAngleEstimator::hVelocity,
+                m_uZero,
+                y,
+                sensor::h,
                 RVelocity,
-                Matrix::minus,
-                AngleStatistics.angleAdd(0));
-    }
-
-    /**
-     * Update with specified state and zero u (because u doesn't affect state
-     * updates)
-     */
-    public void correctBoth(double angle, double velocity) {
-        ekf.correct(
-                Nat.N2(),
-                VecBuilder.fill(0),
-                VecBuilder.fill(angle, velocity),
-                ExtendedAngleEstimator::h,
-                contR,
-                AngleStatistics.angleResidual(0),
-                AngleStatistics.angleAdd(0));
+                sensor::yResidual,
+                m_system::xAdd);
     }
 
     public void reset() {
         ekf.reset();
     }
 
-    public void setXhat(Matrix<N2, N1> xHat) {
+    public void setXhat(Matrix<States, N1> xHat) {
         ekf.setXhat(xHat);
     }
 
@@ -166,7 +127,7 @@ public class ExtendedAngleEstimator {
         return ekf.getP(row, col);
     }
 
-    public Matrix<N2, N1> getXhat() {
+    public Matrix<States, N1> getXhat() {
         return ekf.getXhat();
     }
 }
