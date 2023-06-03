@@ -19,6 +19,10 @@ import edu.wpi.first.math.numbers.N2;
  * TODO: make a cartesian one.
  */
 public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
+    private final double positionMeasurementStdev;
+    private final double velocityMeasurementStdev;
+    private final double positionStateStdev;
+    private final double velocityStateStdev;
     private final Sensor<N2, N1, N2> full;
     private final Sensor<N2, N1, N1> position;
     private final Sensor<N2, N1, N1> velocity;
@@ -31,6 +35,10 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
         public Matrix<N2, N1> yResidual(Matrix<N2, N1> a, Matrix<N2, N1> b) {
             return AngleStatistics.angleResidual(a, b, 0);
         }
+
+        public Matrix<N2, N1> stdev() {
+            return VecBuilder.fill(positionMeasurementStdev, velocityMeasurementStdev);
+        }
     }
 
     public class PositionSensor implements Sensor<N2, N1, N1> {
@@ -40,6 +48,10 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
 
         public Matrix<N1, N1> yResidual(Matrix<N1, N1> a, Matrix<N1, N1> b) {
             return AngleStatistics.angleResidual(a, b, 0);
+        }
+
+        public Matrix<N1, N1> stdev() {
+            return VecBuilder.fill(positionMeasurementStdev);
         }
     }
 
@@ -51,9 +63,19 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
         public Matrix<N1, N1> yResidual(Matrix<N1, N1> a, Matrix<N1, N1> b) {
             return a.minus(b);
         }
+
+        public Matrix<N1, N1> stdev() {
+            return VecBuilder.fill(velocityMeasurementStdev);
+        }
     }
 
-    public DoubleIntegrator1D() {
+    // TODO: remove these stdevs, put them in the sensor only
+    public DoubleIntegrator1D(double positionMeasurementStdev, double velocityMeasurementStdev,
+            double positionStateStdev, double velocityStateStdev) {
+        this.positionMeasurementStdev = positionMeasurementStdev;
+        this.velocityMeasurementStdev = velocityMeasurementStdev;
+        this.positionStateStdev = positionStateStdev;
+        this.velocityStateStdev = velocityStateStdev;
         full = new FullSensor();
         position = new PositionSensor();
         velocity = new VelocitySensor();
@@ -102,5 +124,9 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
 
     public Sensor<N2, N1, N2> full() {
         return full;
+    }
+
+    public Matrix<N2, N1> stdev() {
+        return VecBuilder.fill(positionStateStdev, velocityStateStdev);
     }
 }

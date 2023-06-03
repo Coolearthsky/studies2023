@@ -85,7 +85,8 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
+
         AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
         assertEquals(572.773, K.get(0, 0), kDelta);
@@ -101,7 +102,7 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        NonlinearPlant<N2, N1, N2> system = new Friction1D();
+        NonlinearPlant<N2, N1, N2> system = new Friction1D(0, 0, 0, 0);
 
         AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
@@ -119,9 +120,10 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance,
+                    controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             // same as double integrator when gravity is max
             assertEquals(572.773, K.get(0, 0), kDelta);
@@ -130,9 +132,10 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 4, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance,
+                    controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
 
             assertEquals(573.425, K.get(0, 0), kDelta);// very slightly higher
@@ -141,9 +144,10 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
+            AngleController<N2> angleController = new AngleController<>(Nat.N2(), system, stateTolerance,
+                    controlTolerance);
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             assertEquals(573.695, K.get(0, 0), kDelta); // a tiny bit higher
             assertEquals(44.346, K.get(0, 1), kDelta);// a tiny bit higher

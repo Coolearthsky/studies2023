@@ -16,7 +16,6 @@ import edu.wpi.first.math.system.NumericalJacobian;
 
 public class NumericalJacobianTest {
     private static final double kDelta = 0.0001;
-    NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
 
     /**
      * A = [0 1 0 0] constant
@@ -25,7 +24,7 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
@@ -68,7 +67,7 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D();
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
@@ -105,7 +104,7 @@ public class NumericalJacobianTest {
     public void testPendulumA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+        NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
         {
             // at zero degrees the gravity force doesn't change much with position
             // so the jacobian is zero
@@ -161,7 +160,7 @@ public class NumericalJacobianTest {
     public void testPendulumB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+        NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);

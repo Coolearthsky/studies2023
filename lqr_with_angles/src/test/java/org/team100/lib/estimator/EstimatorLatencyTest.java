@@ -125,25 +125,8 @@ public class EstimatorLatencyTest {
         final AngleController<N2> controller;
         final DoubleIntegrator1D system;
 
-        /**
-         * The derivative of state.
-         * 
-         * x = (position, velocity)
-         * xdot = (velocity, control)
-         */
-        Matrix<N2, N1> f(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-        }
-
-        /**
-         * Both measurements: (position, velocity)
-         */
-        Matrix<N2, N1> h(Matrix<N2, N1> x, Matrix<N1, N1> u) {
-            return x;
-        }
-
         public Scenario() {
-            system = new DoubleIntegrator1D();
+            system = new DoubleIntegrator1D(0.01, 0.01, 0.1, 0.1);
             state = initial();
             observer = newObserver();
             feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
@@ -282,8 +265,8 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         void correctObserver() {
-            observer.correctAngle(VecBuilder.fill(state.observedPosition), system.position());
-            observer.correctVelocity(VecBuilder.fill(state.observedVelocity), system.velocity());
+            observer.correct(VecBuilder.fill(state.observedPosition), system.position());
+            observer.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
         }
 
         /** Predict the expected future state. */
@@ -315,8 +298,6 @@ public class EstimatorLatencyTest {
             final ExtendedAngleEstimator<N2, N1> observer = new ExtendedAngleEstimator<N2, N1>(
                     Nat.N2(), Nat.N1(),
                     system,
-                    VecBuilder.fill(0.1, 0.1),
-                    VecBuilder.fill(0.01, 0.01),
                     kSecPerRioLoop);
             observer.reset();
             observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));

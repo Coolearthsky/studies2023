@@ -30,24 +30,12 @@ public class ExtendedAngleEstimator<States extends Num, Inputs extends Num> {
     private final ExtendedKalmanFilter<States, Inputs, N2> ekf;
 
     /**
-     * Measurement variances.
-     */
-    private final Matrix<N2, N2> contR;
-    private final Matrix<N1, N1> RAngle;
-    private final Matrix<N1, N1> RVelocity;
-
-    /**
-     * @param system             system dynamics, must be control-affine
-     * @param stateStdDevs       vector of std deviations of state estimates
-     * @param measurementStdDevs vector of std deviations per measurement
-     * @param residualFuncY      subtract measurements
+     * @param system system dynamics, must be control-affine
      */
     public ExtendedAngleEstimator(
             Nat<States> states,
             Nat<Inputs> inputs,
             NonlinearPlant<States, Inputs, N2> system,
-            Matrix<States, N1> stateStdDevs,
-            Matrix<N2, N1> measurementStdDevs,
             double dtSeconds) {
         m_uZero = new Matrix<>(inputs, Nat.N1());
         m_system = system;
@@ -57,14 +45,11 @@ public class ExtendedAngleEstimator<States extends Num, Inputs extends Num> {
                 Nat.N2(),
                 system::f,
                 system.full()::h,
-                stateStdDevs,
-                measurementStdDevs,
+                system.stdev(),
+                system.full().stdev(),
                 system.full()::yResidual,
                 system::xAdd,
                 dtSeconds);
-        contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
-        RAngle = contR.block(Nat.N1(), Nat.N1(), 0, 0);
-        RVelocity = contR.block(Nat.N1(), Nat.N1(), 1, 1);
     }
 
     /**
@@ -81,32 +66,17 @@ public class ExtendedAngleEstimator<States extends Num, Inputs extends Num> {
     }
 
     /**
-     * Update with specified position and zero u (because u doesn't affect state
+     * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
      */
-    // TODO replace this with a single correct() method
-    public void correctAngle(Matrix<N1, N1> y, Sensor<States, Inputs, N1> sensor) {
+    public void correct(Matrix<N1, N1> y, Sensor<States, Inputs, N1> sensor) {
+        Matrix<N1, N1> contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N1(), sensor.stdev());
         ekf.correct(
                 Nat.N1(),
                 m_uZero,
                 y,
                 sensor::h,
-                RAngle,
-                sensor::yResidual,
-                m_system::xAdd);
-    }
-
-    /**
-     * Update with specified velocity and zero u (because u doesn't affect state
-     * updates)
-     */
-    public void correctVelocity(Matrix<N1, N1> y, Sensor<States, Inputs, N1> sensor) {
-        ekf.correct(
-                Nat.N1(),
-                m_uZero,
-                y,
-                sensor::h,
-                RVelocity,
+                contR,
                 sensor::yResidual,
                 m_system::xAdd);
     }

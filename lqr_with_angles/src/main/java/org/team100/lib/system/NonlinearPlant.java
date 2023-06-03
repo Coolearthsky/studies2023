@@ -16,10 +16,17 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     public Matrix<States, N1> xAdd(Matrix<States, N1> a, Matrix<States, N1> b);
 
     /**
-     * State residual, e.g. subtraction, used by the controller to compare the reference with the estimate.
+     * State residual, e.g. subtraction, used by the controller to compare the
+     * reference with the estimate.
      */
     public Matrix<States, N1> xResidual(Matrix<States, N1> a, Matrix<States, N1> b);
 
     /** Measure all states; this is really only used for initialization. */
     public Sensor<States, Inputs, Outputs> full();
+
+    /**
+     * Standard deviations of the state, used by the filter; i guess this represents
+     * the stdev of the disturbance?
+     */
+    public Matrix<States, N1> stdev();
 }

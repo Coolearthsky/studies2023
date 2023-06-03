@@ -73,17 +73,13 @@ public class NonlinearSystemLoop {
     /**
      * Correct the state estimate x-hat using the measurements in y.
      * 
-     * these should allow time travel, measurement from the past.
+     * TODO: allow time travel, measurement from the past.
      * 
-     * @param y Measurement
+     * @param y      measurement
+     * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    // TODO remove these
-    public void correctAngle(Matrix<N1, N1> y,  Sensor<N2, N1, N1> sensor) {
-        m_observer.correctAngle(y, sensor);
-    }
-
-    public void correctVelocity(Matrix<N1, N1> y,  Sensor<N2, N1, N1> sensor) {
-        m_observer.correctVelocity(y, sensor);
+    public void correct(Matrix<N1, N1> y, Sensor<N2, N1, N1> sensor) {
+        m_observer.correct(y, sensor);
     }
 
     /**

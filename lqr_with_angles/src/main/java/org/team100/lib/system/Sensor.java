@@ -17,4 +17,7 @@ public interface Sensor<States extends Num, Inputs extends Num, Rows extends Num
      * measurement with the estimated measurement.
      */
     public Matrix<Rows, N1> yResidual(Matrix<Rows, N1> a, Matrix<Rows, N1> b);
+
+    /** Standard deviations of the measurement, used by the filter. */
+    public Matrix<Rows, N1> stdev();
 }
