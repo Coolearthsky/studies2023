@@ -1,6 +1,6 @@
 package org.team100.lib.reference;
 
-import org.team100.lib.estimator.ExtendedAngleEstimator;
+import org.team100.lib.estimator.NonlinearEstimator;
 
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
@@ -40,9 +40,9 @@ public class ReferenceGenerator {
 
     }
 
-    private final ExtendedAngleEstimator<N2, N1> estimator;
+    private final NonlinearEstimator<N2, N1, N2> estimator;
 
-    public ReferenceGenerator(ExtendedAngleEstimator<N2, N1> estimator) {
+    public ReferenceGenerator(NonlinearEstimator<N2, N1, N2> estimator) {
         this.estimator = estimator;
     }
 

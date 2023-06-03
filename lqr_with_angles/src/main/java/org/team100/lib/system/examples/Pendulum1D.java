@@ -3,7 +3,9 @@ package org.team100.lib.system.examples;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.Sensor;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.AngleStatistics;
 import edu.wpi.first.math.numbers.N1;
@@ -34,6 +36,10 @@ public class Pendulum1D implements NonlinearPlant<N2, N1, N2> {
         public Matrix<N2, N1> stdev() {
             return VecBuilder.fill(positionMeasurementStdev, velocityMeasurementStdev);
         }
+
+        public Nat<N2> rows() {
+            return Nat.N2();
+        }
     }
 
     public class PositionSensor implements Sensor<N2, N1, N1> {
@@ -47,6 +53,10 @@ public class Pendulum1D implements NonlinearPlant<N2, N1, N2> {
 
         public Matrix<N1, N1> stdev() {
             return VecBuilder.fill(positionMeasurementStdev);
+        }
+
+        public Nat<N1> rows() {
+            return Nat.N1();
         }
     }
 
@@ -103,5 +113,11 @@ public class Pendulum1D implements NonlinearPlant<N2, N1, N2> {
 
     public Matrix<N2, N1> stdev() {
         return VecBuilder.fill(positionStateStdev, velocityStateStdev);
+    }
+    
+    public Matrix<N2, N1> xNormalize(Matrix<N2, N1> xmat) {
+        Matrix<N2,N1> x = xmat.copy();
+        x.set(0,0, MathUtil.angleModulus(x.get(0,0)));
+        return x;
     }
 }

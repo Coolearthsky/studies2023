@@ -3,8 +3,8 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.AngleController;
-import org.team100.lib.controller.ImmutableControlAffinePlantInversionFeedforward;
+import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.system.examples.DoubleIntegrator1D;
 
 import edu.wpi.first.math.MathUtil;
@@ -120,16 +120,16 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final ExtendedAngleEstimator<N2, N1> observer;
-        final ImmutableControlAffinePlantInversionFeedforward<N2, N1, N2> feedforward;
-        final AngleController<N2> controller;
+        final NonlinearEstimator<N2, N1, N2> observer;
+        final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
+        final LinearizedLQR<N2, N1, N2> controller;
         final DoubleIntegrator1D system;
 
         public Scenario() {
             system = new DoubleIntegrator1D(0.01, 0.01, 0.1, 0.1);
             state = initial();
             observer = newObserver();
-            feedforward = new ImmutableControlAffinePlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
+            feedforward = new LinearizedPlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
             controller = newController();
             label();
             printHeader();
@@ -292,11 +292,11 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        ExtendedAngleEstimator<N2, N1> newObserver() {
+        NonlinearEstimator<N2, N1, N2> newObserver() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final ExtendedAngleEstimator<N2, N1> observer = new ExtendedAngleEstimator<N2, N1>(
-                    Nat.N2(), Nat.N1(),
+            final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(
+                    Nat.N2(), Nat.N1(), Nat.N2(),
                     system,
                     kSecPerRioLoop);
             observer.reset();
@@ -306,10 +306,10 @@ public class EstimatorLatencyTest {
             return observer;
         }
 
-        AngleController<N2> newController() {
+        LinearizedLQR<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new AngleController<>(Nat.N2(), system, stateTolerance, controlTolerance);
+            return new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system, stateTolerance, controlTolerance);
         }
 
         void printHeader() {
