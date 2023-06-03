@@ -3,25 +3,23 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 /** Illustrates multiple measurement sources. */
 public class EKFMultiCorrectTest {
-    static final double kDelta = 0.001;
-    static final double kDt = 0.02;
-
-    final DoubleIntegrator1D system = new DoubleIntegrator1D(0.01, 0.1, 0.015, 0.17);
-
-    final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(Nat.N2(), Nat.N1(), Nat.N2(), system, kDt);
+    private static final double kDelta = 0.001;
+    private static final double kDt = 0.02;
 
     @Test
     public void testMultipleSensors() {
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+        NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
+
         observer.reset();
 
         observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));

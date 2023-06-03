@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Matrix;
@@ -24,7 +24,7 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegratorRotary1D(0, 0, 0, 0);
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
@@ -67,7 +67,7 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegratorRotary1D(0, 0, 0, 0);
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);

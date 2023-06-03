@@ -7,11 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.LinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
@@ -21,33 +19,18 @@ import edu.wpi.first.math.numbers.N2;
  * Demonstrates angle-wrapping with LinearSystemLoop.
  */
 public class AngleLoopTest {
-    static final double kDelta = 0.001;
-    static final double kDt = 0.02;
+    private static final double kDelta = 0.001;
+    private static final double kDt = 0.02;
 
-    // CONTROLLER
+    final Vector<N2> stateTolerance = VecBuilder.fill(0.01, // angle (rad)
+            0.2); // velocity (rad/s)
+    final Vector<N1> controlTolerance = VecBuilder.fill(12.0); // output (volts)
 
-    final Vector<N2> stateTolerance = VecBuilder
-            .fill(0.01, // angle (rad)
-                    0.2); // velocity (rad/s)
-    final Vector<N1> controlTolerance = VecBuilder
-            .fill(12.0); // output (volts)
-
-    final DoubleIntegrator1D system = new DoubleIntegrator1D(0.01, 0.1, 0.015, 0.17);
-
-    final LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system,
-            stateTolerance, controlTolerance);
-
-    Matrix<N1, N1> desaturate(Matrix<N1, N1> u) {
-        return StateSpaceUtil.desaturateInputVector(u, 12.0);
-    }
-
-    final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(Nat.N2(), Nat.N1(),
-            Nat.N2(), system, kDt);
-
-    LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(
-            Nat.N2(), Nat.N1(), system);
-    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<N2, N1, N2>(Nat.N2(), controller, feedforward,
-            observer,  this::desaturate);
+    DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(0.01, 0.1, 0.015, 0.17);
+    LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+    LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
+    NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, observer);
 
     @Test
     public void testLoop() {

@@ -18,9 +18,6 @@ import edu.wpi.first.math.system.NumericalJacobian;
 public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** u value for calculating K, which is required to be u-invariant. */
     private final Matrix<Inputs, N1> kUZero;
-    private final Nat<States> m_states;
-    private final Nat<Inputs> m_inputs;
-    private final Nat<Outputs> m_outputs;
     private final Matrix<States, States> m_Q;
     private final Matrix<Inputs, Inputs> m_R;
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
@@ -30,17 +27,8 @@ public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs exten
      * systems we use are like that.
      * in any case it should match the feedforward.
      */
-    public LinearizedLQR(
-            Nat<States> states,
-            Nat<Inputs> inputs,
-            Nat<Outputs> outputs,
-            NonlinearPlant<States, Inputs, Outputs> plant,
-            Vector<States> qelms,
-            Vector<Inputs> relms) {
-        m_states = states;
-        m_inputs = inputs;
-        m_outputs = outputs;
-        kUZero = new Matrix<>(inputs, Nat.N1());
+    public LinearizedLQR(NonlinearPlant<States, Inputs, Outputs> plant, Vector<States> qelms, Vector<Inputs> relms) {
+        kUZero = new Matrix<>(plant.inputs(), Nat.N1());
         m_plant = plant;
         m_Q = StateSpaceUtil.makeCostMatrix(qelms);
         m_R = StateSpaceUtil.makeCostMatrix(relms);
@@ -55,8 +43,8 @@ public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs exten
      * @return K
      */
     Matrix<Inputs, States> calculateK(Matrix<States, N1> x, Matrix<Inputs, N1> u, double dtSeconds) {
-        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_states, m_states, m_plant::f, x, u);
-        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_states, m_inputs, m_plant::f, x, u);
+        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_plant.states(), m_plant.states(), m_plant::f, x, u);
+        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f, x, u);
 
         var discABPair = Discretization.discretizeAB(A, B, dtSeconds);
         var discA = discABPair.getFirst();

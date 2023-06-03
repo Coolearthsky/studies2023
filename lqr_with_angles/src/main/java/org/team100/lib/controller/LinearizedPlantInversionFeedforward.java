@@ -22,29 +22,23 @@ import edu.wpi.first.math.system.NumericalJacobian;
  * This is similar to the WPI version but it's immutable.
  */
 public class LinearizedPlantInversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
-    private final Nat<States> m_states;
-    private final Nat<Inputs> m_inputs;
-    private final Matrix<Inputs, N1> uZero;
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
+    private final Matrix<Inputs, N1> uZero;
 
     /**
      * @param f the full dynamics f(x,u)
      */
-    public LinearizedPlantInversionFeedforward(
-            Nat<States> states,
-            Nat<Inputs> inputs,
-            NonlinearPlant<States, Inputs, Outputs> plant) {
-        m_states = states;
-        m_inputs = inputs;
+    public LinearizedPlantInversionFeedforward(NonlinearPlant<States, Inputs, Outputs> plant) {
         m_plant = plant;
-        uZero = new Matrix<>(inputs, Nat.N1());
+        uZero = new Matrix<>(plant.inputs(), Nat.N1());
     }
 
     /**
      * @return feedforward as linearized and inverted control response
      */
     public Matrix<Inputs, N1> calculateWithRAndRDot(Matrix<States, N1> r, Matrix<States, N1> rDot) {
-        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_states, m_inputs, m_plant::f, r, uZero);
+        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
+                r, uZero);
         return B.solve(rDot.minus(m_plant.f(r, uZero)));
     }
 }

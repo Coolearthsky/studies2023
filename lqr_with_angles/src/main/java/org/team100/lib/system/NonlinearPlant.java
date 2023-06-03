@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
@@ -34,4 +35,11 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
      * the stdev of the disturbance?
      */
     public Matrix<States, N1> stdev();
+
+    /** Control limit */
+    public Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
+
+    public Nat<States> states();
+    public Nat<Inputs> inputs();
+    public Nat<Outputs> outputs();
 }

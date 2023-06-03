@@ -1,7 +1,5 @@
 package org.team100.lib.system;
 
-import java.util.function.Function;
-
 import org.team100.lib.controller.LinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
@@ -24,32 +22,31 @@ import edu.wpi.first.math.numbers.N1;
  * control output (system input) to achieve the refernce.
  */
 public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
+    private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final LinearizedLQR<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
     private final NonlinearEstimator<States, Inputs, Outputs> m_observer;
-    private final Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> m_clampFunction;
 
     /**
      * Constructs a state-space loop with the given controller, feedforward, and
      * observer. By default, the initial reference is all zeros. Users should call
      * reset with the initial system state before enabling the loop.
      *
-     * @param controller    State-space controller.
-     * @param feedforward   Plant inversion feedforward.
-     * @param observer      State-space observer.
-     * @param clampFunction The function used to clamp the input U.
+     * @param plant       The system to control.
+     * @param controller  State-space controller.
+     * @param feedforward Plant inversion feedforward.
+     * @param observer    State-space observer.
      */
     public NonlinearSystemLoop(
-            Nat<States> states,
+            NonlinearPlant<States, Inputs, Outputs> plant,
             LinearizedLQR<States, Inputs, Outputs> controller,
             LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-            NonlinearEstimator<States, Inputs, Outputs> observer,
-            Function<Matrix<Inputs, N1>, Matrix<Inputs, N1>> clampFunction) {
+            NonlinearEstimator<States, Inputs, Outputs> observer) {
+        m_plant = plant;
         m_controller = controller;
         m_feedforward = feedforward;
         m_observer = observer;
-        m_clampFunction = clampFunction;
-        setXhat(new Matrix<>(states, Nat.N1()));
+        setXhat(new Matrix<>(plant.states(), Nat.N1()));
     }
 
     /**
@@ -96,6 +93,6 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
         Matrix<Inputs, N1> controllerU = m_controller.calculate(m_observer.getXhat(), r, dtSeconds);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
-        return m_clampFunction.apply(controllerU.plus(feedforwardU));
+        return m_plant.limit(controllerU.plus(feedforwardU));
     }
 }

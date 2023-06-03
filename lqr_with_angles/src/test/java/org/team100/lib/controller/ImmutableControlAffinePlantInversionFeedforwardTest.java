@@ -4,11 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
@@ -22,10 +21,10 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the model is trivial
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
 
-        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<N2, N1, N2>(
-                Nat.N2(), Nat.N1(), system);
+        NonlinearPlant<N2, N1, N2> system = new DoubleIntegratorRotary1D(0, 0, 0, 0);
+        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
+
         // position does not matter here.
         Matrix<N2, N1> r = VecBuilder.fill(0, 2);
         // for now, a huge step function.
@@ -39,10 +38,10 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // pendulum model vdot includes position dependence
         // the r and nextR differ by 1
         // so u should be 1/dt or 50.
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<N2, N1, N2>(
-                Nat.N2(), Nat.N1(), system);
+        NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
+        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
+
         {
             // r position 0 means maximum gravity so u = 1
             Matrix<N2, N1> r = VecBuilder.fill(0, 0);

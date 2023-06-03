@@ -6,21 +6,14 @@ import org.team100.lib.system.Sensor;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.AngleStatistics;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
-/**
- * One-dimensional double integrator, represents frictionless newtonian motion.
- * State includes velocity and position, input is acceleration, output is
- * position.
- * 
- * In this case, we're modeling rotation, i.e. a wheel.
- * 
- * TODO: make a cartesian one.
- */
-public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
+/** Base class for one-dimensional rotational plants. */
+public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2>  {
     private final double positionMeasurementStdev;
     private final double velocityMeasurementStdev;
     private final double positionStateStdev;
@@ -86,7 +79,7 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
     }
 
     // TODO: remove these stdevs, put them in the sensor only
-    public DoubleIntegrator1D(double positionMeasurementStdev, double velocityMeasurementStdev,
+    public RotaryPlant1D(double positionMeasurementStdev, double velocityMeasurementStdev,
             double positionStateStdev, double velocityStateStdev) {
         this.positionMeasurementStdev = positionMeasurementStdev;
         this.velocityMeasurementStdev = velocityMeasurementStdev;
@@ -95,23 +88,6 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
         full = new FullSensor();
         position = new PositionSensor();
         velocity = new VelocitySensor();
-    }
-
-    /**
-     * xdot = f(x,u)
-     * pdot = v
-     * vdot = u
-     * 
-     * the x jacobian should be constant [0 1 0 0]
-     * the u jacobian should be constant [0, 1]
-     */
-    @Override
-    public Matrix<N2, N1> f(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        double v = xmat.get(1, 0);
-        double u = umat.get(0, 0);
-        double pdot = v;
-        double vdot = u;
-        return VecBuilder.fill(pdot, vdot);
     }
 
     /**
@@ -151,4 +127,21 @@ public class DoubleIntegrator1D implements NonlinearPlant<N2, N1, N2> {
         x.set(0,0, MathUtil.angleModulus(x.get(0,0)));
         return x;
     }
+
+    public Matrix<N1, N1> limit(Matrix<N1, N1> u) {
+        return StateSpaceUtil.desaturateInputVector(u, 12.0);
+    }
+
+    public Nat<N2> states() {
+        return Nat.N2();
+    }
+
+    public Nat<N1> inputs() {
+        return Nat.N1();
+    }
+
+    public Nat<N2> outputs() {
+        return Nat.N2();
+    }
+
 }

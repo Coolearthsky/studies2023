@@ -25,18 +25,13 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
      * @param dtSeconds scales (inversely) measurement noise in correction.
      *                  TODO: do this per-correction instead
      */
-    public NonlinearEstimator(
-            Nat<States> states,
-            Nat<Inputs> inputs,
-            Nat<Outputs> outputs,
-            NonlinearPlant<States, Inputs, Outputs> system,
-            double dtSeconds) {
-        m_uZero = new Matrix<>(inputs, Nat.N1());
+    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> system, double dtSeconds) {
+        m_uZero = new Matrix<>(system.inputs(), Nat.N1());
         m_system = system;
         ekf = new ExtendedKalmanFilter<States, Inputs, Outputs>(
-                states,
-                inputs,
-                outputs,
+                system.states(),
+                system.inputs(),
+                system.outputs(),
                 system::f,
                 system.full()::h,
                 system.stdev(),

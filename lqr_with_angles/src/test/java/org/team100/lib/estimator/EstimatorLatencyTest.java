@@ -5,11 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.LinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
@@ -78,10 +77,6 @@ import edu.wpi.first.math.numbers.N2;
  * this specifies 1ms latency for the USB interface, and 200Hz sampling, and
  * also suggests that the on-board filter is EKF, which means it should have
  * pretty low latency relative to the sampling frequency?
- * 
- * TODO: extend this to include acceleration, since the gyro provides cartesian
- * accelerations.
- * 
  */
 public class EstimatorLatencyTest {
     private static final double kDelta = 0.001;
@@ -123,13 +118,13 @@ public class EstimatorLatencyTest {
         final NonlinearEstimator<N2, N1, N2> observer;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
         final LinearizedLQR<N2, N1, N2> controller;
-        final DoubleIntegrator1D system;
+        final DoubleIntegratorRotary1D system;
 
         public Scenario() {
-            system = new DoubleIntegrator1D(0.01, 0.01, 0.1, 0.1);
+            system = new DoubleIntegratorRotary1D(0.01, 0.01, 0.1, 0.1);
             state = initial();
             observer = newObserver();
-            feedforward = new LinearizedPlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
+            feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
             printHeader();
@@ -295,10 +290,7 @@ public class EstimatorLatencyTest {
         NonlinearEstimator<N2, N1, N2> newObserver() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(
-                    Nat.N2(), Nat.N1(), Nat.N2(),
-                    system,
-                    kSecPerRioLoop);
+            NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kSecPerRioLoop);
             observer.reset();
             observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
             assertEquals(initialPosition, observer.getXhat(0), kDelta);
@@ -309,7 +301,7 @@ public class EstimatorLatencyTest {
         LinearizedLQR<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system, stateTolerance, controlTolerance);
+            return new LinearizedLQR<>(system, stateTolerance, controlTolerance);
         }
 
         void printHeader() {
