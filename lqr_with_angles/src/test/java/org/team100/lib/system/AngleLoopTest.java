@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -28,7 +28,8 @@ public class AngleLoopTest {
     final Vector<N1> controlTolerance = VecBuilder.fill(12.0); // output (volts)
 
     DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-    LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+    ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
+            stateTolerance, controlTolerance, kDt);
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
     NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
     NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, estimator);

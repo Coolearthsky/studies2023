@@ -256,7 +256,6 @@ public class AperiodicExtendedKalmanFilter<States extends Num, Inputs extends Nu
 
         m_xHat = NumericalIntegration.rk4(f, m_xHat, u, predictionDtSec);
 
-
         // TODO move this m_P calculation since we don't actually use it here.
 
         // Find continuous A

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
@@ -52,7 +52,8 @@ public class EKFTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
-        LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+        ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
+                stateTolerance, controlTolerance, kDt);
 
         // initially, state estimate: at zero, motionless
         Matrix<N2, N1> xhat = estimator.getXhat();
@@ -62,7 +63,7 @@ public class EKFTest {
         Vector<N2> setpoint = VecBuilder.fill(0.02, 0);
 
         // initial: push hard to get started
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint, kDt);
+        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
         assertEquals(11.455, u.get(0, 0), kDelta);
 
         // update 1: coasting, approx zero output
@@ -71,7 +72,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.002, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.008, u.get(0, 0), kDelta);
 
         // update 2: slowing down
@@ -80,7 +81,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.006, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-2.558, u.get(0, 0), kDelta);
 
         // update 3: still slowing down
@@ -89,7 +90,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.010, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-2.556, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -98,7 +99,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.013, xhat.get(0, 0), kDelta);
         assertEquals(0.126, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-1.971, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -107,7 +108,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.015, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-1.38, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -116,7 +117,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.017, xhat.get(0, 0), kDelta);
         assertEquals(0.059, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.976, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -125,7 +126,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.018, xhat.get(0, 0), kDelta);
         assertEquals(0.039, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.663, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -134,7 +135,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.019, xhat.get(0, 0), kDelta);
         assertEquals(0.026, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.467, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -143,7 +144,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.017, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.359, u.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -152,7 +153,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.01, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.228, u.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -161,7 +162,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.131, u.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -170,7 +171,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.071, u.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -179,7 +180,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.001, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.037, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -188,7 +189,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.019, u.get(0, 0), kDelta);
     }
 
@@ -201,7 +202,8 @@ public class EKFTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
-        LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+        ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
+                stateTolerance, controlTolerance, kDt);
 
         estimator.setXhat(VecBuilder.fill(Math.PI - 0.03, 0));
 
@@ -218,7 +220,7 @@ public class EKFTest {
         // try to move +0.02
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint, kDt);
+        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
         // should be same output as above since the motion is the same
         assertEquals(11.455, u.get(0, 0), kDelta);
 
@@ -228,7 +230,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.114, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.024, u.get(0, 0), kDelta);
 
         // update 2: slowing down
@@ -237,7 +239,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.118, xhat.get(0, 0), kDelta);
         assertEquals(0.229, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-2.591, u.get(0, 0), kDelta);
 
         // update 3: still slowing down
@@ -246,7 +248,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.122, xhat.get(0, 0), kDelta);
         assertEquals(0.177, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-2.58, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -255,7 +257,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.125, xhat.get(0, 0), kDelta);
         assertEquals(0.125, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-1.987, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -264,7 +266,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.128, xhat.get(0, 0), kDelta);
         assertEquals(0.086, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-1.465, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -273,7 +275,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.13, xhat.get(0, 0), kDelta);
         assertEquals(0.056, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-1.052, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -282,7 +284,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.035, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.719, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -291,7 +293,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.021, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.431, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -300,7 +302,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.012, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.240, u.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -309,7 +311,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.007, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.126, u.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -318,7 +320,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.005, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.062, u.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -327,7 +329,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.028, u.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -336,7 +338,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.01, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -345,7 +347,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.131, xhat.get(0, 0), kDelta);
         assertEquals(0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-0.001, u.get(0, 0), kDelta);
     }
 
@@ -358,7 +360,8 @@ public class EKFTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
-        LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+        ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
+                stateTolerance, controlTolerance, kDt);
 
         // starting point is the only difference
         estimator.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
@@ -377,7 +380,7 @@ public class EKFTest {
         // try to move +0.02
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint, kDt);
+        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
         // using the EKF this is the correct negative number
         assertEquals(-11.455, u.get(0, 0), kDelta);
 
@@ -385,7 +388,7 @@ public class EKFTest {
         estimator.predictState(u, kDt);
         estimator.correct(VecBuilder.fill(-3.133), system.position());
         xhat = estimator.getXhat();
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(-3.133, xhat.get(0, 0), kDelta);
         assertEquals(-0.229, xhat.get(1, 0), kDelta);
         assertEquals(-0.048, u.get(0, 0), kDelta);
@@ -396,7 +399,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(-3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.229, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(2.594, u.get(0, 0), kDelta);
 
         ////////////////////////////////////////////////////////////////////
@@ -410,7 +413,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.141, xhat.get(0, 0), kDelta);
         assertEquals(-0.177, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(2.612, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
@@ -419,7 +422,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.138, xhat.get(0, 0), kDelta);
         assertEquals(-0.125, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(2.016, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
@@ -428,7 +431,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.135, xhat.get(0, 0), kDelta);
         assertEquals(-0.086, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(1.485, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
@@ -437,7 +440,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.134, xhat.get(0, 0), kDelta);
         assertEquals(-0.056, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.991, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
@@ -446,7 +449,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.133, xhat.get(0, 0), kDelta);
         assertEquals(-0.036, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.656, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
@@ -455,7 +458,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.023, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.460, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
@@ -464,7 +467,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.014, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.279, u.get(0, 0), kDelta);
 
         // update 10: almost there
@@ -473,7 +476,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.008, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.155, u.get(0, 0), kDelta);
 
         // update 11: almost there
@@ -482,7 +485,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.005, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.082, u.get(0, 0), kDelta);
 
         // update 12: almost there
@@ -491,7 +494,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.040, u.get(0, 0), kDelta);
 
         // update 13: almost there
@@ -500,7 +503,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.018, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
@@ -509,7 +512,7 @@ public class EKFTest {
         xhat = estimator.getXhat();
         assertEquals(3.132, xhat.get(0, 0), kDelta);
         assertEquals(-0.003, xhat.get(1, 0), kDelta);
-        u = controller.calculate(xhat, setpoint, kDt);
+        u = controller.calculate(xhat, setpoint);
         assertEquals(0.006, u.get(0, 0), kDelta);
     }
 
@@ -734,25 +737,27 @@ public class EKFTest {
     /** Same test as in BitemporalEstimator, to see if it's the same. */
     @Test
     public void testFullCorrection() {
-       // System.out.println("FULL EKF");
+        // System.out.println("FULL EKF");
         Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.015, 0.17);
         Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.01, 0.1);
         ExtendedKalmanFilter<N2, N1, N2> estimator = new ExtendedKalmanFilter<>(
                 Nat.N2(), Nat.N1(), Nat.N2(), this::f, this::h, stateStdDevs, measurementStdDevs, 0.01);
 
-        double validTime = 0;
+        // double validTime = 0;
         Matrix<N2, N1> xhat = estimator.getXhat();
         // Matrix<N2, N2> P = estimator.getP();
-     //   System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n", validTime, xhat.get(0, 0),
-      //          xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+        // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
+        // validTime, xhat.get(0, 0),
+        // xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
 
         for (long i = 10; i < 1000; i += 10) {
-            validTime = 0.001 * i;
+            // validTime = 0.001 * i;
             estimator.correct(VecBuilder.fill(0), VecBuilder.fill(1, 0));
             xhat = estimator.getXhat();
             // P = estimator.getP();
-         //   System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n", validTime, xhat.get(0, 0),
-          //         xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+            // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
+            // validTime, xhat.get(0, 0),
+            // xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
         }
 
         estimator.correct(VecBuilder.fill(0), VecBuilder.fill(1, 0));

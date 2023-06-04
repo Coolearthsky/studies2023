@@ -3,7 +3,7 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -118,7 +118,7 @@ public class EstimatorLatencyTest {
         final CompleteState state;
         final NonlinearEstimator<N2, N1, N2> estimator;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
-        final LinearizedLQR<N2, N1, N2> controller;
+        final ConstantGainLinearizedLQR<N2, N1, N2> controller;
         final DoubleIntegratorRotary1D system;
 
         public Scenario() {
@@ -279,7 +279,7 @@ public class EstimatorLatencyTest {
                 predict();
                 Vector<N2> nextReference = nextReference();
                 Vector<N2> nextRDot = nextRDot();
-                calculateOutput(nextReference, nextRDot, kSecPerRioLoop);
+                calculateOutput(nextReference, nextRDot);
             }
         }
 
@@ -309,10 +309,10 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot, double dtSec) {
+        void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot) {
             // this is the predicted future state given the previous control
             Matrix<N2, N1> nextXhat = estimator.getXhat();
-            Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference, dtSec);
+            Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
         }
@@ -328,10 +328,10 @@ public class EstimatorLatencyTest {
             return estimator;
         }
 
-        LinearizedLQR<N2, N1, N2> newController() {
+        ConstantGainLinearizedLQR<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new LinearizedLQR<>(system, stateTolerance, controlTolerance);
+            return new ConstantGainLinearizedLQR<>(system, stateTolerance, controlTolerance, kSecPerRioLoop);
         }
 
         void printHeader() {

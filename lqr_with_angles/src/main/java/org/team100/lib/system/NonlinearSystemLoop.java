@@ -1,6 +1,6 @@
 package org.team100.lib.system;
 
-import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
 
@@ -23,7 +23,7 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
-    private final LinearizedLQR<States, Inputs, Outputs> m_controller;
+    private final ConstantGainLinearizedLQR<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
     private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
 
@@ -35,11 +35,11 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param plant       The system to control.
      * @param controller  State-space controller.
      * @param feedforward Plant inversion feedforward.
-     * @param estimator    State-space estimator.
+     * @param estimator   State-space estimator.
      */
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
-            LinearizedLQR<States, Inputs, Outputs> controller,
+            ConstantGainLinearizedLQR<States, Inputs, Outputs> controller,
             LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
             NonlinearEstimator<States, Inputs, Outputs> estimator) {
         m_plant = plant;
@@ -91,7 +91,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * TODO: use absolute time
      */
     public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
-        Matrix<Inputs, N1> controllerU = m_controller.calculate(m_estimator.getXhat(), r, dtSeconds);
+        Matrix<Inputs, N1> controllerU = m_controller.calculate(m_estimator.getXhat(), r);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));
     }

@@ -85,7 +85,7 @@ public class BitemporalBuffer<Value> {
     }
 
     /** Find the entry for the greatest key less than vt. */
-    public Entry<Double,Entry<Long,Value>> validFloorEntry(double vt) {
+    public Entry<Double, Entry<Long, Value>> validFloorEntry(double vt) {
         return valid.floorEntry(vt);
     }
 
