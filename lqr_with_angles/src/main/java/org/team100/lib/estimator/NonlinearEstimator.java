@@ -7,7 +7,6 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.StateSpaceUtil;
-import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 
 /**
@@ -18,17 +17,22 @@ import edu.wpi.first.math.numbers.N1;
 public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Matrix<Inputs, N1> m_uZero;
     private final NonlinearPlant<States, Inputs, Outputs> m_system;
-    private final ExtendedKalmanFilter<States, Inputs, Outputs> ekf;
+    private final double correctionDtSec;
+    private final AperiodicExtendedKalmanFilter<States, Inputs, Outputs> ekf;
 
     /**
-     * @param plant    system dynamics, must be control-affine
-     * @param dtSeconds scales (inversely) measurement noise in correction.
-     *                  TODO: do this per-correction instead
+     * @param plant           system dynamics, must be control-affine
+     * @param correctionDtSec scales (inversely) measurement noise in correction.
+     *                        This is used only for correction, to discretize the
+     *                        DARE solution; choose any value you want (e.g. the
+     *                        robot loop period), and then tune the state and
+     *                        measurement variances around that.
      */
-    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> plant, double dtSeconds) {
+    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> plant, double correctionDtSec) {
         m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
         m_system = plant;
-        ekf = new ExtendedKalmanFilter<States, Inputs, Outputs>(
+        this.correctionDtSec = correctionDtSec;
+        ekf = new AperiodicExtendedKalmanFilter<States, Inputs, Outputs>(
                 plant.states(),
                 plant.inputs(),
                 plant.outputs(),
@@ -38,7 +42,7 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
                 plant.full().stdev(),
                 plant.full()::yResidual,
                 plant::xAdd,
-                dtSeconds);
+                correctionDtSec);
     }
 
     /**
@@ -68,6 +72,10 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
                 contR,
                 sensor::yResidual,
                 m_system::xAdd);
+    }
+
+    public Matrix<States, States> getP() {
+        return ekf.getP();
     }
 
     public void reset() {

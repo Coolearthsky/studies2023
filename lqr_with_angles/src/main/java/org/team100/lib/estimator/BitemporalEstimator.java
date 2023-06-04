@@ -33,9 +33,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
     }
 
     /**
-     * Prediction. Find the most-recent state earlier than the specified valid time,
-     * and integrate forward to estimate the state at the valid time. Record the new
-     * state and time.
+     * Prediction. Find the most-recent state earlier than the specified
+     * valid time, and integrate forward to estimate the state at the valid time.
+     * Record the new state and time.
      */
     public Matrix<States, N1> predict(
             Matrix<Inputs, N1> u,
@@ -48,9 +48,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
     }
 
     /**
-     * Correction. Find the most-recent state earlier than the specified valid time,
-     * and use it as the base for correction to estimate the state at the valid
-     * time. Record the new state and time.
+     * Correction. Find the most-recent state earlier than the specified
+     * valid time, and use it as the base for correction to estimate the state at
+     * the valid time. Record the new state and time.
      */
     public <Rows extends Num> Matrix<States, N1> correct(
             Matrix<Rows, N1> y,
@@ -63,12 +63,15 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
         return update(recordTimeUSec, validTimeSec);
     }
 
-    Entry<Double, Entry<Long, Matrix<States, N1>>> floor(double absoluteTimeSec) {
-        if (absoluteTimeSec < 0)
-            throw new IllegalArgumentException("Negative time is not allowed: " + absoluteTimeSec);
-        Entry<Double, Entry<Long, Matrix<States, N1>>> floor = m_stateBuffer.validFloorEntry(absoluteTimeSec);
+    /**
+     * Find the most-recent state earlier than the specified valid time.
+     */
+    Entry<Double, Entry<Long, Matrix<States, N1>>> floor(double validTimeSec) {
+        if (validTimeSec < 0)
+            throw new IllegalArgumentException("Negative time is not allowed: " + validTimeSec);
+        Entry<Double, Entry<Long, Matrix<States, N1>>> floor = m_stateBuffer.validFloorEntry(validTimeSec);
         if (floor == null)
-            throw new IllegalStateException("No floor key (not initialized?): " + absoluteTimeSec);
+            throw new IllegalStateException("No floor key (not initialized?): " + validTimeSec);
         return floor;
     }
 
