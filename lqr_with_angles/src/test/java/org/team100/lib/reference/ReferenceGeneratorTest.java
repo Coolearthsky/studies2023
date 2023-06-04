@@ -12,9 +12,9 @@ public class ReferenceGeneratorTest {
 
     @Test
     public void testSimple() {
-        NonlinearPlant<N2, N1, N2> system = new NormalDoubleIntegratorRotary1D();
+        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
         double dtSeconds = 0.02;
-        NonlinearEstimator<N2, N1, N2> eae = new NonlinearEstimator<>(system, dtSeconds);
+        NonlinearEstimator<N2, N1, N2> eae = new NonlinearEstimator<>(plant, dtSeconds);
         ReferenceGenerator rg = new ReferenceGenerator(eae);
     }
 }

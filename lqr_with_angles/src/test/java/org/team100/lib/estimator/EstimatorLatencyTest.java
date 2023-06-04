@@ -116,7 +116,7 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final NonlinearEstimator<N2, N1, N2> observer;
+        final NonlinearEstimator<N2, N1, N2> estimator;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
         final LinearizedLQR<N2, N1, N2> controller;
         final DoubleIntegratorRotary1D system;
@@ -153,7 +153,7 @@ public class EstimatorLatencyTest {
                 }
             };
             state = initial();
-            observer = newObserver();
+            estimator = newEstimator();
             feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
@@ -247,8 +247,8 @@ public class EstimatorLatencyTest {
         }
 
         void updatePrediction() {
-            state.predictedPosition = observer.getXhat(0);
-            state.predictedVelocity = observer.getXhat(1);
+            state.predictedPosition = estimator.getXhat(0);
+            state.predictedVelocity = estimator.getXhat(1);
         }
 
         /**
@@ -290,13 +290,13 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         void correctObserver() {
-            observer.correct(VecBuilder.fill(state.observedPosition), system.position());
-            observer.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
+            estimator.correct(VecBuilder.fill(state.observedPosition), system.position());
+            estimator.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
         }
 
         /** Predict the expected future state. */
         void predict() {
-            observer.predictState((Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
+            estimator.predictState((Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
         /**
@@ -311,21 +311,21 @@ public class EstimatorLatencyTest {
          */
         void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot, double dtSec) {
             // this is the predicted future state given the previous control
-            Matrix<N2, N1> nextXhat = observer.getXhat();
+            Matrix<N2, N1> nextXhat = estimator.getXhat();
             Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference, dtSec);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        NonlinearEstimator<N2, N1, N2> newObserver() {
+        NonlinearEstimator<N2, N1, N2> newEstimator() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kSecPerRioLoop);
-            observer.reset();
-            observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
-            assertEquals(initialPosition, observer.getXhat(0), kDelta);
-            assertEquals(initialVelocity, observer.getXhat(1), kDelta);
-            return observer;
+            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kSecPerRioLoop);
+            estimator.reset();
+            estimator.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
+            assertEquals(initialPosition, estimator.getXhat(0), kDelta);
+            assertEquals(initialVelocity, estimator.getXhat(1), kDelta);
+            return estimator;
         }
 
         LinearizedLQR<N2, N1, N2> newController() {

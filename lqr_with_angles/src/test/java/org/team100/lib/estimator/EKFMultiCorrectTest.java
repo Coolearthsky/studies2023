@@ -19,38 +19,38 @@ public class EKFMultiCorrectTest {
     @Test
     public void testMultipleSensors() {
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
-        observer.reset();
+        estimator.reset();
 
-        observer.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
-        assertEquals(-3.132, observer.getXhat(0), kDelta);
-        assertEquals(0, observer.getXhat(1), kDelta);
+        estimator.setXhat(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0));
+        assertEquals(-3.132, estimator.getXhat(0), kDelta);
+        assertEquals(0, estimator.getXhat(1), kDelta);
 
         Matrix<N1, N1> u = VecBuilder.fill(-12);
 
-        observer.predictState(u, kDt);
-        observer.correct(VecBuilder.fill(-3.134), system.position());
-        observer.correct(VecBuilder.fill(-0.240), system.velocity());
-        assertEquals(-3.134, observer.getXhat(0), kDelta);
-        assertEquals(-0.240, observer.getXhat(1), kDelta);
+        estimator.predictState(u, kDt);
+        estimator.correct(VecBuilder.fill(-3.134), system.position());
+        estimator.correct(VecBuilder.fill(-0.240), system.velocity());
+        assertEquals(-3.134, estimator.getXhat(0), kDelta);
+        assertEquals(-0.240, estimator.getXhat(1), kDelta);
 
-        observer.predictState(u, kDt);
-        observer.correct(VecBuilder.fill(-3.141), system.position());
-        observer.correct(VecBuilder.fill(-0.480), system.velocity());
-        assertEquals(-3.141, observer.getXhat(0), kDelta);
-        assertEquals(-0.480, observer.getXhat(1), kDelta);
+        estimator.predictState(u, kDt);
+        estimator.correct(VecBuilder.fill(-3.141), system.position());
+        estimator.correct(VecBuilder.fill(-0.480), system.velocity());
+        assertEquals(-3.141, estimator.getXhat(0), kDelta);
+        assertEquals(-0.480, estimator.getXhat(1), kDelta);
 
-        observer.predictState(u, kDt);
-        observer.correct(VecBuilder.fill(3.13), system.position());
-        observer.correct(VecBuilder.fill(-0.720), system.velocity());
-        assertEquals(3.130, observer.getXhat(0), kDelta);
-        assertEquals(-0.720, observer.getXhat(1), kDelta);
+        estimator.predictState(u, kDt);
+        estimator.correct(VecBuilder.fill(3.13), system.position());
+        estimator.correct(VecBuilder.fill(-0.720), system.velocity());
+        assertEquals(3.130, estimator.getXhat(0), kDelta);
+        assertEquals(-0.720, estimator.getXhat(1), kDelta);
 
-        observer.predictState(u, kDt);
-        observer.correct(VecBuilder.fill(3.113), system.position());
-        observer.correct(VecBuilder.fill(-0.960), system.velocity());
-        assertEquals(3.113, observer.getXhat(0), kDelta);
-        assertEquals(-0.960, observer.getXhat(1), kDelta);
+        estimator.predictState(u, kDt);
+        estimator.correct(VecBuilder.fill(3.113), system.position());
+        estimator.correct(VecBuilder.fill(-0.960), system.velocity());
+        assertEquals(3.113, estimator.getXhat(0), kDelta);
+        assertEquals(-0.960, estimator.getXhat(1), kDelta);
     }
 }

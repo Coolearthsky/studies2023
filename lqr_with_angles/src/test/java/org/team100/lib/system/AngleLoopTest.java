@@ -30,8 +30,8 @@ public class AngleLoopTest {
     DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
     LinearizedLQR<N2, N1, N2> controller = new LinearizedLQR<>(system, stateTolerance, controlTolerance);
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
-    NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, kDt);
-    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, observer);
+    NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, estimator);
 
     @Test
     public void testLoop() {

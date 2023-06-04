@@ -21,28 +21,28 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
     private final ExtendedKalmanFilter<States, Inputs, Outputs> ekf;
 
     /**
-     * @param system    system dynamics, must be control-affine
+     * @param plant    system dynamics, must be control-affine
      * @param dtSeconds scales (inversely) measurement noise in correction.
      *                  TODO: do this per-correction instead
      */
-    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> system, double dtSeconds) {
-        m_uZero = new Matrix<>(system.inputs(), Nat.N1());
-        m_system = system;
+    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> plant, double dtSeconds) {
+        m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
+        m_system = plant;
         ekf = new ExtendedKalmanFilter<States, Inputs, Outputs>(
-                system.states(),
-                system.inputs(),
-                system.outputs(),
-                system::f,
-                system.full()::h,
-                system.stdev(),
-                system.full().stdev(),
-                system.full()::yResidual,
-                system::xAdd,
+                plant.states(),
+                plant.inputs(),
+                plant.outputs(),
+                plant::f,
+                plant.full()::h,
+                plant.stdev(),
+                plant.full().stdev(),
+                plant.full()::yResidual,
+                plant::xAdd,
                 dtSeconds);
     }
 
     /**
-     * Predict state, wrapping the angle if required.
+     * Predict state under output u for dtSec in the future and normalize.
      * 
      * @param u     total control output
      * @param dtSec time quantum (sec)

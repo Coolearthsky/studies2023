@@ -84,6 +84,10 @@ public class BitemporalBuffer<Value> {
         return Collections.unmodifiableNavigableMap(valid.tailMap(vt, true));
     }
 
+    public Entry<Double,Entry<Long,Value>> validFloorEntry(double vt) {
+        return valid.floorEntry(vt);
+    }
+
     public int size() {
         return size;
     }

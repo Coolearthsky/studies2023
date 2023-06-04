@@ -25,7 +25,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final LinearizedLQR<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
-    private final NonlinearEstimator<States, Inputs, Outputs> m_observer;
+    private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
 
     /**
      * Constructs a state-space loop with the given controller, feedforward, and
@@ -35,17 +35,17 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param plant       The system to control.
      * @param controller  State-space controller.
      * @param feedforward Plant inversion feedforward.
-     * @param observer    State-space observer.
+     * @param estimator    State-space estimator.
      */
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
             LinearizedLQR<States, Inputs, Outputs> controller,
             LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-            NonlinearEstimator<States, Inputs, Outputs> observer) {
+            NonlinearEstimator<States, Inputs, Outputs> estimator) {
         m_plant = plant;
         m_controller = controller;
         m_feedforward = feedforward;
-        m_observer = observer;
+        m_estimator = estimator;
         setXhat(new Matrix<>(plant.states(), Nat.N1()));
     }
 
@@ -56,14 +56,14 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @return the i-th element of the observer's state estimate x-hat.
      */
     public double getXHat(int row) {
-        return m_observer.getXhat(row);
+        return m_estimator.getXhat(row);
     }
 
     /**
      * Forces the observer estimate to the provided state.
      */
     public void setXhat(Matrix<States, N1> state) {
-        m_observer.setXhat(state);
+        m_estimator.setXhat(state);
     }
 
     /**
@@ -75,7 +75,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
     public <Rows extends Num> void correct(Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
-        m_observer.correct(y, sensor);
+        m_estimator.correct(y, sensor);
     }
 
     /**
@@ -83,7 +83,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * TODO: use absolute time
      */
     public void predictState(Matrix<Inputs, N1> calculatedU, double dtSeconds) {
-        m_observer.predictState(calculatedU, dtSeconds);
+        m_estimator.predictState(calculatedU, dtSeconds);
     }
 
     /**
@@ -91,7 +91,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * TODO: use absolute time
      */
     public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
-        Matrix<Inputs, N1> controllerU = m_controller.calculate(m_observer.getXhat(), r, dtSeconds);
+        Matrix<Inputs, N1> controllerU = m_controller.calculate(m_estimator.getXhat(), r, dtSeconds);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));
     }

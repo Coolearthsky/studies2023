@@ -24,12 +24,12 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> system = new NormalDoubleIntegratorRotary1D();
+        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -40,7 +40,7 @@ public class NumericalJacobianTest {
             // different position, same A
             Matrix<N2, N1> x = VecBuilder.fill(1, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -51,7 +51,7 @@ public class NumericalJacobianTest {
             // different u, same A
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(10000);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -67,12 +67,12 @@ public class NumericalJacobianTest {
     public void testDoubleIntegratorB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> system = new NormalDoubleIntegratorRotary1D();
+        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, system::f, x, u);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, B.get(0, 0), kDelta),
                     () -> assertEquals(1, B.get(1, 0), kDelta));
@@ -81,7 +81,7 @@ public class NumericalJacobianTest {
             // different position, same B
             Matrix<N2, N1> x = VecBuilder.fill(1, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, system::f, x, u);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, B.get(0, 0), kDelta),
                     () -> assertEquals(1, B.get(1, 0), kDelta));
@@ -90,7 +90,7 @@ public class NumericalJacobianTest {
             // different u, same B
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(10000);
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, system::f, x, u);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, B.get(0, 0), kDelta),
                     () -> assertEquals(1, B.get(1, 0), kDelta));
@@ -104,13 +104,13 @@ public class NumericalJacobianTest {
     public void testPendulumA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
         {
             // at zero degrees the gravity force doesn't change much with position
             // so the jacobian is zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -121,7 +121,7 @@ public class NumericalJacobianTest {
             // at 30 degrees the gravity force changes a little with position
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 6, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -132,7 +132,7 @@ public class NumericalJacobianTest {
             // at 60 degrees the gravity force changes a lot with position
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 3, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -143,7 +143,7 @@ public class NumericalJacobianTest {
             // at 90 degrees the gravity force is about proportional with position
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, system::f, x, u);
+            Matrix<N2, N2> A = NumericalJacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, A.get(0, 0), kDelta),
                     () -> assertEquals(1, A.get(0, 1), kDelta),
@@ -160,12 +160,12 @@ public class NumericalJacobianTest {
     public void testPendulumB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> system = new Pendulum1D();
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
         {
             // at zero
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, system::f, x, u);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, B.get(0, 0), kDelta),
                     () -> assertEquals(1, B.get(1, 0), kDelta));
@@ -174,7 +174,7 @@ public class NumericalJacobianTest {
             // different position, same B
             Matrix<N2, N1> x = VecBuilder.fill(1, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, system::f, x, u);
+            Matrix<N2, N1> B = NumericalJacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertAll(
                     () -> assertEquals(0, B.get(0, 0), kDelta),
                     () -> assertEquals(1, B.get(1, 0), kDelta));
