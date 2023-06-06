@@ -59,7 +59,7 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             double validTimeSec) {
         Entry<Double, Entry<Long, Matrix<States, N1>>> floor = floor(validTimeSec);
         Matrix<States, N1> xhat = floor.getValue().getValue();
-        m_estimator.correct(xhat, y, sensor);
+        xhat = m_estimator.correct(xhat, y, sensor);
         return update(xhat, recordTimeUSec, validTimeSec);
     }
 

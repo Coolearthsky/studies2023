@@ -138,8 +138,8 @@ public class EKFTest {
         assertEquals(-0.350, u.get(0, 0), kDelta);
 
         // update 10: almost there
-        estimator.predictState(xhat, u, kDt);
-        estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
+        xhat = estimator.predictState(xhat, u, kDt);
+        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
         assertEquals(0.02, xhat.get(0, 0), kDelta);
         assertEquals(0.01, xhat.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
