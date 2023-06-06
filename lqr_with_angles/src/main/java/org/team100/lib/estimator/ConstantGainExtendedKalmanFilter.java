@@ -12,6 +12,9 @@ import edu.wpi.first.math.system.NumericalIntegration;
 import edu.wpi.first.math.system.NumericalJacobian;
 import java.util.function.BiFunction;
 
+import org.team100.lib.math.Jacobian;
+import org.team100.lib.math.RandomVector;
+
 /**
  * Similar to WPILib EKF but without the P update, just use initial P forever,
  * which means the gain is kinda constant (adjusted by the h stdev though).
@@ -20,9 +23,6 @@ import java.util.function.BiFunction;
  * 
  * TODO: maybe just specify K, I don't really believe any of this math.
  */
-
-
-
 public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Nat<States> m_states;
     private final BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> m_f;
@@ -54,8 +54,8 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
             Nat<States> states,
             Nat<Inputs> inputs,
             Nat<Outputs> outputs,
-            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
-            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<Outputs, N1>> h,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<Outputs, N1>> h,
             Matrix<States, N1> stateStdDevs,
             Matrix<Outputs, N1> measurementStdDevs,
             double correctionDtSec) {
@@ -74,6 +74,8 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
         Matrix<States, States> discA = discPair.getFirst();
         Matrix<States, States> discQ = discPair.getSecond();
         Matrix<Outputs, Outputs> discR = Discretization.discretizeR(m_contR, correctionDtSec);
+
+        // TODO: this P logic is all wrong
 
         Matrix<States, States> m_initP;
         if (StateSpaceUtil.isDetectable(discA, C) && outputs.getNum() <= states.getNum()) {
@@ -121,20 +123,21 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
      *                      subtracts them.)
      * @param addFuncX      A function that adds two state vectors.
      */
-    public <Rows extends Num> Matrix<States, N1> correct(
+    public <Rows extends Num> RandomVector<States> correct(
             Nat<Rows> rows,
-            Matrix<States, N1> m_xHat,
+            RandomVector<States> m_xHat,
             Matrix<Inputs, N1> u,
             Matrix<Rows, N1> y,
-            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<Rows, N1>> h,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<Rows, N1>> h,
             Matrix<Rows, Rows> contR,
             BiFunction<Matrix<Rows, N1>, Matrix<Rows, N1>, Matrix<Rows, N1>> residualFuncY,
-            BiFunction<Matrix<States, N1>, Matrix<States, N1>, Matrix<States, N1>> addFuncX) {
-        Matrix<Rows, States> C = NumericalJacobian.numericalJacobianX(rows, m_states, h, m_xHat, u);
+            BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
+        Matrix<Rows, States> C = Jacobian.numericalJacobianX(rows, m_states, h, m_xHat.x, u);
         Matrix<Rows, Rows> discR = Discretization.discretizeR(contR, m_correctionDtSec);
         Matrix<Rows, Rows> S = C.times(m_P).times(C.transpose()).plus(discR);
         Matrix<States, Rows> K = S.transpose().solve(C.times(m_P.transpose())).transpose();
-        return addFuncX.apply(m_xHat, K.times(residualFuncY.apply(y, h.apply(m_xHat, u))));
+        Matrix<States, N1> xhat = addFuncX.apply(m_xHat.x, K.times(residualFuncY.apply(y, h.apply(m_xHat.x, u))));
+        return new RandomVector<States>(xhat, m_P);
     }
 
     /**
@@ -144,8 +147,9 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
      * @param u         New control input from controller.
      * @param dtSeconds Timestep for prediction.
      */
-    public Matrix<States, N1> predict(Matrix<States, N1> m_xHat, Matrix<Inputs, N1> u, double predictionDtSec) {
-        return NumericalIntegration.rk4(m_f, m_xHat, u, predictionDtSec);
+    public RandomVector<States> predict(RandomVector<States> m_xHat, Matrix<Inputs, N1> u, double predictionDtSec) {
+        Matrix<States, N1> xhat = NumericalIntegration.rk4(m_f, m_xHat.x, u, predictionDtSec);
+        return new RandomVector<States>(xhat, m_P);
     }
 
     public Matrix<States, States> getP() {

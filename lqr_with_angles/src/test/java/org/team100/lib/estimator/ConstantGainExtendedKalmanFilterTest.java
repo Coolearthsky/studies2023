@@ -21,13 +21,14 @@ import edu.wpi.first.math.trajectory.TrajectoryGenerator;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.RandomVector;
 
 /**
  * This is cut-and-paste from WPILib EKFTest, but with changes to match the
  * class under test.
  */
 class ConstantGainExtendedKalmanFilterTest {
-    private static Matrix<N5, N1> getDynamics(final Matrix<N5, N1> x, final Matrix<N2, N1> u) {
+    private static RandomVector<N5> getDynamics(final RandomVector<N5> x, final Matrix<N2, N1> u) {
         final var motors = DCMotor.getCIM(2);
 
         final var gr = 7.08; // Gear ratio
@@ -41,29 +42,34 @@ class ConstantGainExtendedKalmanFilterTest {
         final var k1 = 1.0 / m + rb * rb / J;
         final var k2 = 1.0 / m - rb * rb / J;
 
-        final var vl = x.get(3, 0);
-        final var vr = x.get(4, 0);
+        final var vl = x.x.get(3, 0);
+        final var vr = x.x.get(4, 0);
         final var Vl = u.get(0, 0);
         final var Vr = u.get(1, 0);
 
-        final Matrix<N5, N1> result = new Matrix<>(Nat.N5(), Nat.N1());
+        final Matrix<N5, N1> resultX = new Matrix<>(Nat.N5(), Nat.N1());
         final var v = 0.5 * (vl + vr);
-        result.set(0, 0, v * Math.cos(x.get(2, 0)));
-        result.set(1, 0, v * Math.sin(x.get(2, 0)));
-        result.set(2, 0, (vr - vl) / (2.0 * rb));
-        result.set(3, 0, k1 * ((C1 * vl) + (C2 * Vl)) + k2 * ((C1 * vr) + (C2 * Vr)));
-        result.set(4, 0, k2 * ((C1 * vl) + (C2 * Vl)) + k1 * ((C1 * vr) + (C2 * Vr)));
-        return result;
+        resultX.set(0, 0, v * Math.cos(x.x.get(2, 0)));
+        resultX.set(1, 0, v * Math.sin(x.x.get(2, 0)));
+        resultX.set(2, 0, (vr - vl) / (2.0 * rb));
+        resultX.set(3, 0, k1 * ((C1 * vl) + (C2 * Vl)) + k2 * ((C1 * vr) + (C2 * Vr)));
+        resultX.set(4, 0, k2 * ((C1 * vl) + (C2 * Vl)) + k1 * ((C1 * vr) + (C2 * Vr)));
+        // TODO: real P treatment
+        return new RandomVector<N5>(resultX, x.P);
     }
 
     @SuppressWarnings("PMD.UnusedFormalParameter")
-    private static Matrix<N3, N1> getLocalMeasurementModel(Matrix<N5, N1> x, Matrix<N2, N1> u) {
-        return VecBuilder.fill(x.get(2, 0), x.get(3, 0), x.get(4, 0));
+    private static RandomVector<N3> getLocalMeasurementModel(RandomVector<N5> x, Matrix<N2, N1> u) {
+        // TODO: real P treatment
+        return new RandomVector<>(VecBuilder.fill(x.x.get(2, 0), x.x.get(3, 0), x.x.get(4, 0)),
+                new Matrix<>(Nat.N3(), Nat.N3()));
     }
 
     @SuppressWarnings("PMD.UnusedFormalParameter")
-    private static Matrix<N5, N1> getGlobalMeasurementModel(Matrix<N5, N1> x, Matrix<N2, N1> u) {
-        return VecBuilder.fill(x.get(0, 0), x.get(1, 0), x.get(2, 0), x.get(3, 0), x.get(4, 0));
+    private static RandomVector<N5> getGlobalMeasurementModel(RandomVector<N5> x, Matrix<N2, N1> u) {
+        // TODO: real P treatment
+        return new RandomVector<>(
+                VecBuilder.fill(x.x.get(0, 0), x.x.get(1, 0), x.x.get(2, 0), x.x.get(3, 0), x.x.get(4, 0)), x.P);
     }
 
     @Test
@@ -83,7 +89,9 @@ class ConstantGainExtendedKalmanFilterTest {
                             dtSeconds);
 
                     Matrix<N2, N1> u = VecBuilder.fill(12.0, 12.0);
-                    Matrix<N5, N1> xhat = new Matrix<>(Nat.N5(), Nat.N1());
+                    RandomVector<N5> xhat = new RandomVector<>(
+                            new Matrix<>(Nat.N5(), Nat.N1()),
+                            new Matrix<>(Nat.N5(), Nat.N5()));
                     xhat = observer.predict(xhat, u, dtSeconds);
 
                     var localY = getLocalMeasurementModel(xhat, u);

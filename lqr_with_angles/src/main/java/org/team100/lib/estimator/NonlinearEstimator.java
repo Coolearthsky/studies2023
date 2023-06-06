@@ -1,5 +1,6 @@
 package org.team100.lib.estimator;
 
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.Sensor;
 
@@ -46,18 +47,18 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
      * @param u     total control output
      * @param dtSec time quantum (sec)
      */
-    public Matrix<States, N1> predictState(Matrix<States, N1> initialState, Matrix<Inputs, N1> u, double dtSec) {
-        final Matrix<States, N1> xhat = ekf.predict(initialState, u, dtSec);
-        final Matrix<States, N1> xhatNormalized = m_system.xNormalize(xhat);
-        return xhatNormalized;
+    public RandomVector<States> predictState(RandomVector<States> initialState, Matrix<Inputs, N1> u, double dtSec) {
+        final RandomVector<States> xhat = ekf.predict(initialState, u, dtSec);
+        final Matrix<States, N1> xhatXNormalized = m_system.xNormalize(xhat.x);
+        return new RandomVector<States>(xhatXNormalized, xhat.P);
     }
 
     /**
      * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
      */
-    public <Rows extends Num> Matrix<States, N1> correct(
-            Matrix<States, N1> initialState,
+    public <Rows extends Num> RandomVector<States> correct(
+            RandomVector<States> initialState,
             Matrix<Rows, N1> y,
             Sensor<States, Inputs, Rows> sensor) {
         Matrix<Rows, Rows> contR = StateSpaceUtil.makeCovarianceMatrix(sensor.rows(), sensor.stdev());

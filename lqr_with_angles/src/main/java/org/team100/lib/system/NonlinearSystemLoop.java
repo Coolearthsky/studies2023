@@ -3,6 +3,7 @@ package org.team100.lib.system;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -55,7 +56,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param y      measurement
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public <Rows extends Num> Matrix<States, N1> correct(Matrix<States, N1> x, Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
+    public <Rows extends Num> RandomVector<States> correct(RandomVector<States> x, Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
         return m_estimator.correct(x, y, sensor);
     }
 
@@ -63,7 +64,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * integrate forward dt.
      * TODO: use absolute time
      */
-    public Matrix<States, N1> predictState(Matrix<States, N1> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
+    public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
        return m_estimator.predictState(initial, calculatedU, dtSeconds);
     }
 
