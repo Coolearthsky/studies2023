@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
  * This is cut-and-paste from WPILib EKFTest, but with changes to match the
  * class under test.
  */
-class AperiodicExtendedKalmanFilterTest {
+class ConstantGainExtendedKalmanFilterTest {
     private static Matrix<N5, N1> getDynamics(final Matrix<N5, N1> x, final Matrix<N2, N1> u) {
         final var motors = DCMotor.getCIM(2);
 
@@ -72,26 +72,33 @@ class AperiodicExtendedKalmanFilterTest {
 
         assertDoesNotThrow(
                 () -> {
-                    AperiodicExtendedKalmanFilter<N5, N2, N3> observer = new AperiodicExtendedKalmanFilter<>(
+                    ConstantGainExtendedKalmanFilter<N5, N2, N3> observer = new ConstantGainExtendedKalmanFilter<>(
                             Nat.N5(),
                             Nat.N2(),
                             Nat.N3(),
-                            AperiodicExtendedKalmanFilterTest::getDynamics,
-                            AperiodicExtendedKalmanFilterTest::getLocalMeasurementModel,
+                            ConstantGainExtendedKalmanFilterTest::getDynamics,
+                            ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
                             VecBuilder.fill(0.5, 0.5, 10.0, 1.0, 1.0),
                             VecBuilder.fill(0.0001, 0.01, 0.01),
                             dtSeconds);
 
                     Matrix<N2, N1> u = VecBuilder.fill(12.0, 12.0);
-                    observer.predict(u, dtSeconds);
+                    Matrix<N5, N1> xhat = new Matrix<>(Nat.N5(), Nat.N1());
+                    xhat = observer.predict(xhat, u, dtSeconds);
 
-                    var localY = getLocalMeasurementModel(observer.getXhat(), u);
-                    observer.correct(u, localY);
+                    var localY = getLocalMeasurementModel(xhat, u);
+                    Matrix<N3, N3> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N3(),
+                            VecBuilder.fill(0.0001, 0.01, 0.01));
+                    xhat = observer.correct(Nat.N3(), xhat, u, localY,
+                            ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                            m_contR, Matrix::minus, Matrix::plus);
 
-                    var globalY = getGlobalMeasurementModel(observer.getXhat(), u);
+                    var globalY = getGlobalMeasurementModel(xhat, u);
                     var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
-                    observer.correct(
-                            Nat.N5(), u, globalY, AperiodicExtendedKalmanFilterTest::getGlobalMeasurementModel, R);
+                    xhat = observer.correct(
+                            Nat.N5(), xhat, u, globalY,
+                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R, Matrix::minus,
+                            Matrix::plus);
                 });
     }
 
@@ -100,12 +107,12 @@ class AperiodicExtendedKalmanFilterTest {
         final double dtSeconds = 0.00505;
         final double rbMeters = 0.8382 / 2.0; // Robot radius
 
-        AperiodicExtendedKalmanFilter<N5, N2, N3> observer = new AperiodicExtendedKalmanFilter<>(
+        ConstantGainExtendedKalmanFilter<N5, N2, N3> observer = new ConstantGainExtendedKalmanFilter<>(
                 Nat.N5(),
                 Nat.N2(),
                 Nat.N3(),
-                AperiodicExtendedKalmanFilterTest::getDynamics,
-                AperiodicExtendedKalmanFilterTest::getLocalMeasurementModel,
+                ConstantGainExtendedKalmanFilterTest::getDynamics,
+                ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
                 VecBuilder.fill(0.5, 0.5, 10.0, 1.0, 1.0),
                 VecBuilder.fill(0.001, 0.01, 0.01),
                 dtSeconds);
@@ -123,19 +130,21 @@ class AperiodicExtendedKalmanFilterTest {
         var B = NumericalJacobian.numericalJacobianU(
                 Nat.N5(),
                 Nat.N2(),
-                AperiodicExtendedKalmanFilterTest::getDynamics,
+                ConstantGainExtendedKalmanFilterTest::getDynamics,
                 new Matrix<>(Nat.N5(), Nat.N1()),
                 u);
 
-        observer.setXhat(
-                VecBuilder.fill(
-                        trajectory.getInitialPose().getTranslation().getX(),
-                        trajectory.getInitialPose().getTranslation().getY(),
-                        trajectory.getInitialPose().getRotation().getRadians(),
-                        0.0,
-                        0.0));
+        Matrix<N5, N1> xhat = VecBuilder.fill(
+                trajectory.getInitialPose().getTranslation().getX(),
+                trajectory.getInitialPose().getTranslation().getY(),
+                trajectory.getInitialPose().getRotation().getRadians(),
+                0.0,
+                0.0);
 
-        var groundTruthX = observer.getXhat();
+        var groundTruthX = xhat;
+
+        Matrix<N3, N3> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N3(),
+                VecBuilder.fill(0.001, 0.01, 0.01));
 
         double totalTime = trajectory.getTotalTimeSeconds();
         for (int i = 0; i < (totalTime / dtSeconds); i++) {
@@ -151,31 +160,39 @@ class AperiodicExtendedKalmanFilterTest {
 
             var localY = getLocalMeasurementModel(groundTruthX, u);
             var whiteNoiseStdDevs = VecBuilder.fill(0.0001, 0.5, 0.5);
-            observer.correct(u, localY.plus(StateSpaceUtil.makeWhiteNoiseVector(whiteNoiseStdDevs)));
+
+            xhat = observer.correct(Nat.N3(), xhat, u,
+                    localY.plus(StateSpaceUtil.makeWhiteNoiseVector(whiteNoiseStdDevs)),
+                    ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                    m_contR, Matrix::minus, Matrix::plus);
 
             Matrix<N5, N1> rdot = nextR.minus(r).div(dtSeconds);
             u = new Matrix<>(B.solve(rdot.minus(getDynamics(r, new Matrix<>(Nat.N2(), Nat.N1())))));
 
-            observer.predict(u, dtSeconds);
+            xhat = observer.predict(xhat, u, dtSeconds);
 
             groundTruthX = NumericalIntegration.rk4(
-                    AperiodicExtendedKalmanFilterTest::getDynamics, groundTruthX, u, dtSeconds);
+                    ConstantGainExtendedKalmanFilterTest::getDynamics, groundTruthX, u, dtSeconds);
 
             r = nextR;
         }
 
-        var localY = getLocalMeasurementModel(observer.getXhat(), u);
-        observer.correct(u, localY);
+        var localY = getLocalMeasurementModel(xhat, u);
+        xhat = observer.correct(Nat.N3(), xhat, u, localY,
+                ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                m_contR, Matrix::minus, Matrix::plus);
 
-        var globalY = getGlobalMeasurementModel(observer.getXhat(), u);
+        var globalY = getGlobalMeasurementModel(xhat, u);
         var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
-        observer.correct(Nat.N5(), u, globalY, AperiodicExtendedKalmanFilterTest::getGlobalMeasurementModel, R);
+        xhat = observer.correct(Nat.N5(), xhat, u, globalY,
+                ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R,
+                Matrix::minus, Matrix::plus);
 
         var finalPosition = trajectory.sample(trajectory.getTotalTimeSeconds());
-        assertEquals(finalPosition.poseMeters.getTranslation().getX(), observer.getXhat(0), 1.0);
-        assertEquals(finalPosition.poseMeters.getTranslation().getY(), observer.getXhat(1), 1.0);
-        assertEquals(finalPosition.poseMeters.getRotation().getRadians(), observer.getXhat(2), 1.0);
-        assertEquals(0.0, observer.getXhat(3), 1.0);
-        assertEquals(0.0, observer.getXhat(4), 1.0);
+        assertEquals(finalPosition.poseMeters.getTranslation().getX(), xhat.get(0, 0), 1.0);
+        assertEquals(finalPosition.poseMeters.getTranslation().getY(), xhat.get(1, 0), 1.0);
+        assertEquals(finalPosition.poseMeters.getRotation().getRadians(), xhat.get(2, 0), 1.0);
+        assertEquals(0.0, xhat.get(3, 0), 1.0);
+        assertEquals(0.0, xhat.get(4, 0), 1.0);
     }
 }

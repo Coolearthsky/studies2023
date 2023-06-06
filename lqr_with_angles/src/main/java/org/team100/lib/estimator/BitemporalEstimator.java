@@ -42,9 +42,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             long recordTimeUSec,
             double validTimeSec) {
         Entry<Double, Entry<Long, Matrix<States, N1>>> floor = floor(validTimeSec);
-        m_estimator.setXhat(floor.getValue().getValue());
-        m_estimator.predictState(u, validTimeSec - floor.getKey());
-        return update(recordTimeUSec, validTimeSec);
+        Matrix<States,N1> xhat = floor.getValue().getValue();
+        Matrix<States, N1> newstate =  m_estimator.predictState(xhat, u, validTimeSec - floor.getKey());
+        return update(newstate, recordTimeUSec, validTimeSec);
     }
 
     /**
@@ -58,9 +58,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             long recordTimeUSec,
             double validTimeSec) {
         Entry<Double, Entry<Long, Matrix<States, N1>>> floor = floor(validTimeSec);
-        m_estimator.setXhat(floor.getValue().getValue());
-        m_estimator.correct(y, sensor);
-        return update(recordTimeUSec, validTimeSec);
+        Matrix<States, N1> xhat = floor.getValue().getValue();
+        m_estimator.correct(xhat, y, sensor);
+        return update(xhat, recordTimeUSec, validTimeSec);
     }
 
     /**
@@ -75,8 +75,7 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
         return floor;
     }
 
-    Matrix<States, N1> update(long recordTimeUSec, double validTimeSec) {
-        Matrix<States, N1> newState = m_estimator.getXhat();
+    Matrix<States, N1> update(Matrix<States, N1> newState, long recordTimeUSec, double validTimeSec) {
         m_stateBuffer.put(recordTimeUSec, validTimeSec, newState);
         return newState;
     }

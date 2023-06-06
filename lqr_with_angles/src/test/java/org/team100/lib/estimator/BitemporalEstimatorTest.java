@@ -87,7 +87,7 @@ public class BitemporalEstimatorTest {
         double validTime = 0;
         stateBuffer.put(recordTime, validTime, VecBuilder.fill(0, 0));
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
-        Matrix<N2, N1> xhat = estimator.getXhat();
+        Matrix<N2, N1> xhat;// = estimator.getXhat();
         // Matrix<N2, N2> P = estimator.getP();
         // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
         // validTime, xhat.get(0, 0),
@@ -116,8 +116,12 @@ public class BitemporalEstimatorTest {
         xhat = bitemporalEstimator.correct(VecBuilder.fill(0), plant.velocity(), 1010l, 1.005);
         // these are now the same because the time-step is the same fixed number as
         // below (0.01 s)
-        assertEquals(0.814, xhat.get(0, 0), kDelta);
-        assertEquals(1.435, xhat.get(1, 0), kDelta);
+        // these are the EKF values
+        // assertEquals(0.814, xhat.get(0, 0), kDelta);
+        //assertEquals(1.435, xhat.get(1, 0), kDelta);
+        // these are the new values; a little different because of constant (a little higher) gain.
+        assertEquals(0.945, xhat.get(0, 0), kDelta);
+        assertEquals(1.655, xhat.get(1, 0), kDelta);
     }
 
     /**
@@ -136,7 +140,7 @@ public class BitemporalEstimatorTest {
         double validTime = 0;
         stateBuffer.put(recordTime, validTime, VecBuilder.fill(0, 0));
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
-        Matrix<N2, N1> xhat = estimator.getXhat();
+        Matrix<N2, N1> xhat;// = estimator.getXhat();
         // Matrix<N2, N2> P = estimator.getP();
         // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
         // validTime, xhat.get(0, 0),
@@ -155,8 +159,12 @@ public class BitemporalEstimatorTest {
         // final correction
         xhat = bitemporalEstimator.correct(VecBuilder.fill(1, 0), plant.full(), 1000l, 1.0);
         // these are identical to the real EKF, using fixed time-step 0.01 s
-        assertEquals(0.814, xhat.get(0, 0), kDelta);
-        assertEquals(1.435, xhat.get(1, 0), kDelta);
+        //assertEquals(0.814, xhat.get(0, 0), kDelta);
+        //assertEquals(1.435, xhat.get(1, 0), kDelta);
+        // these are the new ones, a little higher because of the higher constant gain.
+        assertEquals(0.948, xhat.get(0, 0), kDelta);
+        assertEquals(1.659, xhat.get(1, 0), kDelta);
+
     }
 
     @Test

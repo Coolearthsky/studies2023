@@ -235,20 +235,21 @@ public class EstimatorLatencyTest {
         }
 
         void execute() {
+            Matrix<N2, N1> xhat = VecBuilder.fill(0, 0);
             for (long step = 0; step < 2000; ++step) {
                 state.systemTimeMicrosec = step * kUsecPerSimLoop;
                 updateActual();
                 updateObservation();
-                rioStep();
-                updatePrediction();
+                xhat = rioStep(xhat);
+                updatePrediction(xhat);
                 updateResidual();
                 print();
             }
         }
 
-        void updatePrediction() {
-            state.predictedPosition = estimator.getXhat(0);
-            state.predictedVelocity = estimator.getXhat(1);
+        void updatePrediction(Matrix<N2, N1> xhat) {
+            state.predictedPosition = xhat.get(0, 0);
+            state.predictedVelocity = xhat.get(1, 0);
         }
 
         /**
@@ -273,14 +274,15 @@ public class EstimatorLatencyTest {
          * This talks to the observer and controller. the goal is to decide what to do
          * for the next quantum, so here we are looking at the future.
          */
-        void rioStep() {
+        Matrix<N2, N1> rioStep(Matrix<N2, N1> xhat) {
             if (state.systemTimeMicrosec % kUsecPerRioLoop == 0) {
-                correctObserver();
-                predict();
+                xhat = correctObserver(xhat);
+                xhat = predict(xhat);
                 Vector<N2> nextReference = nextReference();
                 Vector<N2> nextRDot = nextRDot();
-                calculateOutput(nextReference, nextRDot);
+                calculateOutput(xhat, nextReference, nextRDot);
             }
+            return xhat;
         }
 
         /**
@@ -289,14 +291,15 @@ public class EstimatorLatencyTest {
          * Right now these measurements represent the current instant
          * TODO: add measurement delay
          */
-        void correctObserver() {
-            estimator.correct(VecBuilder.fill(state.observedPosition), system.position());
-            estimator.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
+        Matrix<N2, N1> correctObserver(Matrix<N2, N1> xhat) {
+            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedPosition), system.position());
+            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedVelocity), system.velocity());
+            return xhat;
         }
 
         /** Predict the expected future state. */
-        void predict() {
-            estimator.predictState((Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
+        Matrix<N2, N1> predict(Matrix<N2, N1> xhat) {
+            return estimator.predictState(xhat, (Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
         /**
@@ -309,9 +312,8 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot) {
+        void calculateOutput(Matrix<N2, N1> nextXhat, Vector<N2> nextReference, Vector<N2> rDot) {
             // this is the predicted future state given the previous control
-            Matrix<N2, N1> nextXhat = estimator.getXhat();
             Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
@@ -321,10 +323,10 @@ public class EstimatorLatencyTest {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
             NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kSecPerRioLoop);
-            estimator.reset();
-            estimator.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
-            assertEquals(initialPosition, estimator.getXhat(0), kDelta);
-            assertEquals(initialVelocity, estimator.getXhat(1), kDelta);
+
+            Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
+            assertEquals(initialPosition, xhat.get(0, 0), kDelta);
+            assertEquals(initialVelocity, xhat.get(1, 0), kDelta);
             return estimator;
         }
 

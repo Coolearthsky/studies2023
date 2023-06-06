@@ -5,7 +5,6 @@ import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
@@ -46,24 +45,6 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
         m_controller = controller;
         m_feedforward = feedforward;
         m_estimator = estimator;
-        setXhat(new Matrix<>(plant.states(), Nat.N1()));
-    }
-
-    /**
-     * Returns an element of the observer's state estimate x-hat.
-     *
-     * @param row Row of x-hat.
-     * @return the i-th element of the observer's state estimate x-hat.
-     */
-    public double getXHat(int row) {
-        return m_estimator.getXhat(row);
-    }
-
-    /**
-     * Forces the observer estimate to the provided state.
-     */
-    public void setXhat(Matrix<States, N1> state) {
-        m_estimator.setXhat(state);
     }
 
     /**
@@ -74,24 +55,24 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param y      measurement
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public <Rows extends Num> void correct(Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
-        m_estimator.correct(y, sensor);
+    public <Rows extends Num> Matrix<States, N1> correct(Matrix<States, N1> x, Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
+        return m_estimator.correct(x, y, sensor);
     }
 
     /**
      * integrate forward dt.
      * TODO: use absolute time
      */
-    public void predictState(Matrix<Inputs, N1> calculatedU, double dtSeconds) {
-        m_estimator.predictState(calculatedU, dtSeconds);
+    public Matrix<States, N1> predictState(Matrix<States, N1> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
+       return m_estimator.predictState(initial, calculatedU, dtSeconds);
     }
 
     /**
      * find controller output to get to reference at dt; uses observer xhat.
      * TODO: use absolute time
      */
-    public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
-        Matrix<Inputs, N1> controllerU = m_controller.calculate(m_estimator.getXhat(), r);
+    public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
+        Matrix<Inputs, N1> controllerU = m_controller.calculate(xhat, r);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));
     }
