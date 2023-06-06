@@ -7,66 +7,63 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.StateSpaceUtil;
-import edu.wpi.first.math.estimator.ExtendedKalmanFilter;
 import edu.wpi.first.math.numbers.N1;
 
 /**
  * State estimation for nonlinear models.
- * 
- * Has an EKF inside.
  */
 public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Matrix<Inputs, N1> m_uZero;
     private final NonlinearPlant<States, Inputs, Outputs> m_system;
-    private final ExtendedKalmanFilter<States, Inputs, Outputs> ekf;
+    private final ConstantGainExtendedKalmanFilter<States, Inputs, Outputs> ekf;
 
     /**
-     * @param system    system dynamics, must be control-affine
-     * @param dtSeconds scales (inversely) measurement noise in correction.
-     *                  TODO: do this per-correction instead
+     * @param plant           system dynamics, must be control-affine
+     * @param correctionDtSec scales (inversely) measurement noise in correction.
+     *                        This is used to discretize the DARE solution for gain
+     *                        calculation; choose any value you want (e.g. the
+     *                        robot loop period), and then tune the state and
+     *                        measurement variances around that.
      */
-    public NonlinearEstimator(
-            Nat<States> states,
-            Nat<Inputs> inputs,
-            Nat<Outputs> outputs,
-            NonlinearPlant<States, Inputs, Outputs> system,
-            double dtSeconds) {
-        m_uZero = new Matrix<>(inputs, Nat.N1());
-        m_system = system;
-        ekf = new ExtendedKalmanFilter<States, Inputs, Outputs>(
-                states,
-                inputs,
-                outputs,
-                system::f,
-                system.full()::h,
-                system.stdev(),
-                system.full().stdev(),
-                system.full()::yResidual,
-                system::xAdd,
-                dtSeconds);
+    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> plant, double correctionDtSec) {
+        m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
+        m_system = plant;
+        ekf = new ConstantGainExtendedKalmanFilter<States, Inputs, Outputs>(
+                plant.states(),
+                plant.inputs(),
+                plant.outputs(),
+                plant::f,
+                plant.full()::h,
+                plant.stdev(),
+                plant.full().stdev(),
+                correctionDtSec);
     }
 
     /**
-     * Predict state, wrapping the angle if required.
+     * Predict state under output u for dtSec in the future and normalize.
      * 
+     * @param initialState xhat
      * @param u     total control output
      * @param dtSec time quantum (sec)
      */
-    public void predictState(Matrix<Inputs, N1> u, double dtSec) {
-        ekf.predict(u, dtSec);
-        final Matrix<States, N1> xhat = ekf.getXhat();
+    public Matrix<States, N1> predictState(Matrix<States, N1> initialState, Matrix<Inputs, N1> u, double dtSec) {
+        final Matrix<States, N1> xhat = ekf.predict(initialState, u, dtSec);
         final Matrix<States, N1> xhatNormalized = m_system.xNormalize(xhat);
-        ekf.setXhat(xhatNormalized);
+        return xhatNormalized;
     }
 
     /**
      * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
      */
-    public <Rows extends Num> void correct(Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
+    public <Rows extends Num> Matrix<States, N1> correct(
+            Matrix<States, N1> initialState,
+            Matrix<Rows, N1> y,
+            Sensor<States, Inputs, Rows> sensor) {
         Matrix<Rows, Rows> contR = StateSpaceUtil.makeCovarianceMatrix(sensor.rows(), sensor.stdev());
-        ekf.correct(
+        return ekf.correct(
                 sensor.rows(),
+                initialState,
                 m_uZero,
                 y,
                 sensor::h,
@@ -75,23 +72,7 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
                 m_system::xAdd);
     }
 
-    public void reset() {
-        ekf.reset();
-    }
-
-    public void setXhat(Matrix<States, N1> xHat) {
-        ekf.setXhat(xHat);
-    }
-
-    public double getXhat(int row) {
-        return ekf.getXhat(row);
-    }
-
-    public double getP(int row, int col) {
-        return ekf.getP(row, col);
-    }
-
-    public Matrix<States, N1> getXhat() {
-        return ekf.getXhat();
+    public Matrix<States, States> getP() {
+        return ekf.getP();
     }
 }

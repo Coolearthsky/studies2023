@@ -4,8 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
-import org.team100.lib.system.examples.Friction1D;
+import org.team100.lib.system.examples.FrictionRotary1D;
+import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Drake;
@@ -85,9 +85,11 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        NonlinearPlant<N2, N1, N2> system = new DoubleIntegrator1D(0, 0, 0, 0);
 
-        LinearizedLQR<N2, N1, N2> angleController = new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system, stateTolerance, controlTolerance);
+        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
+        ConstantGainLinearizedLQR<N2, N1, N2> angleController = new ConstantGainLinearizedLQR<>(plant,
+                stateTolerance, controlTolerance, kDt);
+
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
         assertEquals(572.773, K.get(0, 0), kDelta);
         assertEquals(44.336, K.get(0, 1), kDelta);
@@ -102,9 +104,11 @@ public class KTest {
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         Matrix<N2, N1> x = VecBuilder.fill(0, 0);
         Matrix<N1, N1> u = VecBuilder.fill(0);
-        NonlinearPlant<N2, N1, N2> system = new Friction1D(0, 0, 0, 0);
 
-        LinearizedLQR<N2, N1, N2> angleController = new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(),  system, stateTolerance, controlTolerance);
+        NonlinearPlant<N2, N1, N2> plant = new FrictionRotary1D();
+        ConstantGainLinearizedLQR<N2, N1, N2> angleController = new ConstantGainLinearizedLQR<>(plant,
+                stateTolerance, controlTolerance, kDt);
+
         Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
         assertEquals(578.494, K.get(0, 0), kDelta);
         assertEquals(43.763, K.get(0, 1), kDelta);
@@ -120,10 +124,11 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(0, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            LinearizedLQR<N2,N1,N2> angleController = new LinearizedLQR<>(Nat.N2(),Nat.N1(), Nat.N2(),  system, stateTolerance,
-                    controlTolerance);
+            NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+            ConstantGainLinearizedLQR<N2, N1, N2> angleController = new ConstantGainLinearizedLQR<>(plant,
+                    stateTolerance, controlTolerance, kDt);
+
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             // same as double integrator when gravity is max
             assertEquals(572.773, K.get(0, 0), kDelta);
@@ -132,10 +137,11 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 4, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            LinearizedLQR<N2,N1,N2> angleController = new LinearizedLQR<>(Nat.N2(),Nat.N1(), Nat.N2(),  system, stateTolerance,
-                    controlTolerance);
+            NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+            ConstantGainLinearizedLQR<N2, N1, N2> angleController = new ConstantGainLinearizedLQR<>(plant,
+                    stateTolerance, controlTolerance, kDt);
+
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
 
             assertEquals(573.425, K.get(0, 0), kDelta);// very slightly higher
@@ -144,10 +150,11 @@ public class KTest {
         {
             Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
             Matrix<N1, N1> u = VecBuilder.fill(0);
-            NonlinearPlant<N2, N1, N2> system = new Pendulum1D(0, 0, 0, 0);
 
-            LinearizedLQR<N2,N1,N2> angleController = new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system, stateTolerance,
-                    controlTolerance);
+            NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+            ConstantGainLinearizedLQR<N2, N1, N2> angleController = new ConstantGainLinearizedLQR<>(plant,
+                    stateTolerance, controlTolerance, kDt);
+
             Matrix<N1, N2> K = angleController.calculateK(x, u, kDt);
             assertEquals(573.695, K.get(0, 0), kDelta); // a tiny bit higher
             assertEquals(44.346, K.get(0, 1), kDelta);// a tiny bit higher
@@ -170,8 +177,8 @@ public class KTest {
         LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        LinearQuadraticRegulator<N2, N1, N2> lqr = new LinearQuadraticRegulator<N2, N1, N2>(
-                plant, stateTolerance, controlTolerance, kDt);
+        LinearQuadraticRegulator<N2, N1, N2> lqr = new LinearQuadraticRegulator<>(plant, stateTolerance,
+                controlTolerance, kDt);
         Matrix<N1, N2> K = lqr.getK();
         assertEquals(572.773, K.get(0, 0), kDelta);
         assertEquals(44.336, K.get(0, 1), kDelta);
@@ -194,8 +201,8 @@ public class KTest {
         LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        LinearQuadraticRegulator<N2, N1, N2> lqr = new LinearQuadraticRegulator<N2, N1, N2>(
-                plant, stateTolerance, controlTolerance, kDt);
+        LinearQuadraticRegulator<N2, N1, N2> lqr = new LinearQuadraticRegulator<>(plant, stateTolerance,
+                controlTolerance, kDt);
         Matrix<N1, N2> K = lqr.getK();
         assertEquals(578.494, K.get(0, 0), kDelta);
         // less velocity feedback needed because of damping

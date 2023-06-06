@@ -8,25 +8,25 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 /**
- * One-dimensional pendulum with gravity. Angle is measured from horizontal.
- * State includes velocity and position, input is acceleration, output is
- * position.
+ * One-dimensional double-integrator with friction force proportional to
+ * velocity.
+ * 
+ * In this case, we're modeling rotation, e.g. a wheel.
  */
-public class Pendulum1D extends RotaryPlant1D {
+public class FrictionRotary1D extends RotaryPlant1D {
     /**
      * xdot = f(x,u)
      * pdot = v
-     * vdot = u - cos(p)
+     * vdot = u
      * 
-     * so vdot itself depends on p but it is still linear in u.
+     * the x jacobian should be constant [0 1 0 -1]
+     * the u jacobian should be constant [0 1]
      */
-    @Override
     public Matrix<N2, N1> f(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        double p = xmat.get(0, 0);
         double v = xmat.get(1, 0);
         double u = umat.get(0, 0);
         double pdot = v;
-        double vdot = u - Math.cos(p);
+        double vdot = u - v;
         return VecBuilder.fill(pdot, vdot);
     }
 

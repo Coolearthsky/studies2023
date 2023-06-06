@@ -3,13 +3,13 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.LinearizedLQR;
+import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
-import org.team100.lib.system.examples.DoubleIntegrator1D;
+import org.team100.lib.system.Sensor;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
@@ -78,10 +78,6 @@ import edu.wpi.first.math.numbers.N2;
  * this specifies 1ms latency for the USB interface, and 200Hz sampling, and
  * also suggests that the on-board filter is EKF, which means it should have
  * pretty low latency relative to the sampling frequency?
- * 
- * TODO: extend this to include acceleration, since the gyro provides cartesian
- * accelerations.
- * 
  */
 public class EstimatorLatencyTest {
     private static final double kDelta = 0.001;
@@ -120,16 +116,45 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
-        final NonlinearEstimator<N2, N1, N2> observer;
+        final NonlinearEstimator<N2, N1, N2> estimator;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
-        final LinearizedLQR<N2, N1, N2> controller;
-        final DoubleIntegrator1D system;
+        final ConstantGainLinearizedLQR<N2, N1, N2> controller;
+        final DoubleIntegratorRotary1D system;
 
         public Scenario() {
-            system = new DoubleIntegrator1D(0.01, 0.01, 0.1, 0.1);
+            system = new DoubleIntegratorRotary1D() {
+
+                public Matrix<N2, N1> stdev() {
+                    return VecBuilder.fill(0.1, 0.1);
+                }
+
+                public Sensor<N2, N1, N2> newFull() {
+                    return new FullSensor() {
+                        public Matrix<N2, N1> stdev() {
+                            return VecBuilder.fill(0.01, 0.01);
+                        }
+                    };
+                }
+
+                public Sensor<N2, N1, N1> newPosition() {
+                    return new PositionSensor() {
+                        public Matrix<N1, N1> stdev() {
+                            return VecBuilder.fill(0.01);
+                        }
+                    };
+                }
+
+                public Sensor<N2, N1, N1> newVelocity() {
+                    return new VelocitySensor() {
+                        public Matrix<N1, N1> stdev() {
+                            return VecBuilder.fill(0.01);
+                        }
+                    };
+                }
+            };
             state = initial();
-            observer = newObserver();
-            feedforward = new LinearizedPlantInversionFeedforward<>(Nat.N2(), Nat.N1(), system);
+            estimator = newEstimator();
+            feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
             printHeader();
@@ -210,20 +235,21 @@ public class EstimatorLatencyTest {
         }
 
         void execute() {
+            Matrix<N2, N1> xhat = VecBuilder.fill(0, 0);
             for (long step = 0; step < 2000; ++step) {
                 state.systemTimeMicrosec = step * kUsecPerSimLoop;
                 updateActual();
                 updateObservation();
-                rioStep();
-                updatePrediction();
+                xhat = rioStep(xhat);
+                updatePrediction(xhat);
                 updateResidual();
                 print();
             }
         }
 
-        void updatePrediction() {
-            state.predictedPosition = observer.getXhat(0);
-            state.predictedVelocity = observer.getXhat(1);
+        void updatePrediction(Matrix<N2, N1> xhat) {
+            state.predictedPosition = xhat.get(0, 0);
+            state.predictedVelocity = xhat.get(1, 0);
         }
 
         /**
@@ -248,14 +274,15 @@ public class EstimatorLatencyTest {
          * This talks to the observer and controller. the goal is to decide what to do
          * for the next quantum, so here we are looking at the future.
          */
-        void rioStep() {
+        Matrix<N2, N1> rioStep(Matrix<N2, N1> xhat) {
             if (state.systemTimeMicrosec % kUsecPerRioLoop == 0) {
-                correctObserver();
-                predict();
+                xhat = correctObserver(xhat);
+                xhat = predict(xhat);
                 Vector<N2> nextReference = nextReference();
                 Vector<N2> nextRDot = nextRDot();
-                calculateOutput(nextReference, nextRDot, kSecPerRioLoop);
+                calculateOutput(xhat, nextReference, nextRDot);
             }
+            return xhat;
         }
 
         /**
@@ -264,14 +291,15 @@ public class EstimatorLatencyTest {
          * Right now these measurements represent the current instant
          * TODO: add measurement delay
          */
-        void correctObserver() {
-            observer.correct(VecBuilder.fill(state.observedPosition), system.position());
-            observer.correct(VecBuilder.fill(state.observedVelocity), system.velocity());
+        Matrix<N2, N1> correctObserver(Matrix<N2, N1> xhat) {
+            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedPosition), system.position());
+            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedVelocity), system.velocity());
+            return xhat;
         }
 
         /** Predict the expected future state. */
-        void predict() {
-            observer.predictState((Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
+        Matrix<N2, N1> predict(Matrix<N2, N1> xhat) {
+            return estimator.predictState(xhat, (Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
         /**
@@ -284,32 +312,28 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Vector<N2> nextReference, Vector<N2> rDot, double dtSec) {
+        void calculateOutput(Matrix<N2, N1> nextXhat, Vector<N2> nextReference, Vector<N2> rDot) {
             // this is the predicted future state given the previous control
-            Matrix<N2, N1> nextXhat = observer.getXhat();
-            Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference, dtSec);
+            Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        NonlinearEstimator<N2, N1, N2> newObserver() {
+        NonlinearEstimator<N2, N1, N2> newEstimator() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            final NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<N2, N1, N2>(
-                    Nat.N2(), Nat.N1(), Nat.N2(),
-                    system,
-                    kSecPerRioLoop);
-            observer.reset();
-            observer.setXhat(VecBuilder.fill(initialPosition, initialVelocity));
-            assertEquals(initialPosition, observer.getXhat(0), kDelta);
-            assertEquals(initialVelocity, observer.getXhat(1), kDelta);
-            return observer;
+            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kSecPerRioLoop);
+
+            Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
+            assertEquals(initialPosition, xhat.get(0, 0), kDelta);
+            assertEquals(initialVelocity, xhat.get(1, 0), kDelta);
+            return estimator;
         }
 
-        LinearizedLQR<N2, N1, N2> newController() {
+        ConstantGainLinearizedLQR<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new LinearizedLQR<>(Nat.N2(), Nat.N1(), Nat.N2(), system, stateTolerance, controlTolerance);
+            return new ConstantGainLinearizedLQR<>(system, stateTolerance, controlTolerance, kSecPerRioLoop);
         }
 
         void printHeader() {

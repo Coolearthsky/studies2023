@@ -84,6 +84,11 @@ public class BitemporalBuffer<Value> {
         return Collections.unmodifiableNavigableMap(valid.tailMap(vt, true));
     }
 
+    /** Find the entry for the greatest key less than vt. */
+    public Entry<Double, Entry<Long, Value>> validFloorEntry(double vt) {
+        return valid.floorEntry(vt);
+    }
+
     public int size() {
         return size;
     }

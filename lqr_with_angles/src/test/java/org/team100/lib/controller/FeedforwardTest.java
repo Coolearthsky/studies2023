@@ -39,7 +39,7 @@ public class FeedforwardTest {
             assertEquals(0.02, discB.get(1, 0), 0.0001);
         }
 
-        final LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
+        LinearSystem<N2, N1, N2> plant = new LinearSystem<>(A, B, C, D);
         LinearPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearPlantInversionFeedforward<>(plant,
                 dtSeconds);
         // these setpoints correspond to constant acceleration

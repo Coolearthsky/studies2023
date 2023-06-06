@@ -13,37 +13,36 @@ import edu.wpi.first.math.system.Discretization;
 import edu.wpi.first.math.system.NumericalJacobian;
 
 /**
- * Full state controller using K from linearized LQR.
+ * Full state controller using constant K from LQR linearized at zero.
+ * 
+ * TODO: maybe just specify K, I don't have much faith in the math here.
  */
-public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs extends Num> {
+public class ConstantGainLinearizedLQR<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** u value for calculating K, which is required to be u-invariant. */
     private final Matrix<Inputs, N1> kUZero;
-    private final Nat<States> m_states;
-    private final Nat<Inputs> m_inputs;
-    private final Nat<Outputs> m_outputs;
     private final Matrix<States, States> m_Q;
     private final Matrix<Inputs, Inputs> m_R;
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
+    private final Matrix<Inputs, States> m_K;
 
     /**
      * TODO: i think that we can require B to be constant, since all the real
-     * systems we use are like that.
-     * in any case it should match the feedforward.
+     * systems we use are like that. In any case it should match the feedforward.
+     * 
+     * @param dtSeconds time step for discretization. choose a value that's
+     *                  convenient, e.g. the robot loop period.
      */
-    public LinearizedLQR(
-            Nat<States> states,
-            Nat<Inputs> inputs,
-            Nat<Outputs> outputs,
+    public ConstantGainLinearizedLQR(
             NonlinearPlant<States, Inputs, Outputs> plant,
             Vector<States> qelms,
-            Vector<Inputs> relms) {
-        m_states = states;
-        m_inputs = inputs;
-        m_outputs = outputs;
-        kUZero = new Matrix<>(inputs, Nat.N1());
+            Vector<Inputs> relms,
+            double dtSeconds) {
+        kUZero = new Matrix<>(plant.inputs(), Nat.N1());
         m_plant = plant;
         m_Q = StateSpaceUtil.makeCostMatrix(qelms);
         m_R = StateSpaceUtil.makeCostMatrix(relms);
+        Matrix<States, N1> x = new Matrix<>(plant.states(), Nat.N1());
+        m_K = calculateK(x, kUZero, dtSeconds);
     }
 
     /**
@@ -55,8 +54,10 @@ public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs exten
      * @return K
      */
     Matrix<Inputs, States> calculateK(Matrix<States, N1> x, Matrix<Inputs, N1> u, double dtSeconds) {
-        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_states, m_states, m_plant::f, x, u);
-        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_states, m_inputs, m_plant::f, x, u);
+        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_plant.states(), m_plant.states(), m_plant::f,
+                x, u);
+        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
+                x, u);
 
         var discABPair = Discretization.discretizeAB(A, B, dtSeconds);
         var discA = discABPair.getFirst();
@@ -84,22 +85,16 @@ public class LinearizedLQR<States extends Num, Inputs extends Num, Outputs exten
     }
 
     /**
-     * Returns control output, K(r-x), using a tangent K.
-     * 
-     * Note: recalculating K all the time might be too slow, maybe only do it if
-     * (x,u) are far from the previous.
+     * Returns control output, K(r-x), using constant K.
      * 
      * Output is not aware of actuator limits; clamp the output yourself.
      * 
-     * @param x         the actual state, xhat from the estimator
-     * @param r         the desired reference state from the trajectory
-     * @param dtSeconds how far in the future
+     * @param x the actual state, xhat from the estimator
+     * @param r the desired reference state from the trajectory
      * @return the controller u value. if you want to use this later, e.g. for
      *         correction, you need to remember it.
      */
-    public Matrix<Inputs, N1> calculate(Matrix<States, N1> x, Matrix<States, N1> r, double dtSeconds) {
-        Matrix<Inputs, States> K = calculateK(x, kUZero, dtSeconds);
-        Matrix<States, N1> error = m_plant.xResidual(r, x);
-        return K.times(error);
+    public Matrix<Inputs, N1> calculate(Matrix<States, N1> x, Matrix<States, N1> r) {
+        return m_K.times(m_plant.xResidual(r, x));
     }
 }
