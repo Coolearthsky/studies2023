@@ -1,5 +1,6 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.Sensor;
 
 import edu.wpi.first.math.Matrix;
@@ -22,12 +23,15 @@ public class FrictionRotary1D extends RotaryPlant1D {
      * the x jacobian should be constant [0 1 0 -1]
      * the u jacobian should be constant [0 1]
      */
-    public Matrix<N2, N1> f(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
-        double v = xmat.get(1, 0);
+    public RandomVector<N2> f(RandomVector<N2> xmat, Matrix<N1, N1> umat) {
+        double v = xmat.x.get(1, 0);
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u - v;
-        return VecBuilder.fill(pdot, vdot);
+        // return VecBuilder.fill(pdot, vdot);
+        // TODO: handle P correctly
+        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+
     }
 
     public Matrix<N2, N1> stdev() {

@@ -1,5 +1,11 @@
 package org.team100.lib.estimator;
 
+import java.util.function.BiFunction;
+
+import org.team100.lib.math.Integration;
+import org.team100.lib.math.Jacobian;
+import org.team100.lib.math.RandomVector;
+
 import edu.wpi.first.math.Drake;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -8,12 +14,6 @@ import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.system.Discretization;
-import edu.wpi.first.math.system.NumericalIntegration;
-import edu.wpi.first.math.system.NumericalJacobian;
-import java.util.function.BiFunction;
-
-import org.team100.lib.math.Jacobian;
-import org.team100.lib.math.RandomVector;
 
 /**
  * Similar to WPILib EKF but without the P update, just use initial P forever,
@@ -25,7 +25,7 @@ import org.team100.lib.math.RandomVector;
  */
 public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Nat<States> m_states;
-    private final BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> m_f;
+    private final BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<States>> m_f;
     private final Matrix<States, States> m_contQ;
     private final Matrix<Outputs, Outputs> m_contR;
     private final double m_correctionDtSec;
@@ -54,8 +54,8 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
             Nat<States> states,
             Nat<Inputs> inputs,
             Nat<Outputs> outputs,
-            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
-            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<Outputs, N1>> h,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<States>> f,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<Outputs>> h,
             Matrix<States, N1> stateStdDevs,
             Matrix<Outputs, N1> measurementStdDevs,
             double correctionDtSec) {
@@ -65,10 +65,11 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
         m_contR = StateSpaceUtil.makeCovarianceMatrix(outputs, measurementStdDevs);
         m_correctionDtSec = correctionDtSec;
 
-        Matrix<States, N1> xHatZero = new Matrix<>(m_states, Nat.N1());
+        RandomVector<States> xHatZero = new RandomVector<>(new Matrix<>(m_states, Nat.N1()),
+                new Matrix<>(m_states, m_states));
         Matrix<Inputs, N1> uZero = new Matrix<>(inputs, Nat.N1());
-        Matrix<States, States> contA = NumericalJacobian.numericalJacobianX(states, states, f, xHatZero, uZero);
-        Matrix<Outputs, States> C = NumericalJacobian.numericalJacobianX(outputs, states, h, xHatZero, uZero);
+        Matrix<States, States> contA = Jacobian.numericalJacobianX(states, states, f, xHatZero, uZero);
+        Matrix<Outputs, States> C = Jacobian.numericalJacobianX(outputs, states, h, xHatZero, uZero);
         Pair<Matrix<States, States>, Matrix<States, States>> discPair = Discretization.discretizeAQTaylor(contA,
                 m_contQ, correctionDtSec);
         Matrix<States, States> discA = discPair.getFirst();
@@ -108,7 +109,7 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
      *
      * @param <Rows>        Number of rows in the result of f(x, u).
      * @param rows          Number of rows in the result of f(x, u).
-     * @param m_xHat state
+     * @param m_xHat        state
      * @param u             Same control input used in the predict step.
      * @param y             Measurement vector.
      * @param h             A vector-valued function of x and u that returns the
@@ -127,29 +128,31 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
             Nat<Rows> rows,
             RandomVector<States> m_xHat,
             Matrix<Inputs, N1> u,
-            Matrix<Rows, N1> y,
-            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, Matrix<Rows, N1>> h,
+            RandomVector<Rows> y,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<Rows>> h,
             Matrix<Rows, Rows> contR,
-            BiFunction<Matrix<Rows, N1>, Matrix<Rows, N1>, Matrix<Rows, N1>> residualFuncY,
+            BiFunction<RandomVector<Rows>, RandomVector<Rows>, RandomVector<Rows>> residualFuncY,
             BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
-        Matrix<Rows, States> C = Jacobian.numericalJacobianX(rows, m_states, h, m_xHat.x, u);
+        Matrix<Rows, States> C = Jacobian.numericalJacobianX(rows, m_states, h, m_xHat, u);
         Matrix<Rows, Rows> discR = Discretization.discretizeR(contR, m_correctionDtSec);
         Matrix<Rows, Rows> S = C.times(m_P).times(C.transpose()).plus(discR);
         Matrix<States, Rows> K = S.transpose().solve(C.times(m_P.transpose())).transpose();
-        Matrix<States, N1> xhat = addFuncX.apply(m_xHat.x, K.times(residualFuncY.apply(y, h.apply(m_xHat.x, u))));
-        return new RandomVector<States>(xhat, m_P);
+        RandomVector<Rows> residual = residualFuncY.apply(y, h.apply(m_xHat, u));
+        RandomVector<States> xhat = addFuncX.apply(m_xHat,
+                new RandomVector<States>(K.times(residual.x), new Matrix<>(m_states, m_states)));
+        // TODO :fix handing of m_P
+        return new RandomVector<States>(xhat.x, m_P);
     }
 
     /**
      * Project the model into the future with a new control input u.
      *
-     * @param m_xHat state
+     * @param m_xHat    state
      * @param u         New control input from controller.
      * @param dtSeconds Timestep for prediction.
      */
     public RandomVector<States> predict(RandomVector<States> m_xHat, Matrix<Inputs, N1> u, double predictionDtSec) {
-        Matrix<States, N1> xhat = NumericalIntegration.rk4(m_f, m_xHat.x, u, predictionDtSec);
-        return new RandomVector<States>(xhat, m_P);
+        return Integration.rk4( m_f, m_xHat, u,predictionDtSec);
     }
 
     public Matrix<States, States> getP() {

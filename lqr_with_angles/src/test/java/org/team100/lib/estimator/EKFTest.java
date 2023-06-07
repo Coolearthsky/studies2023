@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
@@ -45,6 +46,10 @@ public class EKFTest {
         assertEquals(0.0015, estimator.getP().get(1, 0), 0.0001);
     }
 
+    private RandomVector<N1> y1(double yd) {
+        return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0));
+    }
+
     @Test
     public void testNearZero() {
         // positive setpoint, delta +0.02, push positive
@@ -55,9 +60,9 @@ public class EKFTest {
                 stateTolerance, controlTolerance, kDt);
 
         // initially, state estimate: at zero, motionless
-        Matrix<N2, N1> xhat = VecBuilder.fill(0, 0);
-        assertEquals(0, xhat.get(0, 0));
-        assertEquals(0, xhat.get(1, 0));
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        assertEquals(0, xhat.x.get(0, 0));
+        assertEquals(0, xhat.x.get(1, 0));
 
         Vector<N2> setpoint = VecBuilder.fill(0.02, 0);
 
@@ -67,113 +72,113 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.002), system.position());
-        assertEquals(0.002, xhat.get(0, 0), kDelta);
-        assertEquals(0.229, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.002), system.position());
+        assertEquals(0.002, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.229, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.005, u.get(0, 0), kDelta);
 
         // update 2: slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.006), system.position());
-        assertEquals(0.006, xhat.get(0, 0), kDelta);
-        assertEquals(0.229, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.006), system.position());
+        assertEquals(0.006, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.229, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-2.564, u.get(0, 0), kDelta);
 
         // update 3: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.01), system.position());
-        assertEquals(0.010, xhat.get(0, 0), kDelta);
-        assertEquals(0.177, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.01), system.position());
+        assertEquals(0.010, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.177, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-2.561, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.013), system.position());
-        assertEquals(0.013, xhat.get(0, 0), kDelta);
-        assertEquals(0.126, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.013), system.position());
+        assertEquals(0.013, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.126, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-1.975, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.015), system.position());
-        assertEquals(0.015, xhat.get(0, 0), kDelta);
-        assertEquals(0.086, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.015), system.position());
+        assertEquals(0.015, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.086, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-1.383, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.017), system.position());
-        assertEquals(0.017, xhat.get(0, 0), kDelta);
-        assertEquals(0.059, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.017), system.position());
+        assertEquals(0.017, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.059, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.973, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.018), system.position());
-        assertEquals(0.018, xhat.get(0, 0), kDelta);
-        assertEquals(0.039, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.018), system.position());
+        assertEquals(0.018, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.039, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.659, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.019), system.position());
-        assertEquals(0.019, xhat.get(0, 0), kDelta);
-        assertEquals(0.026, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.019), system.position());
+        assertEquals(0.019, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.026, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.462, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0.017, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.017, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.350, u.get(0, 0), kDelta);
 
         // update 10: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0.01, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.01, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.223, u.get(0, 0), kDelta);
 
         // update 11: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0.005, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.005, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.131, u.get(0, 0), kDelta);
 
         // update 12: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0.003, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.072, u.get(0, 0), kDelta);
 
         // update 13: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0.001, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.001, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.039, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(0.02), system.position());
-        assertEquals(0.02, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(0.02), system.position());
+        assertEquals(0.02, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.02, u.get(0, 0), kDelta);
     }
@@ -190,15 +195,15 @@ public class EKFTest {
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
-        Matrix<N2, N1> xhat = VecBuilder.fill(Math.PI - 0.03, 0);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(Math.PI - 0.03, 0), new Matrix<>(Nat.N2(),Nat.N2()));
 
         // initially, state estimate: at zero, motionless
-        assertEquals(3.112, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        assertEquals(3.112, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
-        xhat = estimator.correct(xhat, VecBuilder.fill(Math.PI - 0.03), system.position());
-        assertEquals(3.112, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(Math.PI - 0.03), system.position());
+        assertEquals(3.112, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // try to move +0.02
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
@@ -209,113 +214,113 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.114), system.position());
-        assertEquals(3.114, xhat.get(0, 0), kDelta);
-        assertEquals(0.229, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.114), system.position());
+        assertEquals(3.114, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.229, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.023, u.get(0, 0), kDelta);
 
         // update 2: slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.118), system.position());
-        assertEquals(3.118, xhat.get(0, 0), kDelta);
-        assertEquals(0.229, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.118), system.position());
+        assertEquals(3.118, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.229, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-2.591, u.get(0, 0), kDelta);
 
         // update 3: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.122), system.position());
-        assertEquals(3.122, xhat.get(0, 0), kDelta);
-        assertEquals(0.177, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.122), system.position());
+        assertEquals(3.122, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.177, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-2.581, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.125), system.position());
-        assertEquals(3.125, xhat.get(0, 0), kDelta);
-        assertEquals(0.125, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.125), system.position());
+        assertEquals(3.125, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.125, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-1.988, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.128), system.position());
-        assertEquals(3.128, xhat.get(0, 0), kDelta);
-        assertEquals(0.086, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.128), system.position());
+        assertEquals(3.128, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.086, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-1.462, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.13), system.position());
-        assertEquals(3.13, xhat.get(0, 0), kDelta);
-        assertEquals(0.056, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.13), system.position());
+        assertEquals(3.13, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.056, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-1.047, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.035, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.035, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.714, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.021, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.021, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.431, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.012, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.012, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.242, u.get(0, 0), kDelta);
 
         // update 10: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.007, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.007, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.129, u.get(0, 0), kDelta);
 
         // update 11: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.005, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.005, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.066, u.get(0, 0), kDelta);
 
         // update 12: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.003, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.031, u.get(0, 0), kDelta);
 
         // update 13: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.003, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.013, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.131), system.position());
-        assertEquals(3.131, xhat.get(0, 0), kDelta);
-        assertEquals(0.003, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(3.131), system.position());
+        assertEquals(3.131, xhat.x.get(0, 0), kDelta);
+        assertEquals(0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(-0.004, u.get(0, 0), kDelta);
     }
@@ -333,17 +338,17 @@ public class EKFTest {
                 stateTolerance, controlTolerance, kDt);
 
         // starting point is the only difference
-        Matrix<N2, N1> xhat = VecBuilder.fill(-1.0 * Math.PI + 0.01, 0);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
 
         // initially, state estimate: at zero, motionless
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // starting point is the only difference
-        xhat = estimator.correct(xhat, VecBuilder.fill(-1.0 * Math.PI + 0.01), system.position());
+        xhat = estimator.correct(xhat, y1(-1.0 * Math.PI + 0.01), system.position());
 
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // try to move +0.02
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
@@ -354,19 +359,19 @@ public class EKFTest {
 
         // update 1: coasting, approx zero output
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.133), system.position());
+        xhat = estimator.correct(xhat, y1(-3.133), system.position());
 
         u = controller.calculate(xhat, setpoint);
-        assertEquals(-3.133, xhat.get(0, 0), kDelta);
-        assertEquals(-0.229, xhat.get(1, 0), kDelta);
+        assertEquals(-3.133, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.229, xhat.x.get(1, 0), kDelta);
         assertEquals(-0.048, u.get(0, 0), kDelta);
 
         // update 2: slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.138), system.position());
+        xhat = estimator.correct(xhat, y1(-3.138), system.position());
 
-        assertEquals(-3.138, xhat.get(0, 0), kDelta);
-        assertEquals(-0.229, xhat.get(1, 0), kDelta);
+        assertEquals(-3.138, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.229, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(2.595, u.get(0, 0), kDelta);
 
@@ -377,109 +382,109 @@ public class EKFTest {
         // update 3: still slowing down
         // note boundary crossing here
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.141), system.position());
+        xhat = estimator.correct(xhat, y1(3.141), system.position());
 
-        assertEquals(3.141, xhat.get(0, 0), kDelta);
-        assertEquals(-0.177, xhat.get(1, 0), kDelta);
+        assertEquals(3.141, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.177, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(2.612, u.get(0, 0), kDelta);
 
         // update 4: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.138), system.position());
+        xhat = estimator.correct(xhat, y1(3.138), system.position());
 
-        assertEquals(3.138, xhat.get(0, 0), kDelta);
-        assertEquals(-0.125, xhat.get(1, 0), kDelta);
+        assertEquals(3.138, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.125, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(2.016, u.get(0, 0), kDelta);
 
         // update 5: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.135), system.position());
+        xhat = estimator.correct(xhat, y1(3.135), system.position());
 
-        assertEquals(3.135, xhat.get(0, 0), kDelta);
-        assertEquals(-0.086, xhat.get(1, 0), kDelta);
+        assertEquals(3.135, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.086, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(1.482, u.get(0, 0), kDelta);
 
         // update 6: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.134), system.position());
+        xhat = estimator.correct(xhat, y1(3.134), system.position());
 
-        assertEquals(3.134, xhat.get(0, 0), kDelta);
-        assertEquals(-0.056, xhat.get(1, 0), kDelta);
+        assertEquals(3.134, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.056, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.989, u.get(0, 0), kDelta);
 
         // update 7: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.133), system.position());
+        xhat = estimator.correct(xhat, y1(3.133), system.position());
 
-        assertEquals(3.133, xhat.get(0, 0), kDelta);
-        assertEquals(-0.036, xhat.get(1, 0), kDelta);
+        assertEquals(3.133, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.036, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.656, u.get(0, 0), kDelta);
 
         // update 8: still slowing down
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.023, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.023, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.457, u.get(0, 0), kDelta);
 
         // update 9: passing through the setpoint (slowly)
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.014, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.014, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.279, u.get(0, 0), kDelta);
 
         // update 10: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.008, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.008, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.157, u.get(0, 0), kDelta);
 
         // update 11: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.005, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.005, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.084, u.get(0, 0), kDelta);
 
         // update 12: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.003, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.043, u.get(0, 0), kDelta);
 
         // update 13: almost there
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.003, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.02, u.get(0, 0), kDelta);
 
         // update 14: pretty much done
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.132), system.position());
+        xhat = estimator.correct(xhat, y1(3.132), system.position());
 
-        assertEquals(3.132, xhat.get(0, 0), kDelta);
-        assertEquals(-0.003, xhat.get(1, 0), kDelta);
+        assertEquals(3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.003, xhat.x.get(1, 0), kDelta);
         u = controller.calculate(xhat, setpoint);
         assertEquals(0.008, u.get(0, 0), kDelta);
     }
@@ -496,10 +501,10 @@ public class EKFTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
         // initially, state estimate: at zero, motionless
-        Matrix<N2, N1> xhat = VecBuilder.fill(-1.0 * Math.PI + 0.01, 0);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
 
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // saturate negative-going
         // final double u = -12;
@@ -507,13 +512,13 @@ public class EKFTest {
 
         // update 1
         xhat = estimator.predictState(xhat, u, kDt);
-        assertEquals(-3.134, xhat.get(0, 0), kDelta);
-        assertEquals(-0.240, xhat.get(1, 0), kDelta);
+        assertEquals(-3.134, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.240, xhat.x.get(1, 0), kDelta);
 
         // update 2
         xhat = estimator.predictState(xhat, u, kDt);
-        assertEquals(-3.141, xhat.get(0, 0), kDelta);
-        assertEquals(-0.480, xhat.get(1, 0), kDelta);
+        assertEquals(-3.141, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.480, xhat.x.get(1, 0), kDelta);
 
         ////////////////////////////////////////////////////////////////////
         //
@@ -522,13 +527,13 @@ public class EKFTest {
         // update 3: now it wraps around :-)
         // this only works with my wrapping override for predict().
         xhat = estimator.predictState(xhat, u, kDt);
-        assertEquals(3.130, xhat.get(0, 0), kDelta);
-        assertEquals(-0.720, xhat.get(1, 0), kDelta);
+        assertEquals(3.130, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.720, xhat.x.get(1, 0), kDelta);
 
         // update 4:
         xhat = estimator.predictState(xhat, u, kDt);
-        assertEquals(3.113, xhat.get(0, 0), kDelta);
-        assertEquals(-0.960, xhat.get(1, 0), kDelta);
+        assertEquals(3.113, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.960, xhat.x.get(1, 0), kDelta);
     }
 
     @Test
@@ -561,21 +566,21 @@ public class EKFTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
         // start in negative territory
-        Matrix<N2, N1> xhat = VecBuilder.fill(-1.0 * Math.PI + 0.01, 0);
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
-        xhat = estimator.correct(xhat, VecBuilder.fill(-0.240), system.velocity());
-        assertEquals(-3.134, xhat.get(0, 0), kDelta);
-        assertEquals(-0.12, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(-0.240), system.velocity());
+        assertEquals(-3.134, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.12, xhat.x.get(1, 0), kDelta);
 
-        xhat = estimator.correct(xhat, VecBuilder.fill(-0.480), system.velocity());
-        assertEquals(-3.137, xhat.get(0, 0), kDelta);
-        assertEquals(-0.3, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(-0.480), system.velocity());
+        assertEquals(-3.137, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.3, xhat.x.get(1, 0), kDelta);
 
-        xhat = estimator.correct(xhat, VecBuilder.fill(-0.720), system.velocity());
-        assertEquals(3.141, xhat.get(0, 0), kDelta);
-        assertEquals(-0.51, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(-0.720), system.velocity());
+        assertEquals(3.141, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.51, xhat.x.get(1, 0), kDelta);
     }
 
     @Test
@@ -608,19 +613,19 @@ public class EKFTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
         // start in negative territory
-        Matrix<N2, N1> xhat = VecBuilder.fill(-1.0 * Math.PI + 0.01, 0);
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // supply unwrapped corrections
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.3), system.position());
+        xhat = estimator.correct(xhat, y1(-3.3), system.position());
         // filter wraps it
-        assertEquals(3.067, xhat.get(0, 0), kDelta);
-        assertEquals(-0.760, xhat.get(1, 0), kDelta);
+        assertEquals(3.067, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.760, xhat.x.get(1, 0), kDelta);
 
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.5), system.position());
-        assertEquals(2.925, xhat.get(0, 0), kDelta);
-        assertEquals(-2.044, xhat.get(1, 0), kDelta);
+        xhat = estimator.correct(xhat, y1(-3.5), system.position());
+        assertEquals(2.925, xhat.x.get(0, 0), kDelta);
+        assertEquals(-2.044, xhat.x.get(1, 0), kDelta);
     }
 
     @Test
@@ -635,10 +640,10 @@ public class EKFTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
         // initially, state estimate: near -pi, motionless
-        Matrix<N2, N1> xhat = VecBuilder.fill(-1.0 * Math.PI + 0.01, 0);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
 
-        assertEquals(-3.132, xhat.get(0, 0), kDelta);
-        assertEquals(0, xhat.get(1, 0), kDelta);
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
         // saturate negative-going
         // final double u = -12;
@@ -646,17 +651,17 @@ public class EKFTest {
 
         // update 1
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.134), system.position());
+        xhat = estimator.correct(xhat, y1(-3.134), system.position());
 
-        assertEquals(-3.134, xhat.get(0, 0), kDelta);
-        assertEquals(-0.240, xhat.get(1, 0), kDelta);
+        assertEquals(-3.134, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.240, xhat.x.get(1, 0), kDelta);
 
         // update 2
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(-3.141), system.position());
+        xhat = estimator.correct(xhat, y1(-3.141), system.position());
 
-        assertEquals(-3.141, xhat.get(0, 0), kDelta);
-        assertEquals(-0.480, xhat.get(1, 0), kDelta);
+        assertEquals(-3.141, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.480, xhat.x.get(1, 0), kDelta);
 
         ////////////////////////////////////////////////////////////////////
         //
@@ -664,17 +669,17 @@ public class EKFTest {
         //
         // update 3: now it wraps around :-)
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.13), system.position());
+        xhat = estimator.correct(xhat, y1(3.13), system.position());
 
-        assertEquals(3.130, xhat.get(0, 0), kDelta);
-        assertEquals(-0.720, xhat.get(1, 0), kDelta);
+        assertEquals(3.130, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.720, xhat.x.get(1, 0), kDelta);
 
         // update 4:
         xhat = estimator.predictState(xhat, u, kDt);
-        xhat = estimator.correct(xhat, VecBuilder.fill(3.113), system.position());
+        xhat = estimator.correct(xhat, y1(3.113), system.position());
 
-        assertEquals(3.113, xhat.get(0, 0), kDelta);
-        assertEquals(-0.960, xhat.get(1, 0), kDelta);
+        assertEquals(3.113, xhat.x.get(0, 0), kDelta);
+        assertEquals(-0.960, xhat.x.get(1, 0), kDelta);
     }
 
     public Matrix<N2, N1> f(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {

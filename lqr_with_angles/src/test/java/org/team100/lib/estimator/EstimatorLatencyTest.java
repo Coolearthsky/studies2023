@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
@@ -235,7 +237,7 @@ public class EstimatorLatencyTest {
         }
 
         void execute() {
-            Matrix<N2, N1> xhat = VecBuilder.fill(0, 0);
+            RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
             for (long step = 0; step < 2000; ++step) {
                 state.systemTimeMicrosec = step * kUsecPerSimLoop;
                 updateActual();
@@ -247,9 +249,9 @@ public class EstimatorLatencyTest {
             }
         }
 
-        void updatePrediction(Matrix<N2, N1> xhat) {
-            state.predictedPosition = xhat.get(0, 0);
-            state.predictedVelocity = xhat.get(1, 0);
+        void updatePrediction(RandomVector<N2> xhat) {
+            state.predictedPosition = xhat.x.get(0, 0);
+            state.predictedVelocity = xhat.x.get(1, 0);
         }
 
         /**
@@ -274,7 +276,7 @@ public class EstimatorLatencyTest {
          * This talks to the observer and controller. the goal is to decide what to do
          * for the next quantum, so here we are looking at the future.
          */
-        Matrix<N2, N1> rioStep(Matrix<N2, N1> xhat) {
+        RandomVector<N2> rioStep(RandomVector<N2> xhat) {
             if (state.systemTimeMicrosec % kUsecPerRioLoop == 0) {
                 xhat = correctObserver(xhat);
                 xhat = predict(xhat);
@@ -285,20 +287,24 @@ public class EstimatorLatencyTest {
             return xhat;
         }
 
+        private RandomVector<N1> y1(double yd) {
+            return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0));
+        }
+
         /**
          * Correct the observer with current measurements.
          * 
          * Right now these measurements represent the current instant
          * TODO: add measurement delay
          */
-        Matrix<N2, N1> correctObserver(Matrix<N2, N1> xhat) {
-            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedPosition), system.position());
-            xhat = estimator.correct(xhat, VecBuilder.fill(state.observedVelocity), system.velocity());
+        RandomVector<N2> correctObserver(RandomVector<N2> xhat) {
+            xhat = estimator.correct(xhat, y1(state.observedPosition), system.position());
+            xhat = estimator.correct(xhat, y1(state.observedVelocity), system.velocity());
             return xhat;
         }
 
         /** Predict the expected future state. */
-        Matrix<N2, N1> predict(Matrix<N2, N1> xhat) {
+        RandomVector<N2> predict(RandomVector<N2> xhat) {
             return estimator.predictState(xhat, (Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
@@ -312,7 +318,7 @@ public class EstimatorLatencyTest {
          * 
          * TODO: actually drive the actual state using this output
          */
-        void calculateOutput(Matrix<N2, N1> nextXhat, Vector<N2> nextReference, Vector<N2> rDot) {
+        void calculateOutput(RandomVector<N2> nextXhat, Vector<N2> nextReference, Vector<N2> rDot) {
             // this is the predicted future state given the previous control
             Matrix<N1, N1> u = controller.calculate(nextXhat, nextReference);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, rDot);

@@ -44,7 +44,7 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             double validTimeSec) {
         Entry<Double, Entry<Long, RandomVector<States>>> floor = floor(validTimeSec);
         RandomVector<States> xhat = floor.getValue().getValue();
-        RandomVector<States> newstate =  m_estimator.predictState(xhat, u, validTimeSec - floor.getKey());
+        RandomVector<States> newstate = m_estimator.predictState(xhat, u, validTimeSec - floor.getKey());
         return update(newstate, recordTimeUSec, validTimeSec);
     }
 
@@ -54,7 +54,7 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
      * the valid time. Record the new state and time.
      */
     public <Rows extends Num> RandomVector<States> correct(
-            Matrix<Rows, N1> y,
+            RandomVector<Rows> y,
             Sensor<States, Inputs, Rows> sensor,
             long recordTimeUSec,
             double validTimeSec) {

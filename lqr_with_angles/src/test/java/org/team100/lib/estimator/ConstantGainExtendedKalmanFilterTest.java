@@ -3,6 +3,14 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.team100.lib.math.Integration;
+import org.team100.lib.math.Jacobian;
+import org.team100.lib.math.RandomVector;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.StateSpaceUtil;
@@ -13,19 +21,15 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.numbers.N5;
-import edu.wpi.first.math.system.NumericalIntegration;
-import edu.wpi.first.math.system.NumericalJacobian;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrajectoryConfig;
 import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import java.util.Arrays;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.team100.lib.math.RandomVector;
 
 /**
  * This is cut-and-paste from WPILib EKFTest, but with changes to match the
  * class under test.
+ * 
+ * TODO: just delete this whole file
  */
 class ConstantGainExtendedKalmanFilterTest {
     private static RandomVector<N5> getDynamics(final RandomVector<N5> x, final Matrix<N2, N1> u) {
@@ -99,14 +103,16 @@ class ConstantGainExtendedKalmanFilterTest {
                             VecBuilder.fill(0.0001, 0.01, 0.01));
                     xhat = observer.correct(Nat.N3(), xhat, u, localY,
                             ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
-                            m_contR, Matrix::minus, Matrix::plus);
+                            // m_contR, Matrix::minus, Matrix::plus);
+                            m_contR, RandomVector::minus, RandomVector::plus);
 
                     var globalY = getGlobalMeasurementModel(xhat, u);
                     var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
                     xhat = observer.correct(
                             Nat.N5(), xhat, u, globalY,
-                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R, Matrix::minus,
-                            Matrix::plus);
+                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R,
+                            // Matrix::minus, Matrix::plus);
+                            RandomVector::minus, RandomVector::plus);
                 });
     }
 
@@ -130,24 +136,26 @@ class ConstantGainExtendedKalmanFilterTest {
                 new Pose2d(24.73, 19.68, Rotation2d.fromDegrees(5.846)));
         var trajectory = TrajectoryGenerator.generateTrajectory(waypoints, new TrajectoryConfig(8.8, 0.1));
 
+        // grr, reference should not be random variable
+
         Matrix<N5, N1> r = new Matrix<>(Nat.N5(), Nat.N1());
 
         Matrix<N5, N1> nextR = new Matrix<>(Nat.N5(), Nat.N1());
         Matrix<N2, N1> u = new Matrix<>(Nat.N2(), Nat.N1());
 
-        var B = NumericalJacobian.numericalJacobianU(
+        var B = Jacobian.numericalJacobianU(
                 Nat.N5(),
                 Nat.N2(),
                 ConstantGainExtendedKalmanFilterTest::getDynamics,
-                new Matrix<>(Nat.N5(), Nat.N1()),
+                new RandomVector<>(new Matrix<>(Nat.N5(), Nat.N1()), new Matrix<>(Nat.N5(), Nat.N5())),
                 u);
 
-        Matrix<N5, N1> xhat = VecBuilder.fill(
+        RandomVector<N5> xhat = new RandomVector<>(VecBuilder.fill(
                 trajectory.getInitialPose().getTranslation().getX(),
                 trajectory.getInitialPose().getTranslation().getY(),
                 trajectory.getInitialPose().getRotation().getRadians(),
                 0.0,
-                0.0);
+                0.0), new Matrix<>(Nat.N5(), Nat.N5()));
 
         var groundTruthX = xhat;
 
@@ -170,16 +178,20 @@ class ConstantGainExtendedKalmanFilterTest {
             var whiteNoiseStdDevs = VecBuilder.fill(0.0001, 0.5, 0.5);
 
             xhat = observer.correct(Nat.N3(), xhat, u,
-                    localY.plus(StateSpaceUtil.makeWhiteNoiseVector(whiteNoiseStdDevs)),
+                    localY.plus(
+                            new RandomVector<>(
+                                    StateSpaceUtil.makeWhiteNoiseVector(whiteNoiseStdDevs),
+                                    new Matrix<>(Nat.N3(), Nat.N3()))),
                     ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
-                    m_contR, Matrix::minus, Matrix::plus);
+                    m_contR, RandomVector::minus, RandomVector::plus);
 
             Matrix<N5, N1> rdot = nextR.minus(r).div(dtSeconds);
-            u = new Matrix<>(B.solve(rdot.minus(getDynamics(r, new Matrix<>(Nat.N2(), Nat.N1())))));
+            RandomVector<N5> rv = new RandomVector<>(r, new Matrix<>(Nat.N5(), Nat.N5()));
+            u = new Matrix<>(B.solve(rdot.minus(getDynamics(rv, new Matrix<>(Nat.N2(), Nat.N1())).x)));
 
             xhat = observer.predict(xhat, u, dtSeconds);
 
-            groundTruthX = NumericalIntegration.rk4(
+            groundTruthX = Integration.rk4(
                     ConstantGainExtendedKalmanFilterTest::getDynamics, groundTruthX, u, dtSeconds);
 
             r = nextR;
@@ -188,19 +200,19 @@ class ConstantGainExtendedKalmanFilterTest {
         var localY = getLocalMeasurementModel(xhat, u);
         xhat = observer.correct(Nat.N3(), xhat, u, localY,
                 ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
-                m_contR, Matrix::minus, Matrix::plus);
+                m_contR, RandomVector::minus, RandomVector::plus);
 
         var globalY = getGlobalMeasurementModel(xhat, u);
         var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
         xhat = observer.correct(Nat.N5(), xhat, u, globalY,
                 ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R,
-                Matrix::minus, Matrix::plus);
+                RandomVector::minus, RandomVector::plus);
 
         var finalPosition = trajectory.sample(trajectory.getTotalTimeSeconds());
-        assertEquals(finalPosition.poseMeters.getTranslation().getX(), xhat.get(0, 0), 1.0);
-        assertEquals(finalPosition.poseMeters.getTranslation().getY(), xhat.get(1, 0), 1.0);
-        assertEquals(finalPosition.poseMeters.getRotation().getRadians(), xhat.get(2, 0), 1.0);
-        assertEquals(0.0, xhat.get(3, 0), 1.0);
-        assertEquals(0.0, xhat.get(4, 0), 1.0);
+        assertEquals(finalPosition.poseMeters.getTranslation().getX(), xhat.x.get(0, 0), 1.0);
+        assertEquals(finalPosition.poseMeters.getTranslation().getY(), xhat.x.get(1, 0), 1.0);
+        assertEquals(finalPosition.poseMeters.getRotation().getRadians(), xhat.x.get(2, 0), 1.0);
+        assertEquals(0.0, xhat.x.get(3, 0), 1.0);
+        assertEquals(0.0, xhat.x.get(4, 0), 1.0);
     }
 }

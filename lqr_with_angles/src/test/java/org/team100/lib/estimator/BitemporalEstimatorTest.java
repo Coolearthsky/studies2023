@@ -78,6 +78,10 @@ public class BitemporalEstimatorTest {
                     () -> assertEquals(1, prediction.x.get(1, 0), kDelta));
         }
     }
+    
+    private RandomVector<N1> y1(double yd) {
+        return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0));
+    }
 
     /** correct position and velocity separately every 0.005s */
     @Test
@@ -101,7 +105,7 @@ public class BitemporalEstimatorTest {
         for (long i = 10; i < 1000; i += 10) {
             recordTime = i;
             validTime = 0.001 * i;
-            xhat = bitemporalEstimator.correct(VecBuilder.fill(1), plant.position(), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(y1(1), plant.position(), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -109,7 +113,7 @@ public class BitemporalEstimatorTest {
 
             recordTime += 5;
             validTime += 0.005;
-            xhat = bitemporalEstimator.correct(VecBuilder.fill(0), plant.velocity(), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(y1(0), plant.velocity(), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -117,8 +121,8 @@ public class BitemporalEstimatorTest {
         }
 
         // final correction
-        xhat = bitemporalEstimator.correct(VecBuilder.fill(1), plant.position(), 1000l, 1.0);
-        xhat = bitemporalEstimator.correct(VecBuilder.fill(0), plant.velocity(), 1010l, 1.005);
+        xhat = bitemporalEstimator.correct(y1(1), plant.position(), 1000l, 1.0);
+        xhat = bitemporalEstimator.correct(y1(0), plant.velocity(), 1010l, 1.005);
         // these are now the same because the time-step is the same fixed number as
         // below (0.01 s)
         // these are the EKF values
@@ -127,6 +131,10 @@ public class BitemporalEstimatorTest {
         // these are the new values; a little different because of constant (a little higher) gain.
         assertEquals(0.945, xhat.x.get(0, 0), kDelta);
         assertEquals(1.655, xhat.x.get(1, 0), kDelta);
+    }
+
+    private RandomVector<N2> y2(double y0, double y1) {
+        return new RandomVector<>(VecBuilder.fill(y0, y1), new Matrix<>(Nat.N2(),Nat.N2()));
     }
 
     /**
@@ -154,7 +162,7 @@ public class BitemporalEstimatorTest {
         for (long i = 10; i < 1000; i += 10) {
             recordTime = i;
             validTime = 0.001 * i;
-            xhat = bitemporalEstimator.correct(VecBuilder.fill(1, 0), plant.full(), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(y2(1, 0), plant.full(), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -162,7 +170,7 @@ public class BitemporalEstimatorTest {
         }
 
         // final correction
-        xhat = bitemporalEstimator.correct(VecBuilder.fill(1, 0), plant.full(), 1000l, 1.0);
+        xhat = bitemporalEstimator.correct(y2(1, 0), plant.full(), 1000l, 1.0);
         // these are identical to the real EKF, using fixed time-step 0.01 s
         //assertEquals(0.814, xhat.get(0, 0), kDelta);
         //assertEquals(1.435, xhat.get(1, 0), kDelta);

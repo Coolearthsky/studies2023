@@ -3,6 +3,7 @@ package org.team100.lib.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.examples.FrictionRotary1D;
 import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
@@ -83,7 +84,8 @@ public class KTest {
     public void testFK() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+        // Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+        RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
         Matrix<N1, N1> u = VecBuilder.fill(0);
 
         NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
@@ -102,7 +104,8 @@ public class KTest {
     public void testFrictionFK() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+        // Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+        RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
         Matrix<N1, N1> u = VecBuilder.fill(0);
 
         NonlinearPlant<N2, N1, N2> plant = new FrictionRotary1D();
@@ -122,7 +125,8 @@ public class KTest {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
         {
-            Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            // Matrix<N2, N1> x = VecBuilder.fill(0, 0);
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
             Matrix<N1, N1> u = VecBuilder.fill(0);
 
             NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
@@ -135,7 +139,9 @@ public class KTest {
             assertEquals(44.336, K.get(0, 1), kDelta);
         }
         {
-            Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 4, 0);
+            // Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 4, 0);
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI/4, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+
             Matrix<N1, N1> u = VecBuilder.fill(0);
 
             NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
@@ -148,7 +154,9 @@ public class KTest {
             assertEquals(44.343, K.get(0, 1), kDelta);// very slightly higher
         }
         {
-            Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
+            // Matrix<N2, N1> x = VecBuilder.fill(Math.PI / 2, 0);
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI/2, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+
             Matrix<N1, N1> u = VecBuilder.fill(0);
 
             NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();

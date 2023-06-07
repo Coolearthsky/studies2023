@@ -44,13 +44,13 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
      * Predict state under output u for dtSec in the future and normalize.
      * 
      * @param initialState xhat
-     * @param u     total control output
-     * @param dtSec time quantum (sec)
+     * @param u            total control output
+     * @param dtSec        time quantum (sec)
      */
     public RandomVector<States> predictState(RandomVector<States> initialState, Matrix<Inputs, N1> u, double dtSec) {
         final RandomVector<States> xhat = ekf.predict(initialState, u, dtSec);
-        final Matrix<States, N1> xhatXNormalized = m_system.xNormalize(xhat.x);
-        return new RandomVector<States>(xhatXNormalized, xhat.P);
+        final RandomVector<States> xhatXNormalized = m_system.xNormalize(xhat);
+        return xhatXNormalized;
     }
 
     /**
@@ -59,7 +59,7 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
      */
     public <Rows extends Num> RandomVector<States> correct(
             RandomVector<States> initialState,
-            Matrix<Rows, N1> y,
+            RandomVector<Rows> y,
             Sensor<States, Inputs, Rows> sensor) {
         Matrix<Rows, Rows> contR = StateSpaceUtil.makeCovarianceMatrix(sensor.rows(), sensor.stdev());
         return ekf.correct(

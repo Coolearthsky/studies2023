@@ -56,7 +56,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param y      measurement
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public <Rows extends Num> RandomVector<States> correct(RandomVector<States> x, Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
+    public <Rows extends Num> RandomVector<States> correct(RandomVector<States> x, RandomVector<Rows> y, Sensor<States, Inputs, Rows> sensor) {
         return m_estimator.correct(x, y, sensor);
     }
 
@@ -72,7 +72,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * find controller output to get to reference at dt; uses observer xhat.
      * TODO: use absolute time
      */
-    public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
+    public Matrix<Inputs, N1> calculateTotalU(RandomVector<States> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
         Matrix<Inputs, N1> controllerU = m_controller.calculate(xhat, r);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));

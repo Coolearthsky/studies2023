@@ -1,12 +1,13 @@
 package org.team100.lib.controller;
 
+import org.team100.lib.math.Jacobian;
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.system.NumericalJacobian;
 
 /**
  * Feedforward for a control-affine system, i.e. control response depends only
@@ -37,8 +38,10 @@ public class LinearizedPlantInversionFeedforward<States extends Num, Inputs exte
      * @return feedforward as linearized and inverted control response
      */
     public Matrix<Inputs, N1> calculateWithRAndRDot(Matrix<States, N1> r, Matrix<States, N1> rDot) {
-        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
-                r, uZero);
-        return B.solve(rDot.minus(m_plant.f(r, uZero)));
+        // TODO something better with this non-random random vector
+        RandomVector<States> rv = new RandomVector<>(r, new Matrix<>(m_plant.states(), m_plant.states()));
+        Matrix<States, Inputs> B = Jacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
+                rv, uZero);
+        return B.solve(rDot.minus(m_plant.f(rv, uZero).x));
     }
 }

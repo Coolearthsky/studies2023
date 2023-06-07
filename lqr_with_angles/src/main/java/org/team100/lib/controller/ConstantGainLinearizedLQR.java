@@ -1,5 +1,7 @@
 package org.team100.lib.controller;
 
+import org.team100.lib.math.Jacobian;
+import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Drake;
@@ -10,7 +12,6 @@ import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.system.Discretization;
-import edu.wpi.first.math.system.NumericalJacobian;
 
 /**
  * Full state controller using constant K from LQR linearized at zero.
@@ -41,7 +42,8 @@ public class ConstantGainLinearizedLQR<States extends Num, Inputs extends Num, O
         m_plant = plant;
         m_Q = StateSpaceUtil.makeCostMatrix(qelms);
         m_R = StateSpaceUtil.makeCostMatrix(relms);
-        Matrix<States, N1> x = new Matrix<>(plant.states(), Nat.N1());
+        RandomVector<States> x = new RandomVector<>(new Matrix<>(plant.states(), Nat.N1()),
+                new Matrix<>(plant.states(), plant.states()));
         m_K = calculateK(x, kUZero, dtSeconds);
     }
 
@@ -53,10 +55,10 @@ public class ConstantGainLinearizedLQR<States extends Num, Inputs extends Num, O
      * @param dtSeconds how far in the future
      * @return K
      */
-    Matrix<Inputs, States> calculateK(Matrix<States, N1> x, Matrix<Inputs, N1> u, double dtSeconds) {
-        Matrix<States, States> A = NumericalJacobian.numericalJacobianX(m_plant.states(), m_plant.states(), m_plant::f,
+    Matrix<Inputs, States> calculateK(RandomVector<States> x, Matrix<Inputs, N1> u, double dtSeconds) {
+        Matrix<States, States> A = Jacobian.numericalJacobianX(m_plant.states(), m_plant.states(), m_plant::f,
                 x, u);
-        Matrix<States, Inputs> B = NumericalJacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
+        Matrix<States, Inputs> B = Jacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
                 x, u);
 
         var discABPair = Discretization.discretizeAB(A, B, dtSeconds);
@@ -94,7 +96,8 @@ public class ConstantGainLinearizedLQR<States extends Num, Inputs extends Num, O
      * @return the controller u value. if you want to use this later, e.g. for
      *         correction, you need to remember it.
      */
-    public Matrix<Inputs, N1> calculate(Matrix<States, N1> x, Matrix<States, N1> r) {
-        return m_K.times(m_plant.xResidual(r, x));
+    public Matrix<Inputs, N1> calculate(RandomVector<States> x, Matrix<States, N1> r) {
+        RandomVector<States> rv = new RandomVector<>(r, new Matrix<>(m_plant.states(), m_plant.states()));
+        return m_K.times(m_plant.xResidual(rv, x).x);
     }
 }
