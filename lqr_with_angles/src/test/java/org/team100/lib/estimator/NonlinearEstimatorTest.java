@@ -23,15 +23,6 @@ public class NonlinearEstimatorTest {
     }
 
     @Test
-    public void testEstimator() {
-        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
-        // obsP: error covariance
-        assertEquals(0.00064, estimator.getP().get(0, 0), 0.0001);
-        assertEquals(0.0015, estimator.getP().get(1, 0), 0.0001);
-    }
-
-    @Test
     public void testObserverWrappingPredictOnly() {
         // just test the observer prediction across the boundary
         // it just predicts over and over.

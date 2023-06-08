@@ -16,24 +16,41 @@ import edu.wpi.first.math.numbers.N1;
  * c = C*(wa/A + (1-w)b/B)
  * C = 1/(w/A + (1-w)/B)
  * 
- * Notice that the aggregate mean is weighted by the covariances. This matches
- * the intuition that more-precise estimates should win. On the other hand, the
- * aggregate covariance doesn't depend on the means, which seems
- * counterintuitive.
+ * How does this pooling behave?
+ * 
+ * The aggregate mean is weighted by the covariances, which seems right:
+ * more-precise estimates have more influence.
+ * 
+ * The aggregate covariance doesn't depend on the means, which seems wrong.
+ * 
+ * This pooling method cannot handle zero variances.
+ * 
+ * Bayesian inference and inverse variance weighting are the same idea, without
+ * the 'w' factor.
+ * 
  */
-public class LogLinearPooling<States extends Num> implements Pooling<States> {
-    // In covariance intersection, the choice of w minimizes C, but for now let's
-    // just choose a number; it won't be optimal but I don't think it matters.
-    private static final double w = 0.5;
+public abstract class LogLinearPooling<States extends Num> implements Pooling<States> {
 
-    public RandomVector<States> fuse(RandomVector<States> a, RandomVector<States> b) {
+    /**
+     * Weights should add to one.
+     * 
+     * @param pa a weight
+     * @param pb b weight
+     */
+    RandomVector<States> fuse(RandomVector<States> a, double pa, RandomVector<States> b, double pb) {
         Matrix<States, N1> ax = a.x;
         Matrix<States, N1> bx = b.x;
         Matrix<States, States> aP = a.P;
         Matrix<States, States> bP = b.P;
 
-        Matrix<States, States> cP = aP.inv().times(w).plus(bP.inv().times(1 - w)).inv();
-        Matrix<States, N1> cx = cP.times(aP.inv().times(ax).times(w).plus(bP.inv().times(bx).times(1 - w)));
+        Matrix<States, States> paaPI = aP.inv().times(pa);
+        Matrix<States, States> pbbPI = bP.inv().times(pb);
+        Matrix<States, States> cP = paaPI.plus(pbbPI).inv();
+
+        Matrix<States, N1> cax = aP.inv().times(ax).times(pa);
+        Matrix<States, N1> cbx = bP.inv().times(bx).times(pb);
+        
+        Matrix<States, N1> cx = cP.times(cax.plus(cbx));
 
         return new RandomVector<States>(cx, cP);
     }

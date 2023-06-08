@@ -1,7 +1,6 @@
 package org.team100.lib.estimator;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,33 +37,113 @@ public class ExtendedKalmanFilterTest {
     /** Same test as in BitemporalEstimator, to see if it's the same. */
     @Test
     public void testFullCorrection() {
-        // System.out.println("FULL EKF");
-        Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.015, 0.17);
-        Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.01, 0.1);
+        System.out.println("FULL EKF");
+        // not much disturbance, very noisy measurement
+        Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.01, 0.01);
+        Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.1, 0.1);
         ExtendedKalmanFilter<N2, N1, N2> estimator = new ExtendedKalmanFilter<>(
                 Nat.N2(), Nat.N1(), Nat.N2(), this::f, this::h, stateStdDevs, measurementStdDevs, 0.01);
+        double validTime = 0;
 
-        // double validTime = 0;
+        // initial xhat is zero
         Matrix<N2, N1> xhat = estimator.getXhat();
-        // Matrix<N2, N2> P = estimator.getP();
-        // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
-        // validTime, xhat.get(0, 0),
-        // xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+        assertArrayEquals(new double[] { 0, 0 }, xhat.getData(), kDelta);
+
+        // initial P
+        Matrix<N2, N2> P = estimator.getP();
+        assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, P.getData(), 0.0001);
+
+        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+
+        // no control input
+        Matrix<N1, N1> u = VecBuilder.fill(0);
+        // measure position 1, velocity 0
+        Matrix<N2, N1> y = VecBuilder.fill(1, 0);
 
         for (long i = 10; i < 1000; i += 10) {
-            // validTime = 0.001 * i;
-            estimator.correct(VecBuilder.fill(0), VecBuilder.fill(1, 0));
+            validTime = 0.001 * i;
+            estimator.correct(u, y);
             xhat = estimator.getXhat();
-            // P = estimator.getP();
-            // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
-            // validTime, xhat.get(0, 0),
-            // xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+            P = estimator.getP();
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
         }
 
-        estimator.correct(VecBuilder.fill(0), VecBuilder.fill(1, 0));
+        estimator.correct(u, y);
+
         xhat = estimator.getXhat();
-        assertEquals(0.814, xhat.get(0, 0), kDelta);
-        assertEquals(1.435, xhat.get(1, 0), kDelta);
+        // note poor estimate because of noisy measurement
+        assertArrayEquals(new double[] { 0.296, 0.061 }, xhat.getData(), kDelta);
+
+        P = estimator.getP();
+        assertArrayEquals(new double[] { 0.00296, 0.00061, 0.00061, 0.00035 }, P.getData(), 0.00001);
+    }
+
+    /** Same test as in BitemporalEstimator, to see if it's the same. */
+    @Test
+    public void testFullCorrectionAndPrediction() {
+        System.out.println("FULL EKF CORRECT AND PREDICT");
+        // not much disturbance, very noisy measurement
+        Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.01, 0.01);
+        Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.1, 0.1);
+
+        // so what *should* happen with variance?
+         Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), stateStdDevs);
+         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
+
+         Matrix<N2, N2> m_contR  = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
+         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
+
+        ExtendedKalmanFilter<N2, N1, N2> estimator = new ExtendedKalmanFilter<>(
+                Nat.N2(), Nat.N1(), Nat.N2(), this::f, this::h, stateStdDevs, measurementStdDevs, 0.01);
+        double validTime = 0;
+
+        // initial xhat is zero
+        Matrix<N2, N1> xhat = estimator.getXhat();
+        assertArrayEquals(new double[] { 0, 0 }, xhat.getData(), kDelta);
+
+        // initial P ...
+
+        Matrix<N2, N2> P = estimator.getP();
+        assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, P.getData(), 0.0001);
+
+        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+
+        // no control input
+        Matrix<N1, N1> u = VecBuilder.fill(0);
+        // measure position 1, velocity 0
+        Matrix<N2, N1> y = VecBuilder.fill(1, 0);
+
+        for (long i = 10; i < 1000; i += 10) {
+            validTime = 0.001 * i; // implies dt of 0.01
+
+            // show both prediction and correction
+
+            estimator.predict(u, 0.01); // note dt here
+            xhat = estimator.getXhat();
+            P = estimator.getP();
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
+                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+
+            estimator.correct(u, y);
+            xhat = estimator.getXhat();
+            P = estimator.getP();
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
+                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+        }
+
+        estimator.correct(u, y);
+
+        xhat = estimator.getXhat();
+        // a bit better but still poor
+        assertArrayEquals(new double[] { 0.378, 0.071 }, xhat.getData(), kDelta);
+
+        P = estimator.getP();
+        assertArrayEquals(new double[] { 0.00426, 0.00090, 0.00090, 0.00042 }, P.getData(), 0.00001);
     }
 
     /** trying to figure out how to handle the discretization time */

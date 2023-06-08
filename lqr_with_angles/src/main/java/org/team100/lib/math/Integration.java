@@ -6,8 +6,8 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
-/** for random variables */
 public class Integration {
+    /** Runge-Kutta 4 for random vectors. */
     public static <States extends Num, Inputs extends Num> RandomVector<States> rk4(
             BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<States>> f,
             RandomVector<States> x,
@@ -21,5 +21,16 @@ public class Integration {
         RandomVector<States> k4 = f.apply(x.plus(k3.times(h)), u);
 
         return x.plus((k1.plus(k2.times(2.0)).plus(k3.times(2.0)).plus(k4)).times(h / 6.0));
+    }
+
+    /** Noise integration produces variance of t */
+    public static <States extends Num> RandomVector<States> wiener(WhiteNoiseVector<States> xi, double dtSeconds) {
+        final var h = dtSeconds;
+
+        Matrix<States, N1> mu = xi.P.extractColumnVector(0);
+        mu.fill(0);
+        Matrix<States, States> P = xi.P.copy();
+        P = P.times(dtSeconds);
+        return new RandomVector<>(mu, P);
     }
 }

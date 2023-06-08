@@ -8,6 +8,12 @@ import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
 /**
+ * Represents measurement:
+ * 
+ * y = h(x,u)
+ * 
+ * The measurement function, h, includes the notion of uncertainty.
+ *  
  * There can be any number of sensors viewing a system, so it's a separate
  * interface.
  * 

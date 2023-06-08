@@ -12,9 +12,10 @@ import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
 /**
- * Keeps past states and measurements, rolls back and forth.
+ * Keeps past states and measurements.
  * 
- * TODO: if the recent time is close to the current time, just use it.
+ * TODO: if asked to provide prediction across past measurements, divide the
+ * prediction into pieces and use the measurements.
  * 
  * TODO: differentiate between predictions and corrections?
  * 

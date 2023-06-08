@@ -16,8 +16,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.system.Discretization;
 
 /**
- * Similar to WPILib EKF but without the P update, just use initial P forever,
- * which means the gain is kinda constant (adjusted by the h stdev though).
+ * Similar to WPILib EKF but with more transparent covariance.
  * 
  * TODO: bring this up to the github tip version
  * 
@@ -106,6 +105,8 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
 
     /**
      * Correct the state estimate using the measurements in y.
+     * 
+     * in WPILib, K is recalculated here, but we just used the fixed one.
      *
      * @param <Rows>        Number of rows in the result of f(x, u).
      * @param rows          Number of rows in the result of f(x, u).
@@ -133,10 +134,18 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
             Matrix<Rows, Rows> contR,
             BiFunction<RandomVector<Rows>, RandomVector<Rows>, RandomVector<Rows>> residualFuncY,
             BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
+
         Matrix<Rows, States> C = Jacobian.numericalJacobianX(rows, m_states, h, m_xHat, u);
+        // so this is measurement covariance times dt
         Matrix<Rows, Rows> discR = Discretization.discretizeR(contR, m_correctionDtSec);
+        // this applies the measurement function, h, to the current estimate of the state covariance
+        // and then adds that little bit of measurement covariance, so this must be an estimate
+        // of the measurement covariance.
         Matrix<Rows, Rows> S = C.times(m_P).times(C.transpose()).plus(discR);
+        // so "A solve b" means finding x for Ax=b 
+        // so this means find x for Sx = CP, which means what?
         Matrix<States, Rows> K = S.transpose().solve(C.times(m_P.transpose())).transpose();
+
         RandomVector<Rows> residual = residualFuncY.apply(y, h.apply(m_xHat, u));
         RandomVector<States> xhat = addFuncX.apply(m_xHat,
                 new RandomVector<States>(K.times(residual.x), new Matrix<>(m_states, m_states)));
@@ -152,14 +161,6 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
      * @param dtSeconds Timestep for prediction.
      */
     public RandomVector<States> predict(RandomVector<States> m_xHat, Matrix<Inputs, N1> u, double predictionDtSec) {
-        return Integration.rk4( m_f, m_xHat, u,predictionDtSec);
-    }
-
-    public Matrix<States, States> getP() {
-        return m_P;
-    }
-
-    public double getP(int row, int col) {
-        return m_P.get(row, col);
+        return Integration.rk4(m_f, m_xHat, u, predictionDtSec);
     }
 }

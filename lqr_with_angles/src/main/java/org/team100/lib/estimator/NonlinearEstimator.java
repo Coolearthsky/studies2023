@@ -72,8 +72,4 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
                 sensor::yResidual,
                 m_system::xAdd);
     }
-
-    public Matrix<States, States> getP() {
-        return ekf.getP();
-    }
 }
