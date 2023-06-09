@@ -25,8 +25,6 @@ public class Integration {
 
     /** Noise integration produces variance of t */
     public static <States extends Num> RandomVector<States> wiener(WhiteNoiseVector<States> xi, double dtSeconds) {
-        final var h = dtSeconds;
-
         Matrix<States, N1> mu = xi.P.extractColumnVector(0);
         mu.fill(0);
         Matrix<States, States> P = xi.P.copy();
