@@ -15,11 +15,33 @@ public class JacobianTest {
         return x;
     }
 
+    public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1,N1> u) {
+        return x;
+    }
+    
     @Test
-    public void testJacobian() {
+    public void testJacobianF() {
         RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Matrix<N2, N2> A = Jacobian.numericalJacobianX(Nat.N2(), Nat.N2(), this::f, x, u);
         assertArrayEquals(new double[] {1, 0, 0, 1}, A.getData(), kDelta);
     }
+
+    @Test
+    public void testJacobianH() {
+        // TODO: make an H version
+        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        Matrix<N2, N2> A = Jacobian.numericalJacobianX(Nat.N2(), Nat.N2(), this::h, x, u);
+        assertArrayEquals(new double[] {1, 0, 0, 1}, A.getData(), kDelta);
+    }
+
+    @Test
+    public void testJacobianU() {
+        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        Matrix<N2, N1> B = Jacobian.numericalJacobianU(Nat.N2(), Nat.N1(), this::f, x, u);
+        assertArrayEquals(new double[] {0, 0}, B.getData(), kDelta);
+    }
+
 }
