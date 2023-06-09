@@ -19,27 +19,23 @@ public class NormalDoubleIntegratorCartesian1D extends DoubleIntegratorCartesian
     public class NormalFullSensor extends FullSensor {
         public Matrix<N2, N1> stdev() {
             return measurementStdev;
-            // return VecBuilder.fill(0.01, 0.1);
         }
     }
 
     public class NormalPositionSensor extends PositionSensor {
         public Matrix<N1, N1> stdev() {
             return measurementStdev.block(Nat.N1(),Nat.N1(),0,0);
-            // return VecBuilder.fill(0.01);
         }
     }
 
     public class NormalVelocitySensor extends VelocitySensor {
         public Matrix<N1, N1> stdev() {
             return measurementStdev.block(Nat.N1(),Nat.N1(),1,0);
-            // return VecBuilder.fill(0.1);
         }
     }
 
     public Matrix<N2, N1> stdev() {
         return stateStdev;
-        // return VecBuilder.fill(0.015, 0.17);
     }
 
     public Sensor<N2, N1, N1> newPosition() {

@@ -62,12 +62,13 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
             RandomVector<Rows> y,
             Sensor<States, Inputs, Rows> sensor) {
         Matrix<Rows, Rows> contR = StateSpaceUtil.makeCovarianceMatrix(sensor.rows(), sensor.stdev());
-        return ekf.correct(
+        return ekf.correctNew(
                 sensor.rows(),
                 initialState,
                 m_uZero,
                 y,
                 sensor::h,
+                sensor::hinv,
                 contR,
                 sensor::yResidual,
                 m_system::xAdd);

@@ -1,5 +1,6 @@
 package org.team100.lib.system;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -35,15 +36,17 @@ public class AngleLoopTest {
     NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
     NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, estimator);
 
-
     private RandomVector<N1> y1(double yd) {
-        return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0));
+        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     @Test
     public void testLoop() {
         // initially, state estimate: at zero, motionless
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), p);
         assertEquals(0, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
@@ -69,6 +72,8 @@ public class AngleLoopTest {
         {
             // update 1: coasting, approx zero output
             xhat = loop.correct(xhat, y1(0.002), system.position());
+            assertArrayEquals(new double[] { 0.002, 0.229 }, xhat.x.getData(), kDelta);
+            assertArrayEquals(new double[] { 0.133, 0, 0, 0.266 }, xhat.P.getData(), kDelta);
             xhat = loop.correct(xhat, y1(0.229), system.velocity());
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
@@ -171,7 +176,10 @@ public class AngleLoopTest {
     @Test
     public void testWrapping() {
         // start = -pi+0.01
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 

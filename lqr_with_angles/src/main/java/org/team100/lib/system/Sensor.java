@@ -28,6 +28,9 @@ public interface Sensor<States extends Num, Inputs extends Num, Rows extends Num
     /** A sensor can return any number of measurement Rows at once. */
     public RandomVector<Rows> h(RandomVector<States> x, Matrix<Inputs, N1> u);
 
+    /** Inverse of the above.  Don't use noninvertible sensors. */
+    public RandomVector<States> hinv(RandomVector<Rows> y, Matrix<Inputs, N1> u);
+
     /**
      * Measurement residual, e.g. subtraction, used by the filter to compare the
      * measurement with the estimated measurement.

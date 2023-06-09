@@ -82,13 +82,14 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         // weighted mean:
         Matrix<States, N1> cx = pa.times(ax).plus(pb.times(bx));
 
-        // variance, transparent version:
+        // variance, transparent version
         Matrix<States, States> cPA = pa.times(aP);
         Matrix<States, States> cPB = pb.times(bP);
         // dispersion term
         Matrix<States, N1> d = ax.minus(bx);
-        Matrix<States, States> d2 = d.times(d.transpose());
-        Matrix<States, States> dP = pa.times(pb).times(d2);
+        double d2 = d.transpose().times(d).get(0,0);
+        Matrix<States, States> papb = pa.times(pb);
+        Matrix<States, States> dP = papb.times(d2);
         Matrix<States, States> cP = cPA.plus(cPB).plus(dP);
 
         return new RandomVector<States>(cx, cP);

@@ -43,4 +43,11 @@ public class RandomVector<States extends Num> {
     public RandomVector<States> times(double d) {
         return new RandomVector<>(x.times(d), P.times(d * d));
     }
+
+    @Override
+    public String toString() {
+        return "RandomVector [x=" + x + ", P=" + P + "]";
+    }
+
+    
 }

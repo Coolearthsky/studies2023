@@ -22,9 +22,9 @@ import edu.wpi.first.math.numbers.N2;
 public class EstimatorAndControlTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
-    
+
     private RandomVector<N1> y1(double yd) {
-        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0));
+        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     private RandomVector<N2> updateAndCheck(
@@ -67,7 +67,10 @@ public class EstimatorAndControlTest {
                 stateTolerance, controlTolerance, kDt);
 
         // initially, state estimate: at zero, motionless
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), p);
         assertEquals(0, xhat.x.get(0, 0));
         assertEquals(0, xhat.x.get(1, 0));
 
@@ -152,8 +155,10 @@ public class EstimatorAndControlTest {
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(Math.PI - 0.03, 0),
-                new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(Math.PI - 0.03, 0), p);
 
         // initially, state estimate: at zero, motionless
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
@@ -246,8 +251,10 @@ public class EstimatorAndControlTest {
                 stateTolerance, controlTolerance, kDt);
 
         // starting point is the only difference
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0),
-                new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
 
         // initially, state estimate: at zero, motionless
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);

@@ -39,7 +39,6 @@ public class VarianceWeightedLinearPooling<States extends Num> extends LinearPoo
         Matrix<States, States> pIsumI = PIsum.inv();
         Matrix<States, States> pa = aPI.times(pIsumI);
         Matrix<States, States> pb = bPI.times(pIsumI);
-        // and the weights are a square matrix. hm.
         return fuse(a, pa, b, pb);
     }
 

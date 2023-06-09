@@ -2,6 +2,8 @@ package org.team100.lib.estimator;
 
 import java.util.function.BiFunction;
 
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.Integration;
 import org.team100.lib.math.Jacobian;
 import org.team100.lib.math.RandomVector;
@@ -29,6 +31,8 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
     private final Matrix<Outputs, Outputs> m_contR;
     private final double m_correctionDtSec;
     private final Matrix<States, States> m_P;
+    // TODO inject this
+    LinearPooling<States> pooling = new VarianceWeightedLinearPooling<States>();
 
     /**
      * Constructs an extended Kalman filter.
@@ -138,19 +142,70 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
         Matrix<Rows, States> C = Jacobian.numericalJacobianX(rows, m_states, h, m_xHat, u);
         // so this is measurement covariance times dt
         Matrix<Rows, Rows> discR = Discretization.discretizeR(contR, m_correctionDtSec);
-        // this applies the measurement function, h, to the current estimate of the state covariance
-        // and then adds that little bit of measurement covariance, so this must be an estimate
+        // this applies the measurement function, h, to the current estimate of the
+        // state covariance
+        // and then adds that little bit of measurement covariance, so this must be an
+        // estimate
         // of the measurement covariance.
         Matrix<Rows, Rows> S = C.times(m_P).times(C.transpose()).plus(discR);
-        // so "A solve b" means finding x for Ax=b 
+        // so "A solve b" means finding x for Ax=b
         // so this means find x for Sx = CP, which means what?
         Matrix<States, Rows> K = S.transpose().solve(C.times(m_P.transpose())).transpose();
+
+        // so what's happening here is, there's an xhat that comes from who knows where
+        // and so you run it through h to get a predicted measurement, and then compare
+        // it to the
+        // actual measurement, so you have a residual measurement.
+        // then you magically multiply the residual times K to get the residual state.
+        // so that's the bad part.
+        //
+        // instead, take the measurement, invert h to find the state corresponding to
+        // that measurement.
+        // of course h is not invertible.
+        //
+        // is it?
+        // h might be: h([x0,x1],u) = [x0+x1,0]
+        // so maybe just require that there be an inverse.
 
         RandomVector<Rows> residual = residualFuncY.apply(y, h.apply(m_xHat, u));
         RandomVector<States> xhat = addFuncX.apply(m_xHat,
                 new RandomVector<States>(K.times(residual.x), new Matrix<>(m_states, m_states)));
         // TODO :fix handing of m_P
         return new RandomVector<States>(xhat.x, m_P);
+    }
+
+    /**
+     * Use the inverse h function to get the state corresponding to the measurement.
+     */
+    public <Rows extends Num> RandomVector<States> correctNew(
+            Nat<Rows> rows,
+            RandomVector<States> m_xHat,
+            Matrix<Inputs, N1> u,
+            RandomVector<Rows> y,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<Rows>> h,
+            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv,
+            Matrix<Rows, Rows> contR,
+            BiFunction<RandomVector<Rows>, RandomVector<Rows>, RandomVector<Rows>> residualFuncY,
+            BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
+        RandomVector<States> x = hinv.apply(y, u);
+        return pooling.fuse(x, m_xHat);
+    }
+
+    /**
+     * Use the inverse h function to get the state corresponding to the measurement.
+     */
+    public <Rows extends Num> RandomVector<States> stateForMeasurement(
+            Nat<Rows> rows,
+            RandomVector<States> m_xHat,
+            Matrix<Inputs, N1> u,
+            RandomVector<Rows> y,
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<Rows>> h,
+            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv,
+            Matrix<Rows, Rows> contR,
+            BiFunction<RandomVector<Rows>, RandomVector<Rows>, RandomVector<Rows>> residualFuncY,
+            BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
+        RandomVector<States> x = hinv.apply(y, u);
+        return x;
     }
 
     /**

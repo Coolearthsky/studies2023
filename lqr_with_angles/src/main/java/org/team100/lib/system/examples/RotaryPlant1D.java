@@ -14,6 +14,7 @@ import edu.wpi.first.math.numbers.N2;
 
 /** Base class for one-dimensional rotational plants. */
 public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
+    private static final double kBig = 1e9;
     private final Sensor<N2, N1, N2> full;
     private final Sensor<N2, N1, N1> position;
     private final Sensor<N2, N1, N1> velocity;
@@ -25,8 +26,12 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
         }
 
         @Override
+        public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
+            return y;
+        }
+
+        @Override
         public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
-            // return AngleStatistics.angleResidual(a, b, 0);
             return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
         }
 
@@ -39,13 +44,25 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
     public abstract class PositionSensor implements Sensor<N2, N1, N1> {
         @Override
         public RandomVector<N1> h(RandomVector<N2> x, Matrix<N1, N1> u) {
-            // return VecBuilder.fill(x.get(0, 0));
-            return new RandomVector<>(x.x.block(Nat.N1(),Nat.N1(), 0, 0), x.P.block(Nat.N1(), Nat.N1(), 0, 0));
+            return new RandomVector<>(
+                    x.x.block(Nat.N1(), Nat.N1(), 0, 0),
+                    x.P.block(Nat.N1(), Nat.N1(), 0, 0));
+        }
+
+        // x0 = y0
+        // x1 = 0 with high variance
+        @Override
+        public RandomVector<N2> hinv(RandomVector<N1> y, Matrix<N1, N1> u) {
+            Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+            xx.set(0, 0, y.x.get(0, 0));
+            Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+            xP.set(0, 0, y.P.get(0, 0));
+            xP.set(1, 1, kBig); // which means it could be anything
+            return new RandomVector<>(xx, xP);
         }
 
         @Override
         public RandomVector<N1> yResidual(RandomVector<N1> a, RandomVector<N1> b) {
-//            return AngleStatistics.angleResidual(a, b, 0);
             return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
         }
 
@@ -58,8 +75,19 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
     public abstract class VelocitySensor implements Sensor<N2, N1, N1> {
         @Override
         public RandomVector<N1> h(RandomVector<N2> x, Matrix<N1, N1> u) {
-            // return VecBuilder.fill(x.get(1, 0));
-            return new RandomVector<>(x.x.block(Nat.N1(),Nat.N1(), 1, 0), x.P.block(Nat.N1(), Nat.N1(), 1, 1));
+            return new RandomVector<>(x.x.block(Nat.N1(), Nat.N1(), 1, 0), x.P.block(Nat.N1(), Nat.N1(), 1, 1));
+        }
+
+        // x0 = 0 with high variance
+        // x1 = y0
+        @Override
+        public RandomVector<N2> hinv(RandomVector<N1> y, Matrix<N1, N1> u) {
+            Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+            xx.set(1, 0, y.x.get(0, 0));
+            Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+            xP.set(0, 0, kBig); // which means it could be anything
+            xP.set(1, 1, y.P.get(0, 0));
+            return new RandomVector<>(xx, xP);
         }
 
         @Override

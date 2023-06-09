@@ -31,8 +31,13 @@ public class BitemporalEstimatorTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // no motion
-        // TODO: realistic covariance
-        stateBuffer.put(0l, 0.0, new RandomVector<N2>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2())));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        stateBuffer.put(0l, 0.0,
+                new RandomVector<N2>(
+                        VecBuilder.fill(0, 0),
+                        p));
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
         {
             // this should find the initial state
@@ -57,8 +62,13 @@ public class BitemporalEstimatorTest {
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // velocity = 1
-        // TODO: realistic covariance
-        stateBuffer.put(0l, 0.0, new RandomVector<N2>(VecBuilder.fill(0, 1), new Matrix<>(Nat.N2(), Nat.N2())));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        stateBuffer.put(0l, 0.0,
+                new RandomVector<N2>(
+                        VecBuilder.fill(0, 1),
+                        p));
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
         {
             // this should find the initial state
@@ -84,7 +94,8 @@ public class BitemporalEstimatorTest {
     }
 
     private RandomVector<N1> y1(double yd) {
-        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0));
+        // assume a reasonable variance.
+        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     /** correct position and velocity separately every 0.005s */
@@ -99,8 +110,14 @@ public class BitemporalEstimatorTest {
         long recordTime = 0l;
         double validTime = 0;
         // TODO: realistic covariance
-        stateBuffer.put(recordTime, validTime,
-                new RandomVector<N2>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2())));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        stateBuffer.put(0l, 0.0,
+                new RandomVector<N2>(
+                        VecBuilder.fill(0, 1),
+                        p));
+
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
         RandomVector<N2> xhat;// = estimator.getXhat();
         // Matrix<N2, N2> P = estimator.getP();
@@ -158,7 +175,7 @@ public class BitemporalEstimatorTest {
                 VecBuilder.fill(0.01, 0.01),
                 VecBuilder.fill(0.1, 0.1));
 
-                        // so what *should* happen with variance?
+        // so what *should* happen with variance?
         Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
@@ -171,17 +188,19 @@ public class BitemporalEstimatorTest {
         long recordTime = 0l;
         double validTime = 0;
 
-                // initial xhat is zero with Q covariance
+        // initial xhat is zero with Q covariance
         // TODO is this a reasonable first guess?
         RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), m_contQ);
         assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.P.getData(), 0.0001);
 
         // initial xhat is zero
-        // RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        // RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()),
+        // new Matrix<>(Nat.N2(), Nat.N2()));
         // assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
 
-        // assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, xhat.P.getData(), 0.0001);
+        // assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 },
+        // xhat.P.getData(), 0.0001);
 
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
@@ -244,7 +263,8 @@ public class BitemporalEstimatorTest {
         assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.P.getData(), 0.0001);
         // DARE provides this:
-//        assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, xhat.P.getData(), 0.0001);
+        // assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 },
+        // xhat.P.getData(), 0.0001);
 
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);

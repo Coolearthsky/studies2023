@@ -1,5 +1,6 @@
 package org.team100.lib.estimator;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -7,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.Integration;
 import org.team100.lib.math.Jacobian;
 import org.team100.lib.math.RandomVector;
@@ -32,6 +35,9 @@ import edu.wpi.first.math.trajectory.TrajectoryGenerator;
  * TODO: just delete this whole file
  */
 class ConstantGainExtendedKalmanFilterTest {
+    private static final double kDelta = 0.001;
+    private static final double kBig = 1e9;
+
     private static RandomVector<N5> getDynamics(final RandomVector<N5> x, final Matrix<N2, N1> u) {
         final var motors = DCMotor.getCIM(2);
 
@@ -62,18 +68,28 @@ class ConstantGainExtendedKalmanFilterTest {
         return new RandomVector<N5>(resultX, x.P);
     }
 
-    @SuppressWarnings("PMD.UnusedFormalParameter")
     private static RandomVector<N3> getLocalMeasurementModel(RandomVector<N5> x, Matrix<N2, N1> u) {
-        // TODO: real P treatment
         return new RandomVector<>(VecBuilder.fill(x.x.get(2, 0), x.x.get(3, 0), x.x.get(4, 0)),
-                new Matrix<>(Nat.N3(), Nat.N3()));
+        x.P.block(Nat.N3(),Nat.N3(),2,2));
     }
 
-    @SuppressWarnings("PMD.UnusedFormalParameter")
+    private static RandomVector<N5> getLocalMeasurementModelInv(RandomVector<N3> y, Matrix<N2, N1> u) {
+        Matrix<N5,N1> x = VecBuilder.fill(0, 0, y.x.get(0, 0), y.x.get(1, 0), y.x.get(2, 0));
+        Matrix<N5,N5> P = new Matrix<>(Nat.N5(),Nat.N5());
+        // upper diagonal block is the "don't know" value
+        P.set(0,0,kBig);
+        P.set(1,1,kBig);
+        // the lower diagonal block is from y
+        P.assignBlock(2, 2, y.P);
+        return new RandomVector<>(x,P);
+    }
+
     private static RandomVector<N5> getGlobalMeasurementModel(RandomVector<N5> x, Matrix<N2, N1> u) {
-        // TODO: real P treatment
-        return new RandomVector<>(
-                VecBuilder.fill(x.x.get(0, 0), x.x.get(1, 0), x.x.get(2, 0), x.x.get(3, 0), x.x.get(4, 0)), x.P);
+        return x;
+    }
+
+    private static RandomVector<N5> getGlobalMeasurementModelInv(RandomVector<N5> y, Matrix<N2, N1> u) {
+        return y;
     }
 
     @Test
@@ -101,16 +117,19 @@ class ConstantGainExtendedKalmanFilterTest {
                     var localY = getLocalMeasurementModel(xhat, u);
                     Matrix<N3, N3> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N3(),
                             VecBuilder.fill(0.0001, 0.01, 0.01));
-                    xhat = observer.correct(Nat.N3(), xhat, u, localY,
+                    xhat = observer.correctNew(Nat.N3(), xhat, u, localY,
                             ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                            ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModelInv,
                             // m_contR, Matrix::minus, Matrix::plus);
                             m_contR, RandomVector::minus, RandomVector::plus);
 
                     var globalY = getGlobalMeasurementModel(xhat, u);
                     var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
-                    xhat = observer.correct(
+                    xhat = observer.correctNew(
                             Nat.N5(), xhat, u, globalY,
-                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R,
+                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel,
+                            ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModelInv,
+                             R,
                             // Matrix::minus, Matrix::plus);
                             RandomVector::minus, RandomVector::plus);
                 });
@@ -177,12 +196,13 @@ class ConstantGainExtendedKalmanFilterTest {
             var localY = getLocalMeasurementModel(groundTruthX, u);
             var whiteNoiseStdDevs = VecBuilder.fill(0.0001, 0.5, 0.5);
 
-            xhat = observer.correct(Nat.N3(), xhat, u,
+            xhat = observer.correctNew(Nat.N3(), xhat, u,
                     localY.plus(
                             new RandomVector<>(
                                     StateSpaceUtil.makeWhiteNoiseVector(whiteNoiseStdDevs),
                                     new Matrix<>(Nat.N3(), Nat.N3()))),
                     ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                    ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModelInv,
                     m_contR, RandomVector::minus, RandomVector::plus);
 
             Matrix<N5, N1> rdot = nextR.minus(r).div(dtSeconds);
@@ -198,14 +218,17 @@ class ConstantGainExtendedKalmanFilterTest {
         }
 
         var localY = getLocalMeasurementModel(xhat, u);
-        xhat = observer.correct(Nat.N3(), xhat, u, localY,
+        xhat = observer.correctNew(Nat.N3(), xhat, u, localY,
                 ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModel,
+                ConstantGainExtendedKalmanFilterTest::getLocalMeasurementModelInv,
                 m_contR, RandomVector::minus, RandomVector::plus);
 
         var globalY = getGlobalMeasurementModel(xhat, u);
         var R = StateSpaceUtil.makeCostMatrix(VecBuilder.fill(0.01, 0.01, 0.0001, 0.5, 0.5));
-        xhat = observer.correct(Nat.N5(), xhat, u, globalY,
-                ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel, R,
+        xhat = observer.correctNew(Nat.N5(), xhat, u, globalY,
+                ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModel,
+                ConstantGainExtendedKalmanFilterTest::getGlobalMeasurementModelInv,       
+                R,
                 RandomVector::minus, RandomVector::plus);
 
         var finalPosition = trajectory.sample(trajectory.getTotalTimeSeconds());
@@ -214,5 +237,184 @@ class ConstantGainExtendedKalmanFilterTest {
         assertEquals(finalPosition.poseMeters.getRotation().getRadians(), xhat.x.get(2, 0), 1.0);
         assertEquals(0.0, xhat.x.get(3, 0), 1.0);
         assertEquals(0.0, xhat.x.get(4, 0), 1.0);
+    }
+
+    ///////////////////////////
+
+    // maybe don't delete this part
+
+    /** xdot for x */
+    public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
+    /** y for x */
+    public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
+    /** x for y */
+    public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
+        return y;
+    }
+
+// this is the old way
+    @Test
+    public void testSimpleCorrections() {
+        ConstantGainExtendedKalmanFilter<N2, N1, N2> observer = new ConstantGainExtendedKalmanFilter<>(
+                Nat.N2(),
+                Nat.N1(),
+                Nat.N2(),
+                this::f,
+                this::h,
+                VecBuilder.fill(0.1, 0.1),
+                VecBuilder.fill(0.1, 0.1),
+                0.02);
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> y = new RandomVector<>(yx, yP);
+
+        Matrix<N2, N2> contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), VecBuilder.fill(0.1, 0.1));
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+        assertArrayEquals(new double[] { 0.047, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+
+        xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+        assertArrayEquals(new double[] { 0.092, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+
+        xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+        assertArrayEquals(new double[] { 0.134, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+
+        xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+        assertArrayEquals(new double[] { 0.175, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+
+        xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+        assertArrayEquals(new double[] { 0.213, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+
+        // go all the way to the end
+        for (int i = 0; i < 100; ++i) {
+            xhat = observer.correct(Nat.N2(), xhat, u, y, this::h, contR, RandomVector::minus, RandomVector::plus);
+
+        }
+        assertArrayEquals(new double[] { 0.994, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.025, 0, 0, 0.025 }, xhat.P.getData(), kDelta);
+    }
+    
+    @Test
+    public void testStateForMeasurement() {
+        ConstantGainExtendedKalmanFilter<N2, N1, N2> observer = new ConstantGainExtendedKalmanFilter<>(
+                Nat.N2(),
+                Nat.N1(),
+                Nat.N2(),
+                this::f,
+                this::h,
+                VecBuilder.fill(0.1, 0.1),
+                VecBuilder.fill(0.1, 0.1),
+                0.02);
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> y = new RandomVector<>(yx, yP);
+
+        Matrix<N2, N2> contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), VecBuilder.fill(0.1, 0.1));
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        xhat = observer.stateForMeasurement(Nat.N2(), xhat, u, y, this::h, this::hinv, contR, RandomVector::minus, RandomVector::plus);
+        // since the state is just the measurement,
+        // you get the specified mean and variance of the measurement.
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+    }
+
+    /**
+     * this method converges *much* faster than the "kalman gain" method, and it seems more correct and less mysterious.
+     */
+    @Test
+    public void testCombineStateForMeasurement() {
+        ConstantGainExtendedKalmanFilter<N2, N1, N2> observer = new ConstantGainExtendedKalmanFilter<>(
+                Nat.N2(),
+                Nat.N1(),
+                Nat.N2(),
+                this::f,
+                this::h,
+                VecBuilder.fill(0.1, 0.1),
+                VecBuilder.fill(0.1, 0.1),
+                0.02);
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+        RandomVector<N2> xhatNew = xhat.copy();
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> y = new RandomVector<>(yx, yP);
+
+        Matrix<N2, N2> contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), VecBuilder.fill(0.1, 0.1));
+
+        LinearPooling<N2> p2 = new VarianceWeightedLinearPooling<N2>();
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        xhatNew = observer.stateForMeasurement(Nat.N2(), xhat, u, y, this::h, this::hinv, contR, RandomVector::minus, RandomVector::plus);
+        xhat = p2.fuse(xhat, xhatNew);
+        // since the old and new have the same variance the mean is in the middle
+        assertArrayEquals(new double[] { 0.5, 0 }, xhat.x.getData(), kDelta);
+        // the difference in means adds to the variance but only of the first component
+        assertArrayEquals(new double[] { 0.26, 0, 0, 0.01}, xhat.P.getData(), kDelta);
+
+        xhatNew = observer.stateForMeasurement(Nat.N2(), xhat, u, y, this::h, this::hinv,contR, RandomVector::minus, RandomVector::plus);
+        xhat = p2.fuse(xhat, xhatNew);
+        // new measurement has lower variance so it is preferred
+        assertArrayEquals(new double[] { 0.982, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion keeps increasing P
+        assertArrayEquals(new double[] { 0.028, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        xhatNew = observer.stateForMeasurement(Nat.N2(), xhat, u, y, this::h, this::hinv,contR, RandomVector::minus, RandomVector::plus);
+        xhat = p2.fuse(xhat, xhatNew);
+        assertArrayEquals(new double[] { 0.995, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion is on the way down now
+        assertArrayEquals(new double[] { 0.015, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        // go all the way to the end
+        for (int i = 0; i < 100; ++i) {
+            xhatNew = observer.stateForMeasurement(Nat.N2(), xhat, u, y, this::h, this::hinv,contR, RandomVector::minus, RandomVector::plus);
+            xhat = p2.fuse(xhat, xhatNew);
+        }
+        // now the estimate matches the measurement
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
     }
 }

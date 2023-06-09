@@ -19,7 +19,7 @@ public class EKFMultiCorrectTest {
     private static final double kDt = 0.02;
 
     private RandomVector<N1> y1(double yd) {
-        return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0));
+        return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     @Test
@@ -27,7 +27,10 @@ public class EKFMultiCorrectTest {
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
 
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), new Matrix<>(Nat.N2(),Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(),Nat.N2());
+        p.set(0,0,0.1);
+        p.set(1,1,0.1);
+        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
