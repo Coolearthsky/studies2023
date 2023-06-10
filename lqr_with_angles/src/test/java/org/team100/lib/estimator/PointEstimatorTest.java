@@ -33,7 +33,7 @@ public class PointEstimatorTest {
 
     @Test
     public void testStateForFullMeasurement() {
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
         // measurement is 1,0
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
@@ -44,9 +44,8 @@ public class PointEstimatorTest {
         yP.set(1, 1, 0.01);
         RandomVector<N2> y = new RandomVector<>(yx, yP);
 
-        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Thing thing = new Thing();
-        RandomVector<N2> xhat = pointEstimator.stateForMeasurement(u, y, thing::hinv);
+        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU( y, thing::hinv);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
@@ -55,7 +54,7 @@ public class PointEstimatorTest {
 
     @Test
     public void testStateForPartialMeasurement() {
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
         // measurement is 1,x
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
@@ -66,9 +65,8 @@ public class PointEstimatorTest {
         yP.set(1, 1, 1e9); // enormous variance; TODO: how big shouild this be?
         RandomVector<N2> y = new RandomVector<>(yx, yP);
 
-        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Thing thing = new Thing();
-        RandomVector<N2> xhat = pointEstimator.stateForMeasurement(u, y, thing::hinv);
+        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y, thing::hinv);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);

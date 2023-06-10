@@ -3,7 +3,6 @@ package org.team100.lib.system.examples;
 import org.team100.lib.system.Sensor;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 

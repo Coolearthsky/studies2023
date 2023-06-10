@@ -21,13 +21,16 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final BitemporalBuffer<RandomVector<States>> m_stateBuffer;
+    private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
     private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
 
     public BitemporalEstimator(
             NonlinearPlant<States, Inputs, Outputs> plant,
             BitemporalBuffer<RandomVector<States>> stateBuffer,
+            IntegratingPredictor<States, Inputs, Outputs> predictor,
             NonlinearEstimator<States, Inputs, Outputs> estimator) {
         m_stateBuffer = stateBuffer;
+        m_predictor = predictor;
         m_estimator = estimator;
     }
 
@@ -42,7 +45,7 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             double validTimeSec) {
         Entry<Double, Entry<Long, RandomVector<States>>> floor = floor(validTimeSec);
         RandomVector<States> xhat = floor.getValue().getValue();
-        RandomVector<States> newstate = m_estimator.predictState(xhat, u, validTimeSec - floor.getKey());
+        RandomVector<States> newstate = m_predictor.predict(xhat, u, validTimeSec - floor.getKey());
         return update(newstate, recordTimeUSec, validTimeSec);
     }
 

@@ -43,6 +43,7 @@ public class EstimatorAndControlTest {
     }
 
     private RandomVector<N2> updateAndCheck(
+            IntegratingPredictor<N2, N1, N2> predictor,
             NonlinearEstimator<N2, N1, N2> estimator,
             RandomVector<N2> xhat,
             Matrix<N1, N1> u,
@@ -50,7 +51,7 @@ public class EstimatorAndControlTest {
             Sensor<N2, N1, N2> sensor,
             double x0,
             double x1) {
-        xhat = estimator.predictState(xhat, u, kDt);
+        xhat = predictor.predict(xhat, u, kDt);
         xhat = estimator.correct(xhat, y1(y), sensor);
         assertEquals(x0, xhat.x.get(0, 0), kDelta);
         assertEquals(x1, xhat.x.get(1, 0), kDelta);
@@ -77,10 +78,10 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>( predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -96,46 +97,46 @@ public class EstimatorAndControlTest {
 
         Matrix<N1, N1> u = controlAndCheck(controller, xhat, setpoint, 11.455);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.002, system.position(), 0.002, 0.229);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.002, system.position(), 0.002, 0.229);
         u = controlAndCheck(controller, xhat, setpoint, 0.137);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.006, system.position(), 0.006, 0.232);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.006, system.position(), 0.006, 0.232);
         u = controlAndCheck(controller, xhat, setpoint, -2.390);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.01, system.position(), 0.01, 0.184);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.01, system.position(), 0.01, 0.184);
         u = controlAndCheck(controller, xhat, setpoint, -2.529);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.013, system.position(), 0.013, 0.133);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.013, system.position(), 0.013, 0.133);
         u = controlAndCheck(controller, xhat, setpoint, -2.001);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.015, system.position(), 0.015, 0.093);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.015, system.position(), 0.015, 0.093);
         u = controlAndCheck(controller, xhat, setpoint, -1.400);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.017, system.position(), 0.017, 0.065);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.017, system.position(), 0.017, 0.065);
         u = controlAndCheck(controller, xhat, setpoint, -1.127);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.018, system.position(), 0.018, 0.043);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.018, system.position(), 0.018, 0.043);
         u = controlAndCheck(controller, xhat, setpoint, -0.753);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.019, system.position(), 0.019, 0.028);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.019, system.position(), 0.019, 0.028);
         u = controlAndCheck(controller, xhat, setpoint, -0.576);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.017);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0.017);
         u = controlAndCheck(controller, xhat, setpoint, -0.521);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.006);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0.006);
         u = controlAndCheck(controller, xhat, setpoint, -0.224);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.001);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0.001);
         u = controlAndCheck(controller, xhat, setpoint, -0.065);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
         u = controlAndCheck(controller, xhat, setpoint, -0.011);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
         u = controlAndCheck(controller, xhat, setpoint, 0.001);
 
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 0.02, system.position(), 0.02, 0);
         u = controlAndCheck(controller, xhat, setpoint, 0.002);
     }
 
@@ -153,10 +154,10 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>( predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -180,46 +181,46 @@ public class EstimatorAndControlTest {
         Matrix<N1, N1> u;
         u = controlAndCheck(controller, xhat, setpoint, 11.455);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.114, system.position(), 3.114, 0.229);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.114, system.position(), 3.114, 0.229);
         u = controlAndCheck(controller, xhat, setpoint, -0.058);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.118, system.position(), 3.118, 0.228);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.118, system.position(), 3.118, 0.228);
         u = controlAndCheck(controller, xhat, setpoint, -2.454);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.122, system.position(), 3.122, 0.178);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.122, system.position(), 3.122, 0.178);
         u = controlAndCheck(controller, xhat, setpoint, -2.517);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.125, system.position(), 3.125, 0.128);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.125, system.position(), 3.125, 0.128);
         u = controlAndCheck(controller, xhat, setpoint, -1.982);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.128, system.position(), 3.128, 0.089);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.128, system.position(), 3.128, 0.089);
         u = controlAndCheck(controller, xhat, setpoint, -1.679);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.130, system.position(), 3.130, 0.056);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.130, system.position(), 3.130, 0.056);
         u = controlAndCheck(controller, xhat, setpoint, -1.279);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.030);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.030);
         u = controlAndCheck(controller, xhat, setpoint, -0.806);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.014);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.014);
         u = controlAndCheck(controller, xhat, setpoint, -0.302);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
         u = controlAndCheck(controller, xhat, setpoint, -0.076);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
         u = controlAndCheck(controller, xhat, setpoint, -0.008);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.004);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.003);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
         u = controlAndCheck(controller, xhat, setpoint, 0.001);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
         u = controlAndCheck(controller, xhat, setpoint, 0.001);
     }
 
@@ -237,10 +238,10 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -267,46 +268,46 @@ public class EstimatorAndControlTest {
         Matrix<N1, N1> u;
         u = controlAndCheck(controller, xhat, setpoint, -11.455);
 
-        xhat = updateAndCheck(estimator, xhat, u, -3.133, system.position(), -3.133, -0.229);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, -3.133, system.position(), -3.133, -0.229);
         u = controlAndCheck(controller, xhat, setpoint, -0.312);
 
-        xhat = updateAndCheck(estimator, xhat, u, -3.138, system.position(), -3.138, -0.235);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, -3.138, system.position(), -3.138, -0.235);
         u = controlAndCheck(controller, xhat, setpoint, 2.638);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.141, system.position(), 3.141, -0.182);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.141, system.position(), 3.141, -0.182);
         u = controlAndCheck(controller, xhat, setpoint, 2.700);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.138, system.position(), 3.138, -0.128);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.138, system.position(), 3.138, -0.128);
         u = controlAndCheck(controller, xhat, setpoint, 2.058);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.135, system.position(), 3.135, -0.087);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.135, system.position(), 3.135, -0.087);
         u = controlAndCheck(controller, xhat, setpoint, 1.700);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.134, system.position(), 3.134, -0.053);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.134, system.position(), 3.134, -0.053);
         u = controlAndCheck(controller, xhat, setpoint, 0.994);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.133, system.position(), 3.133, -0.033);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.133, system.position(), 3.133, -0.033);
         u = controlAndCheck(controller, xhat, setpoint, 0.646);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.021);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.021);
         u = controlAndCheck(controller, xhat, setpoint, 0.532);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.01);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.01);
         u = controlAndCheck(controller, xhat, setpoint, 0.222);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.063);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.01);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.002);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.002);
 
-        xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
+        xhat = updateAndCheck(predictor, estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.001);
     }
 }

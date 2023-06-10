@@ -19,6 +19,8 @@ import edu.wpi.first.math.numbers.N1;
  * u: control input
  * y: measurement output
  * w: noise process
+ * 
+ * TODO: remove most of this
  */
 public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** State evolution */

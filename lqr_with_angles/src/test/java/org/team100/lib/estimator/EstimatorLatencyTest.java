@@ -120,6 +120,7 @@ public class EstimatorLatencyTest {
 
     public static abstract class Scenario {
         final CompleteState state;
+        final IntegratingPredictor<N2, N1, N2> predictor;
         final NonlinearEstimator<N2, N1, N2> estimator;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
         final ConstantGainLinearizedLQR<N2, N1, N2> controller;
@@ -129,13 +130,13 @@ public class EstimatorLatencyTest {
             system = new DoubleIntegratorRotary1D() {
 
                 // public Matrix<N2, N1> stdev() {
-                //     return VecBuilder.fill(0.1, 0.1);
+                // return VecBuilder.fill(0.1, 0.1);
                 // }
 
                 public Sensor<N2, N1, N2> newFull() {
                     return new FullSensor() {
                         // public Matrix<N2, N1> stdev() {
-                        //     return VecBuilder.fill(0.01, 0.01);
+                        // return VecBuilder.fill(0.01, 0.01);
                         // }
                     };
                 }
@@ -143,7 +144,7 @@ public class EstimatorLatencyTest {
                 public Sensor<N2, N1, N2> newPosition() {
                     return new PositionSensor() {
                         // public Matrix<N1, N1> stdev() {
-                        //     return VecBuilder.fill(0.01);
+                        // return VecBuilder.fill(0.01);
                         // }
                     };
                 }
@@ -151,13 +152,14 @@ public class EstimatorLatencyTest {
                 public Sensor<N2, N1, N2> newVelocity() {
                     return new VelocitySensor() {
                         // public Matrix<N1, N1> stdev() {
-                        //     return VecBuilder.fill(0.01);
+                        // return VecBuilder.fill(0.01);
                         // }
                     };
                 }
             };
             state = initial();
-            estimator = newEstimator();
+            predictor = new IntegratingPredictor<>(system);
+            estimator = newEstimator(predictor);
             feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
@@ -289,38 +291,31 @@ public class EstimatorLatencyTest {
             return xhat;
         }
 
-
-
         private RandomVector<N2> ypos(double yd) {
 
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(0, 0, yd); // position
-            
+
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, 0.1); // TODO: pass variance somehow
             yP.set(1, 1, 1e9); // velocity gets "don't know" variance
             return new RandomVector<>(yx, yP);
-    
-    
-    
-            //return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
+
+            // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
         }
-    
+
         private RandomVector<N2> yvel(double yd) {
-    
+
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(1, 0, yd); // velocity
-            
+
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, 1e9); // position gets "don't know" variance
             yP.set(1, 1, 0.1); // TODO: pass variance somehow
             return new RandomVector<>(yx, yP);
-    
-           // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
+
+            // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
         }
-
-
-
 
         /**
          * Correct the observer with current measurements.
@@ -336,7 +331,7 @@ public class EstimatorLatencyTest {
 
         /** Predict the expected future state. */
         RandomVector<N2> predict(RandomVector<N2> xhat) {
-            return estimator.predictState(xhat, (Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
+            return predictor.predict(xhat, (Matrix<N1, N1>) VecBuilder.fill(state.controlU), kSecPerRioLoop);
         }
 
         /**
@@ -356,15 +351,15 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        NonlinearEstimator<N2, N1, N2> newEstimator() {
-            double initialPosition = position(0);
-            double initialVelocity = velocity(0);
-            IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-            PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+        NonlinearEstimator<N2, N1, N2> newEstimator(IntegratingPredictor<N2, N1, N2> predictor) {
+
+            PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
             LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
+            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(predictor, pointEstimator, pooling);
 
+            double initialPosition = position(0);
+            double initialVelocity = velocity(0);
             Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
             assertEquals(initialPosition, xhat.get(0, 0), kDelta);
             assertEquals(initialVelocity, xhat.get(1, 0), kDelta);

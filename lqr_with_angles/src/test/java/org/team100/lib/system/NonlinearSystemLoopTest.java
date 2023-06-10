@@ -37,12 +37,12 @@ public class NonlinearSystemLoopTest {
     DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
     ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
             stateTolerance, controlTolerance, kDt);
-    IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-    PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+    IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
+    PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-    NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
+    NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>( predictor, pointEstimator, pooling);
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
-    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, estimator);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, controller, feedforward, estimator);
 
     private RandomVector<N2> ypos(double yd) {
 

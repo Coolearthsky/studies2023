@@ -2,6 +2,7 @@ package org.team100.lib.system;
 
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.NonlinearEstimator;
 import org.team100.lib.math.RandomVector;
 
@@ -25,6 +26,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final ConstantGainLinearizedLQR<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
+    private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
     private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
 
     /**
@@ -39,10 +41,12 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      */
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
+            IntegratingPredictor<States, Inputs, Outputs> predictor,
             ConstantGainLinearizedLQR<States, Inputs, Outputs> controller,
             LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
             NonlinearEstimator<States, Inputs, Outputs> estimator) {
         m_plant = plant;
+        m_predictor = predictor;
         m_controller = controller;
         m_feedforward = feedforward;
         m_estimator = estimator;
@@ -65,7 +69,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * TODO: use absolute time
      */
     public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
-       return m_estimator.predictState(initial, calculatedU, dtSeconds);
+       return m_predictor.predict(initial, calculatedU, dtSeconds);
     }
 
     /**
