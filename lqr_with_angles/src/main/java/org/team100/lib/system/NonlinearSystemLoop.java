@@ -3,7 +3,8 @@ package org.team100.lib.system;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
-import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.estimator.PointEstimator;
+import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
@@ -27,7 +28,8 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     private final ConstantGainLinearizedLQR<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
     private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
-    private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
+    private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
+    private final LinearPooling<States> m_pooling;
 
     /**
      * Constructs a state-space loop with the given controller, feedforward, and
@@ -42,14 +44,16 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
             IntegratingPredictor<States, Inputs, Outputs> predictor,
+            PointEstimator<States, Inputs, Outputs> pointEstimator,
+            LinearPooling<States> pooling,
             ConstantGainLinearizedLQR<States, Inputs, Outputs> controller,
-            LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-            NonlinearEstimator<States, Inputs, Outputs> estimator) {
+            LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward) {
         m_plant = plant;
         m_predictor = predictor;
+        m_pointEstimator = pointEstimator;
+        m_pooling = pooling;
         m_controller = controller;
         m_feedforward = feedforward;
-        m_estimator = estimator;
     }
 
     /**
@@ -61,7 +65,9 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
     public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y, Sensor<States, Inputs, Outputs> sensor) {
-        return m_estimator.correct(x, y, sensor);
+         RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
+     return m_pooling.fuse(xx, x);
+       // return m_estimator.correct(x, y, sensor);
     }
 
     /**

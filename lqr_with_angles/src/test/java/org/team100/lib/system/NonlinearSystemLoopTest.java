@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
-import org.team100.lib.estimator.NonlinearEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
@@ -40,9 +39,8 @@ public class NonlinearSystemLoopTest {
     IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-    NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>( predictor, pointEstimator, pooling);
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
-    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, controller, feedforward, estimator);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, pointEstimator, pooling, controller, feedforward);
 
     private RandomVector<N2> ypos(double yd) {
 

@@ -121,7 +121,8 @@ public class EstimatorLatencyTest {
     public static abstract class Scenario {
         final CompleteState state;
         final IntegratingPredictor<N2, N1, N2> predictor;
-        final NonlinearEstimator<N2, N1, N2> estimator;
+        final PointEstimator<N2, N1, N2> pointEstimator;
+        final LinearPooling<N2> pooling;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
         final ConstantGainLinearizedLQR<N2, N1, N2> controller;
         final DoubleIntegratorRotary1D system;
@@ -159,7 +160,9 @@ public class EstimatorLatencyTest {
             };
             state = initial();
             predictor = new IntegratingPredictor<>(system);
-            estimator = newEstimator(predictor);
+            pointEstimator = new PointEstimator<>(Nat.N1());
+            pooling = new VarianceWeightedLinearPooling<>();
+            // estimator = newEstimator(predictor);
             feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
@@ -324,8 +327,15 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         RandomVector<N2> correctObserver(RandomVector<N2> xhat) {
-            xhat = estimator.correct(xhat, ypos(state.observedPosition), system.position());
-            xhat = estimator.correct(xhat, yvel(state.observedVelocity), system.velocity());
+
+            RandomVector<N2> x;
+            x = pointEstimator.stateForMeasurementWithZeroU(ypos(state.observedPosition), system.position()::hinv);
+            xhat = pooling.fuse(x, xhat);
+            x = pointEstimator.stateForMeasurementWithZeroU(yvel(state.observedVelocity), system.velocity()::hinv);
+            xhat = pooling.fuse(x, xhat);
+
+           // xhat = estimator.correct(xhat, ypos(state.observedPosition), system.position());
+           // xhat = estimator.correct(xhat, yvel(state.observedVelocity), system.velocity());
             return xhat;
         }
 
@@ -351,20 +361,19 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        NonlinearEstimator<N2, N1, N2> newEstimator(IntegratingPredictor<N2, N1, N2> predictor) {
+        // NonlinearEstimator<N2, N1, N2> newEstimator(IntegratingPredictor<N2, N1, N2> predictor) {
 
-            PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        //     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
-            LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(predictor, pointEstimator, pooling);
+        //     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
-            double initialPosition = position(0);
-            double initialVelocity = velocity(0);
-            Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
-            assertEquals(initialPosition, xhat.get(0, 0), kDelta);
-            assertEquals(initialVelocity, xhat.get(1, 0), kDelta);
-            return estimator;
-        }
+        //     double initialPosition = position(0);
+        //     double initialVelocity = velocity(0);
+        //     Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
+        //     assertEquals(initialPosition, xhat.get(0, 0), kDelta);
+        //     assertEquals(initialVelocity, xhat.get(1, 0), kDelta);
+        //     return estimator;
+        // }
 
         ConstantGainLinearizedLQR<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);

@@ -56,7 +56,6 @@ public class EKFMultiCorrectTest {
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>( predictor, pointEstimator, pooling);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(),Nat.N2());
         p.set(0,0,0.1);
@@ -67,27 +66,53 @@ public class EKFMultiCorrectTest {
 
         Matrix<N1, N1> u = VecBuilder.fill(-12);
 
+        RandomVector<N2> x;
+
         xhat = predictor.predict(xhat, u, kDt);
-        xhat = estimator.correct(xhat, ypos(-3.134), system.position());
-        xhat = estimator.correct(xhat, yvel(-0.240), system.velocity());
+
+        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.134), system.position()::hinv);
+        xhat = pooling.fuse(x, xhat);
+        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.240), system.velocity()::hinv);
+        xhat = pooling.fuse(x, xhat);
+
+        // xhat = estimator.correct(xhat, ypos(-3.134), system.position());
+        // xhat = estimator.correct(xhat, yvel(-0.240), system.velocity());
         assertEquals(-3.134, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.240, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        xhat = estimator.correct(xhat, ypos(-3.141), system.position());
-        xhat = estimator.correct(xhat, yvel(-0.480), system.velocity());
+
+        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.141), system.position()::hinv);
+        xhat = pooling.fuse(x, xhat);
+        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.480), system.velocity()::hinv);
+        xhat = pooling.fuse(x, xhat);
+
+        // xhat = estimator.correct(xhat, ypos(-3.141), system.position());
+        // xhat = estimator.correct(xhat, yvel(-0.480), system.velocity());
         assertEquals(-3.141, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.480, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        xhat = estimator.correct(xhat, ypos(3.13), system.position());
-        xhat = estimator.correct(xhat, yvel(-0.720), system.velocity());
+
+        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.13), system.position()::hinv);
+        xhat = pooling.fuse(x, xhat);
+        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.720), system.velocity()::hinv);
+        xhat = pooling.fuse(x, xhat);
+
+        // xhat = estimator.correct(xhat, ypos(3.13), system.position());
+        // xhat = estimator.correct(xhat, yvel(-0.720), system.velocity());
         assertEquals(3.130, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.720, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        xhat = estimator.correct(xhat, ypos(3.113), system.position());
-        xhat = estimator.correct(xhat, yvel(-0.960), system.velocity());
+
+        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.113), system.position()::hinv);
+        xhat = pooling.fuse(x, xhat);
+        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.960), system.velocity()::hinv);
+        xhat = pooling.fuse(x, xhat);
+
+        // xhat = estimator.correct(xhat, ypos(3.113), system.position());
+        // xhat = estimator.correct(xhat, yvel(-0.960), system.velocity());
         assertEquals(3.113, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.960, xhat.x.get(1, 0), kDelta);
     }

@@ -2,6 +2,7 @@ package org.team100.lib.estimator;
 
 import java.util.Map.Entry;
 
+import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
@@ -22,16 +23,19 @@ import edu.wpi.first.math.numbers.N1;
 public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final BitemporalBuffer<RandomVector<States>> m_stateBuffer;
     private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
-    private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
+    private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
+    private final LinearPooling<States> m_pooling;
 
     public BitemporalEstimator(
             NonlinearPlant<States, Inputs, Outputs> plant,
             BitemporalBuffer<RandomVector<States>> stateBuffer,
             IntegratingPredictor<States, Inputs, Outputs> predictor,
-            NonlinearEstimator<States, Inputs, Outputs> estimator) {
+            PointEstimator<States, Inputs, Outputs> pointEstimator,
+            LinearPooling<States> pooling) {
         m_stateBuffer = stateBuffer;
         m_predictor = predictor;
-        m_estimator = estimator;
+        m_pointEstimator = pointEstimator;
+        m_pooling = pooling;
     }
 
     /**
@@ -61,7 +65,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
             double validTimeSec) {
         Entry<Double, Entry<Long, RandomVector<States>>> floor = floor(validTimeSec);
         RandomVector<States> xhat = floor.getValue().getValue();
-        xhat = m_estimator.correct(xhat, y, sensor);
+        RandomVector<States> x = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
+        xhat = m_pooling.fuse(x, xhat);
+        //xhat = m_estimator.correct(xhat, y, sensor);
         return update(xhat, recordTimeUSec, validTimeSec);
     }
 
