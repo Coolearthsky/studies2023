@@ -192,10 +192,17 @@ public class BitemporalEstimatorTest {
                 VecBuilder.fill(0.1, 0.1));
 
         // so what *should* happen with variance?
-        Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
+        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(),Nat.N2());
+        m_contQ.set(0,0,0.0001);
+        m_contQ.set(1,1,0.0001);
+        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-        Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
+        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
+        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(),Nat.N2());
+        m_contR.set(0,0,0.01);
+        m_contR.set(1,1,0.01);
+
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -266,10 +273,16 @@ public class BitemporalEstimatorTest {
                 VecBuilder.fill(0.1, 0.1));
 
         // so what *should* happen with variance?
-        Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
+        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
+        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(),Nat.N2());
+        m_contQ.set(0,0,0.0001);
+        m_contQ.set(1,1,0.0001);
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-        Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
+        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
+        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(),Nat.N2());
+        m_contR.set(0,0,0.01);
+        m_contR.set(1,1,0.01);
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();

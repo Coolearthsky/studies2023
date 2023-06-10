@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -124,6 +125,24 @@ public class IntegratingPredictorTest {
         assertArrayEquals(new double[] { 1.278 }, i1.P.getData(), kDelta);
     }
 
+    @Test
+    public void testRandomVectorIntegration1WithNoise() {
+        Matrix<N1, N1> x = new Matrix<>(Nat.N1(), Nat.N1());
+        x.set(0, 0, 1);
+        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
+        p.set(0, 0, 1);
+        RandomVector<N1> v1 = new RandomVector<>(x, p);
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        // big time step here to see the effect
+        WhiteNoiseVector<N1> xi = new WhiteNoiseVector<>(VecBuilder.fill(1));
+        IntegratingPredictor<N1, N1> predictor = new IntegratingPredictor<>();
+        RandomVector<N1> i1 = predictor.predictWithNoise(this::f1, v1, u, xi, 1.0);
+        // same as input
+        assertArrayEquals(new double[] { 1 }, i1.x.getData(), kDelta);
+        // noise adds "t" worth of extra variance compared to the above case
+        assertArrayEquals(new double[] { 2.278 }, i1.P.getData(), kDelta);
+    }
+
 
     @Test
     public void testRandomVectorIntegration1x() {
@@ -159,6 +178,34 @@ public class IntegratingPredictorTest {
         RandomVector<N2> i2 = predictor.predict(this::f2, v2, u, 1);
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
         assertArrayEquals(new double[] { 1.278, 0, 0, 1.278 }, i2.P.getData(), kDelta);
+    }
+
+    @Test
+    public void testRandomVectorIntegration2WithNoise() {
+        Matrix<N2, N1> x = new Matrix<>(Nat.N2(), Nat.N1());
+        x.set(0, 0, 1);
+        x.set(1, 0, 1);
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 1);
+        p.set(0, 1, 0);
+        p.set(1, 0, 0);
+        p.set(1, 1, 1);
+        RandomVector<N2> v2 = new RandomVector<>(x, p);
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+
+        Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
+        pp.set(0, 0, 2);
+        pp.set(0, 1, 0);
+        pp.set(1, 0, 0);
+        pp.set(1, 1, 0.5);
+
+        WhiteNoiseVector<N2> xi = new WhiteNoiseVector<>(pp);
+        // big time step here to see the effect
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        RandomVector<N2> i2 = predictor.predictWithNoise(this::f2, v2, u, xi, 1);
+        assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
+        // noise variance varies by dimension; 0th is larger, 1st is smaller
+        assertArrayEquals(new double[] { 3.278, 0, 0, 1.778 }, i2.P.getData(), kDelta);
     }
 
 

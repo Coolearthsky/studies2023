@@ -38,17 +38,19 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
     /**
      * Predict state under output u for dtSec in the future and normalize.
      * 
-     * @param initialState xhat
+     * @param x xhat
      * @param u            total control output
      * @param dtSec        time quantum (sec)
      */
     public RandomVector<States> predictState(
-            RandomVector<States> initialState,
+            RandomVector<States> x,
             Matrix<Inputs, N1> u,
             double dtSec) {
-        final RandomVector<States> xhat = predict(m_plant::f, initialState, u, dtSec);
-        final RandomVector<States> xhatXNormalized = m_plant.xNormalize(xhat);
-        return xhatXNormalized;
+return m_predictor.predict(m_plant::f, x, u, dtSec);
+
+        // final RandomVector<States> xhat = m_predictor.predict(m_plant::f, x, u, dtSec);
+        // final RandomVector<States> xhatXNormalized = m_plant.xNormalize(xhat);
+        // return xhatXNormalized;
     }
 
     /**
@@ -59,41 +61,8 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
             RandomVector<States> initialState,
             RandomVector<Rows> y,
             Sensor<States, Inputs, Rows> sensor) {
-        return correctNew(
-                initialState,
-                m_uZero,
-                y,
-                sensor::hinv,
-                m_pooling);
-    }
-
-    /**
-     * Project the model into the future with a new control input u.
-     *
-     * @param f     dynamics not including noise
-     * @param x     State at t0
-     * @param u     New control input from controller.
-     * @param dtSec Timestep for prediction.
-     */
-    public RandomVector<States> predict(
-            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<States>> f,
-            RandomVector<States> x,
-            Matrix<Inputs, N1> u,
-            double dtSec) {
-        return m_predictor.predict(f, x, u, dtSec);
-    }
-
-    /**
-     * Use the inverse h function to get the state corresponding to the measurement.
-     */
-    public <Rows extends Num> RandomVector<States> correctNew(
-            RandomVector<States> m_xHat,
-            Matrix<Inputs, N1> u,
-            RandomVector<Rows> y,
-            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv,
-            LinearPooling<States> pooling) {
-        RandomVector<States> x = stateForMeasurement(u, y, hinv);
-        return pooling.fuse(x, m_xHat);
+        RandomVector<States> x = stateForMeasurement(m_uZero, y, sensor::hinv);
+        return m_pooling.fuse(x, initialState);
     }
 
     /**

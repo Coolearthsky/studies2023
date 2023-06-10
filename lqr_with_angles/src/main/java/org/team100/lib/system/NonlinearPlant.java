@@ -24,16 +24,16 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     /** State evolution */
     public RandomVector<States> f(RandomVector<States> x, Matrix<Inputs, N1> u);
 
-    /**
-     * State addition, used by the filter to correct the state towards the
-     * measurement.
-     */
-    public RandomVector<States> xAdd(RandomVector<States> a, RandomVector<States> b);
+    // /**
+    //  * State addition, used by the filter to correct the state towards the
+    //  * measurement.
+    //  */
+    // public RandomVector<States> xAdd(RandomVector<States> a, RandomVector<States> b);
 
-    /**
-     * Normalize state, used by predict, e.g. for angle wrapping.
-     */
-    public RandomVector<States> xNormalize(RandomVector<States> x);
+    // /**
+    //  * Normalize state, used by predict, e.g. for angle wrapping.
+    //  */
+    // public RandomVector<States> xNormalize(RandomVector<States> x);
 
     /**
      * State residual, e.g. subtraction, used by the controller to compare the
@@ -44,11 +44,11 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     /** Measure all states; this is really only used for initialization. */
     public Sensor<States, Inputs, Outputs> full();
 
-    /**
-     * Standard deviations of the state, used by the filter; i guess this represents
-     * the stdev of the disturbance?
-     */
-    public Matrix<States, N1> stdev();
+    // /**
+    //  * Standard deviations of the state, used by the filter; i guess this represents
+    //  * the stdev of the disturbance?
+    //  */
+    // public Matrix<States, N1> stdev();
 
     /** Control limit */
     public Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);

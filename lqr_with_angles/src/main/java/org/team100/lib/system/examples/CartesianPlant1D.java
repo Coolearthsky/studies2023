@@ -104,10 +104,10 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
         return a.minus(b);
     }
 
-    @Override
-    public RandomVector<N2> xAdd(RandomVector<N2> a, RandomVector<N2> b) {
-        return a.plus(b);
-    }
+    // @Override
+    // public RandomVector<N2> xAdd(RandomVector<N2> a, RandomVector<N2> b) {
+    //     return a.plus(b);
+    // }
 
     /**
      * Measure position.
@@ -124,9 +124,9 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
         return full;
     }
 
-    public RandomVector<N2> xNormalize(RandomVector<N2> xmat) {
-        return xmat;
-    }
+    // public RandomVector<N2> xNormalize(RandomVector<N2> xmat) {
+    //     return xmat;
+    // }
 
     public Matrix<N1, N1> limit(Matrix<N1, N1> u) {
         return StateSpaceUtil.desaturateInputVector(u, 12.0);

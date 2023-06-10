@@ -32,35 +32,35 @@ public class FrictionCartesian1D extends CartesianPlant1D {
         return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
     }
 
-    @Override
-    public Matrix<N2, N1> stdev() {
-        return VecBuilder.fill(0.015, 0.17);
-    }
+    // @Override
+    // public Matrix<N2, N1> stdev() {
+    //     return VecBuilder.fill(0.015, 0.17);
+    // }
 
     @Override
     public Sensor<N2, N1, N2> newFull() {
         return new FullSensor() {
-            public Matrix<N2, N1> stdev() {
-                return VecBuilder.fill(0.01, 0.1);
-            }
+            // public Matrix<N2, N1> stdev() {
+            //     return VecBuilder.fill(0.01, 0.1);
+            // }
         };
     }
 
     @Override
     public Sensor<N2, N1, N1> newPosition() {
         return new PositionSensor() {
-            public Matrix<N1, N1> stdev() {
-                return VecBuilder.fill(0.01);
-            }
+            // public Matrix<N1, N1> stdev() {
+            //     return VecBuilder.fill(0.01);
+            // }
         };
     }
 
     @Override
     public Sensor<N2, N1, N1> newVelocity() {
         return new VelocitySensor() {
-            public Matrix<N1, N1> stdev() {
-                return VecBuilder.fill(0.1);
-            }
+            // public Matrix<N1, N1> stdev() {
+            //     return VecBuilder.fill(0.1);
+            // }
         };
     }
 

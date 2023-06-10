@@ -112,10 +112,10 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
         return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
     }
 
-    public RandomVector<N2> xAdd(RandomVector<N2> a, RandomVector<N2> b) {
-        // note independent assumption
-        return new RandomVector<>(AngleStatistics.angleAdd(a.x, b.x, 0), a.P.plus(b.P));
-    }
+    // public RandomVector<N2> xAdd(RandomVector<N2> a, RandomVector<N2> b) {
+    //     // note independent assumption
+    //     return new RandomVector<>(AngleStatistics.angleAdd(a.x, b.x, 0), a.P.plus(b.P));
+    // }
 
     public Sensor<N2, N1, N1> position() {
         return position;
@@ -129,12 +129,12 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
         return full;
     }
 
-    @Override
-    public RandomVector<N2> xNormalize(RandomVector<N2> xmat) {
-        RandomVector<N2> x = xmat.copy();
-        x.x.set(0, 0, MathUtil.angleModulus(x.x.get(0, 0)));
-        return x;
-    }
+    // @Override
+    // public RandomVector<N2> xNormalize(RandomVector<N2> xmat) {
+    //     RandomVector<N2> x = xmat.copy();
+    //     x.x.set(0, 0, MathUtil.angleModulus(x.x.get(0, 0)));
+    //     return x;
+    // }
 
     public Matrix<N1, N1> limit(Matrix<N1, N1> u) {
         return StateSpaceUtil.desaturateInputVector(u, 12.0);

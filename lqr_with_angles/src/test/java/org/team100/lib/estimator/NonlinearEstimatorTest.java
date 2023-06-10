@@ -84,25 +84,25 @@ public class NonlinearEstimatorTest {
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D() {
             public Sensor<N2, N1, N2> newFull() {
                 return new FullSensor() {
-                    public Matrix<N2, N1> stdev() {
-                        return VecBuilder.fill(0.1, 0.00001);
-                    }
+                    // public Matrix<N2, N1> stdev() {
+                    //     return VecBuilder.fill(0.1, 0.00001);
+                    // }
                 };
             }
 
             public Sensor<N2, N1, N1> newPosition() {
                 return new PositionSensor() {
-                    public Matrix<N1, N1> stdev() {
-                        return VecBuilder.fill(0.1);
-                    }
+                    // public Matrix<N1, N1> stdev() {
+                    //     return VecBuilder.fill(0.1);
+                    // }
                 };
             }
 
             public Sensor<N2, N1, N1> newVelocity() {
                 return new VelocitySensor() {
-                    public Matrix<N1, N1> stdev() {
-                        return VecBuilder.fill(0.00001);
-                    }
+                    // public Matrix<N1, N1> stdev() {
+                    //     return VecBuilder.fill(0.00001);
+                    // }
                 };
             }
         };
@@ -142,17 +142,17 @@ public class NonlinearEstimatorTest {
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D() {
             public Sensor<N2, N1, N2> newFull() {
                 return new FullSensor() {
-                    public Matrix<N2, N1> stdev() {
-                        return VecBuilder.fill(0.00001, 0.1);
-                    }
+                    // public Matrix<N2, N1> stdev() {
+                    //     return VecBuilder.fill(0.00001, 0.1);
+                    // }
                 };
             }
 
             public Sensor<N2, N1, N1> newPosition() {
                 return new PositionSensor() {
-                    public Matrix<N1, N1> stdev() {
-                        return VecBuilder.fill(0.00001);
-                    }
+                    // public Matrix<N1, N1> stdev() {
+                    //     return VecBuilder.fill(0.00001);
+                    // }
                     // if you want angle modulus, do it here.
                     //////////////////?? or not?
                     //
@@ -169,9 +169,9 @@ public class NonlinearEstimatorTest {
 
             public Sensor<N2, N1, N1> newVelocity() {
                 return new VelocitySensor() {
-                    public Matrix<N1, N1> stdev() {
-                        return VecBuilder.fill(0.1);
-                    }
+                    // public Matrix<N1, N1> stdev() {
+                    //     return VecBuilder.fill(0.1);
+                    // }
                 };
             }
         };
