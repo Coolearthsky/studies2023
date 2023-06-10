@@ -41,12 +41,14 @@ import edu.wpi.first.math.numbers.N1;
  * 
  * This pooling method works fine with zero variances.
  * 
+ * If you're doing non-Euclidean geometry, you'd better handle that in your
+ * variable class.
+ * 
  * [1] https://arxiv.org/pdf/2202.11633.pdf
  * [2]
  * https://stats.stackexchange.com/questions/16608/what-is-the-variance-of-the-weighted-mixture-of-two-gaussians
  */
 public abstract class LinearPooling<States extends Num> implements Pooling<States> {
-
     /**
      * Note that a and b could involve non-cartesian dimensions, e.g. angle
      * wrapping.
@@ -57,49 +59,39 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
             Matrix<States, States> pa,
             RandomVector<States> b,
             Matrix<States, States> pb) {
-        // TODO: make these checks "test mode only" to avoid throwing in matches
+        // TODO: in "comp mode" make these checks substitute some acceptable behavior
+        // like some simpler average
 
         Matrix<States, States> sumOfWeight = pa.plus(pb);
         if (!MatrixFeatures_DDRM.isIdentity(sumOfWeight.getStorage().getDDRM(), 0.001)) {
             throw new IllegalArgumentException("weights do not sum to one.\npa:\n "
                     + pa.toString() + "\npb:\n " + pb.toString());
         }
-
-        Matrix<States, N1> ax = a.x;
-        Matrix<States, N1> bx = b.x;
-        Matrix<States, States> aP = a.P;
-        Matrix<States, States> bP = b.P;
-
-        // TODO: make these checks "test mode only" to avoid throwing in matches
-        if (!MatrixFeatures_DDRM.isSymmetric(aP.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("aP is not symmetric.\n" + aP.toString());
+        if (!MatrixFeatures_DDRM.isSymmetric(a.P.getStorage().getDDRM())) {
+            throw new IllegalArgumentException("aP is not symmetric.\n" + a.P.toString());
         }
-        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(aP.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("aP is not positive semidefinite.\n" + aP.toString());
+        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(a.P.getStorage().getDDRM())) {
+            throw new IllegalArgumentException("aP is not positive semidefinite.\n" + a.P.toString());
         }
-        if (!MatrixFeatures_DDRM.isSymmetric(bP.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("bP is not symmetric.\n" + bP.toString());
+        if (!MatrixFeatures_DDRM.isSymmetric(b.P.getStorage().getDDRM())) {
+            throw new IllegalArgumentException("bP is not symmetric.\n" + b.P.toString());
         }
-        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(bP.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("bP is not positive semidefinite.\n" + bP.toString());
+        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(b.P.getStorage().getDDRM())) {
+            throw new IllegalArgumentException("bP is not positive semidefinite.\n" + b.P.toString());
         }
 
-        // weighted mean:
-        // this can be fixed up by the caller
-        // Matrix<States, N1> cx = pa.times(ax).plus(pb.times(bx));
-        Matrix<States, N1> meanMean = ax.plus(pb.times(bx.minus(ax)));
+        Matrix<States, States> dispersionTerm = dispersionCovariance(a, pa, b, pb);
+        RandomVector<States> cc = a.combine(pb, b);
+        return a.make(cc.x, cc.P.plus(dispersionTerm));
+    }
 
-        // variance, transparent version
-
-        // dispersion term
-        // this line needs to use the residual function.
-        //
-        //
-//        Matrix<States, N1> d = ax.minus(bx);
-// use the new x minus thing which does wrapping maybe?
+    /** Covariance of the mixture due to dispersion in the means. */
+    private Matrix<States, States> dispersionCovariance(
+            RandomVector<States> a,
+            Matrix<States, States> pa,
+            RandomVector<States> b,
+            Matrix<States, States> pb) {
         Matrix<States, N1> d = a.xminus(b.x);
-        //
-        //
         Matrix<States, States> ddiag = pa.copy();
         ddiag.fill(0);
         for (int i = 0; i < ddiag.getNumCols(); ++i) {
@@ -108,21 +100,7 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         Matrix<States, States> d2 = ddiag.times(ddiag);
         Matrix<States, States> papb = pa.times(pb);
         Matrix<States, States> dispersionTerm = papb.times(d2);
-
-        // Matrix<States, States> cPA = pa.times(aP);
-        // Matrix<States, States> cPB = pb.times(bP);
-        // Matrix<States, States> meanCovariance = cPA.plus(cPB);
-        // exactly like above
-        Matrix<States, States> meanCovariance = aP.plus(pb.times(bP.minus(aP)));
-        Matrix<States, States> cP = meanCovariance.plus(dispersionTerm);
-
-        RandomVector<States> cc = a.combine(pb,b);
-
-//        return new RandomVector<States>(meanMean, cP);
-
-// return new RandomVector<States>(cc.x, cc.P.plus(dispersionTerm));
-
-        return a.make(cc.x, cc.P.plus(dispersionTerm));
+        return dispersionTerm;
     }
 
     /**
@@ -140,39 +118,4 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         }
         return fuse(a, pamat, b, pbmat);
     }
-
-    /**
-     * Weights should add to one.
-     * 
-     * @param pa a weight
-     * @param pb b weight
-     */
-    RandomVector<States> fuseold(RandomVector<States> a, double pa, RandomVector<States> b, double pb) {
-        Matrix<States, N1> ax = a.x;
-        Matrix<States, N1> bx = b.x;
-        Matrix<States, States> aP = a.P;
-        Matrix<States, States> bP = b.P;
-
-        // weighted mean:
-        Matrix<States, N1> cx = ax.times(pa).plus(bx.times(pb));
-
-        // variance, opaque version:
-        // Matrix<States, N1> aE = ax.minus(cx);
-        // Matrix<States, N1> bE = bx.minus(cx);
-        // Matrix<States, States> cPA = aP.plus(aE.times(aE.transpose())).times(pa);
-        // Matrix<States, States> cPB = bP.plus(bE.times(bE.transpose())).times(pb);
-        // Matrix<States, States> cP = cPA.plus(cPB);
-
-        // variance, transparent version:
-        Matrix<States, States> cPA = aP.times(pa);
-        Matrix<States, States> cPB = bP.times(pb);
-        // dispersion term
-        Matrix<States, N1> d = ax.minus(bx);
-        Matrix<States, States> d2 = d.times(d.transpose());
-        Matrix<States, States> dP = d2.times(pa).times(pb);
-        Matrix<States, States> cP = cPA.plus(cPB).plus(dP);
-
-        return new RandomVector<States>(cx, cP);
-    }
-
 }

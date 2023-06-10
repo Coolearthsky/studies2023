@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
@@ -23,12 +25,17 @@ import edu.wpi.first.math.numbers.N2;
 
 public class BitemporalEstimatorTest {
     private static final double kDelta = 0.001;
+    private static boolean kPrint = false;
 
     @Test
     public void testStopped() {
         NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+
+                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // no motion
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -59,7 +66,10 @@ public class BitemporalEstimatorTest {
     public void testMotion() {
         NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // velocity = 1
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -104,8 +114,9 @@ public class BitemporalEstimatorTest {
         // System.out.println("SEPARATE");
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-        // TODO: the constant timestep here will not work.
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -174,7 +185,7 @@ public class BitemporalEstimatorTest {
      */
     @Test
     public void testFullCorrection() {
-        System.out.println("FULL MY VERSION");
+        if (kPrint) System.out.println("FULL MY VERSION");
         // not much disturbance, very noisy measurement
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
                 VecBuilder.fill(0.01, 0.01),
@@ -186,9 +197,9 @@ public class BitemporalEstimatorTest {
 
         Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
-
-        // TODO: the constant timestep here will not work.
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -210,8 +221,8 @@ public class BitemporalEstimatorTest {
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
 
-        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+        if (kPrint)System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                 validTime, xhat.x.get(0, 0),
                 xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
@@ -222,7 +233,7 @@ public class BitemporalEstimatorTest {
             recordTime = i;
             validTime = 0.001 * i;
             xhat = bitemporalEstimator.correct(y, plant.full(), recordTime, validTime);
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+            if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                     validTime, xhat.x.get(0, 0),
                     xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
         }
@@ -248,7 +259,7 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testFullCorrectionAndPrediction() {
-        System.out.println("FULL MY VERSION CORRECT AND PREDICT");
+        if (kPrint)System.out.println("FULL MY VERSION CORRECT AND PREDICT");
         // not much disturbance, very noisy measurement
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
                 VecBuilder.fill(0.01, 0.01),
@@ -260,9 +271,9 @@ public class BitemporalEstimatorTest {
 
         Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
-
-        // TODO: the constant timestep here will not work.
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -279,8 +290,8 @@ public class BitemporalEstimatorTest {
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
 
-        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+        if (kPrint) System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                 validTime, xhat.x.get(0, 0),
                 xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
@@ -297,14 +308,14 @@ public class BitemporalEstimatorTest {
 
             // TODO this doesn't yet inject noise, i think.
             xhat = bitemporalEstimator.predict(u, recordTime, validTime);
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
+            if (kPrint)  System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
                     validTime, xhat.x.get(0, 0),
                     xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
             // there is no "u" here because the measurement function "h" is required to be
             // u-invariant
             xhat = bitemporalEstimator.correct(y, plant.full(), recordTime, validTime);
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
+            if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
                     validTime, xhat.x.get(0, 0),
                     xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
         }
@@ -331,7 +342,10 @@ public class BitemporalEstimatorTest {
     public void testFloor() {
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, 0.01);
+                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
         {

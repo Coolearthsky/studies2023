@@ -18,9 +18,6 @@ import edu.wpi.first.math.numbers.N1;
  * prediction into pieces and use the measurements.
  * 
  * TODO: differentiate between predictions and corrections?
- * 
- * TODO: consider removing state from the internal estimator, since we force the
- * state every time.
  */
 public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final BitemporalBuffer<RandomVector<States>> m_stateBuffer;

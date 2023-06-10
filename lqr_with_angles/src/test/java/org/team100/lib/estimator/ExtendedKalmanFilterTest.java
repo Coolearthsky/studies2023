@@ -21,6 +21,7 @@ import edu.wpi.first.math.system.NumericalJacobian;
  */
 public class ExtendedKalmanFilterTest {
     private static final double kDelta = 0.001;
+    private static boolean kPrint = false;
 
     public Matrix<N2, N1> f(Matrix<N2, N1> xmat, Matrix<N1, N1> umat) {
         double v = xmat.get(1, 0);
@@ -37,7 +38,8 @@ public class ExtendedKalmanFilterTest {
     /** Same test as in BitemporalEstimator, to see if it's the same. */
     @Test
     public void testFullCorrection() {
-        System.out.println("FULL EKF");
+        if (kPrint)
+            System.out.println("FULL EKF");
         // not much disturbance, very noisy measurement
         Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.01, 0.01);
         Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.1, 0.1);
@@ -53,9 +55,11 @@ public class ExtendedKalmanFilterTest {
         Matrix<N2, N2> P = estimator.getP();
         assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, P.getData(), 0.0001);
 
-        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+        if (kPrint)
+            System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
 
         // no control input
         Matrix<N1, N1> u = VecBuilder.fill(0);
@@ -67,8 +71,9 @@ public class ExtendedKalmanFilterTest {
             estimator.correct(u, y);
             xhat = estimator.getXhat();
             P = estimator.getP();
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                        validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
         }
 
         estimator.correct(u, y);
@@ -84,17 +89,18 @@ public class ExtendedKalmanFilterTest {
     /** Same test as in BitemporalEstimator, to see if it's the same. */
     @Test
     public void testFullCorrectionAndPrediction() {
-        System.out.println("FULL EKF CORRECT AND PREDICT");
+        if (kPrint)
+            System.out.println("FULL EKF CORRECT AND PREDICT");
         // not much disturbance, very noisy measurement
         Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.01, 0.01);
         Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.1, 0.1);
 
         // so what *should* happen with variance?
-         Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), stateStdDevs);
-         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
+        Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), stateStdDevs);
+        assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-         Matrix<N2, N2> m_contR  = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
-         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
+        Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), measurementStdDevs);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
 
         ExtendedKalmanFilter<N2, N1, N2> estimator = new ExtendedKalmanFilter<>(
                 Nat.N2(), Nat.N1(), Nat.N2(), this::f, this::h, stateStdDevs, measurementStdDevs, 0.01);
@@ -109,9 +115,11 @@ public class ExtendedKalmanFilterTest {
         Matrix<N2, N2> P = estimator.getP();
         assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 }, P.getData(), 0.0001);
 
-        System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+        if (kPrint)
+            System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
 
         // no control input
         Matrix<N1, N1> u = VecBuilder.fill(0);
@@ -126,14 +134,16 @@ public class ExtendedKalmanFilterTest {
             estimator.predict(u, 0.01); // note dt here
             xhat = estimator.getXhat();
             P = estimator.getP();
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
-                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
+                        validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
 
             estimator.correct(u, y);
             xhat = estimator.getXhat();
             P = estimator.getP();
-            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
-                    validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
+                        validTime, xhat.get(0, 0), xhat.get(1, 0), P.get(0, 0), P.get(0, 1), P.get(1, 0), P.get(1, 1));
         }
 
         estimator.correct(u, y);
@@ -155,8 +165,10 @@ public class ExtendedKalmanFilterTest {
     }
 
     private void printStuff(double dtSeconds) {
-        System.out.println("=======================================");
-        System.out.println("dt " + dtSeconds);
+        if (kPrint)
+            System.out.println("=======================================");
+        if (kPrint)
+            System.out.println("dt " + dtSeconds);
         Matrix<N2, N1> stateStdDevs = VecBuilder.fill(0.015, 0.17);
         Matrix<N2, N1> measurementStdDevs = VecBuilder.fill(0.1, 0.1);
 
@@ -167,33 +179,41 @@ public class ExtendedKalmanFilterTest {
 
         Matrix<N2, N2> contA = NumericalJacobian.numericalJacobianX(
                 Nat.N2(), Nat.N2(), this::f, m_xHat, new Matrix<>(Nat.N1(), Nat.N1()));
-        System.out.println("contA " + contA);
+        if (kPrint)
+            System.out.println("contA " + contA);
         // double integrator A
         assertArrayEquals(new double[] { 0, 1, 0, 0 }, contA.getData());
 
         Matrix<N2, N2> C = NumericalJacobian.numericalJacobianX(
                 Nat.N2(), Nat.N2(), this::h, m_xHat, new Matrix<>(Nat.N1(), Nat.N1()));
-        System.out.println("C " + C);
+        if (kPrint)
+            System.out.println("C " + C);
         // C is identity since h is identity.
         assertArrayEquals(new double[] { 1, 0, 0, 1 }, C.getData());
 
         Pair<Matrix<N2, N2>, Matrix<N2, N2>> discPair = Discretization.discretizeAQTaylor(contA, m_contQ, dtSeconds);
         Matrix<N2, N2> discA = discPair.getFirst();
-        System.out.println("discA " + discA);
+        if (kPrint)
+            System.out.println("discA " + discA);
         Matrix<N2, N2> discQ = discPair.getSecond();
-        System.out.println("discQ " + discQ);
+        if (kPrint)
+            System.out.println("discQ " + discQ);
         Matrix<N2, N2> discR = Discretization.discretizeR(m_contR, dtSeconds);
-        System.out.println("discR " + discR);
+        if (kPrint)
+            System.out.println("discR " + discR);
         Matrix<N2, N2> m_P = Drake.discreteAlgebraicRiccatiEquation(discA.transpose(), C.transpose(), discQ, discR);
-        System.out.println("m_P " + m_P);
+        if (kPrint)
+            System.out.println("m_P " + m_P);
 
         // this is from EKF correct()
 
         // state prediction covariance
         Matrix<N2, N2> S = C.times(m_P).times(C.transpose()).plus(discR);
-        System.out.println("S " + S);
+        if (kPrint)
+            System.out.println("S " + S);
         Matrix<N2, N2> K = S.transpose().solve(C.times(m_P.transpose())).transpose();
-        System.out.println("K " + K);
+        if (kPrint)
+            System.out.println("K " + K);
 
         // output
         Matrix<N2, N1> y = VecBuilder.fill(1, 0);
@@ -201,50 +221,60 @@ public class ExtendedKalmanFilterTest {
         Matrix<N1, N1> u = VecBuilder.fill(0);
 
         Matrix<N2, N1> expectedMeasurement = h(m_xHat, u);
-        System.out.println("expectedMeasurement " + expectedMeasurement);
+        if (kPrint)
+            System.out.println("expectedMeasurement " + expectedMeasurement);
         assertArrayEquals(new double[] { 0, 0 }, expectedMeasurement.getData());
 
         Matrix<N2, N1> residual = y.minus(expectedMeasurement);
         assertArrayEquals(new double[] { 1, 0 }, residual.getData());
-        System.out.println("residual " + residual);
+        if (kPrint)
+            System.out.println("residual " + residual);
 
         Matrix<N2, N1> increment = K.times(residual);
-        System.out.println("increment " + increment);
+        if (kPrint)
+            System.out.println("increment " + increment);
 
         m_xHat = m_xHat.plus(increment);
-        System.out.println("m_xHat " + m_xHat);
+        if (kPrint)
+            System.out.println("m_xHat " + m_xHat);
         m_P = Matrix.eye(Nat.N2())
                 .minus(K.times(C))
                 .times(m_P)
                 .times(Matrix.eye(Nat.N2()).minus(K.times(C)).transpose())
                 .plus(K.times(discR).times(K.transpose()));
-        System.out.println("m_P " + m_P);
+        if (kPrint)
+            System.out.println("m_P " + m_P);
     }
 
     /** how does R, Q, and dt affect K? */
     // turn this off because it makes a lot of output.
     // @Test
     public void testKRQDt() {
-        System.out.println("KRQDt ======================================");
-        System.out.println("     q,      r,     dt, k[0,0]");
+        if (kPrint)
+            System.out.println("KRQDt ======================================");
+        if (kPrint)
+            System.out.println("     q,      r,     dt, k[0,0]");
         // more dt => more k
         for (double dt = 0.1; dt < 10; dt += 0.1) {
             double r = 1;
             double q = 1;
             Matrix<N2, N2> K = k(q, r, dt);
-            System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
+            if (kPrint)
+                System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
         }
         for (double q = 0.1; q < 10; q += 0.1) {
             double r = 1;
             double dt = 1;
             Matrix<N2, N2> K = k(q, r, dt);
-            System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
+            if (kPrint)
+                System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
         }
         for (double r = 0.1; r < 10; r += 0.1) {
             double dt = 1;
             double q = 1;
             Matrix<N2, N2> K = k(q, r, dt);
-            System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
+            if (kPrint)
+                System.out.printf("%6.3f, %6.3f, %6.3f, %6.3f\n", q, r, dt, K.get(0, 0));
         }
     }
 

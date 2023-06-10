@@ -18,6 +18,9 @@ import edu.wpi.first.math.Num;
  * 
  * pa = (1/A)/(1/A + 1/B)
  * pb = (1/B)/(1/A + 1/B)
+ * 
+ * If you are representing non-Euclidean geometry you'd better be using the
+ * right RandomVector class, because this class doesn't handle it.
  */
 public class VarianceWeightedLinearPooling<States extends Num> extends LinearPooling<States> {
     private static final double kThreshold = 1e-15;
@@ -25,10 +28,11 @@ public class VarianceWeightedLinearPooling<States extends Num> extends LinearPoo
     /**
      * Note that a and b could involve non-cartesian dimensions, e.g. angle
      * wrapping.
-     * The caller needs to handle normalization.
+     * The caller needs to handle normalization, wrapping, etc.
      */
     public RandomVector<States> fuse(RandomVector<States> a, RandomVector<States> b) {
-        // TODO: turn off these checks somehow for matches, use some sort of backoff strategy
+        // TODO: turn off these checks somehow for matches, use some sort of backoff
+        // strategy
         if (a.getClass() != b.getClass()) {
             throw new IllegalArgumentException("a and b must be same type\n" + a.getClass() + " " + b.getClass());
         }

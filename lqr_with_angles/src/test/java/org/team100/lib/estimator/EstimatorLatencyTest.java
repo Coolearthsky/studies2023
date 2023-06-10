@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -328,7 +330,9 @@ public class EstimatorLatencyTest {
         NonlinearEstimator<N2, N1, N2> newEstimator() {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
-            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kSecPerRioLoop);
+            IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+            LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
             Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
             assertEquals(initialPosition, xhat.get(0, 0), kDelta);

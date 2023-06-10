@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -63,7 +66,9 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -152,7 +157,9 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -247,7 +254,9 @@ public class EstimatorAndControlTest {
                 .fill(12.0); // output (volts)
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 

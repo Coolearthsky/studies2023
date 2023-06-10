@@ -18,19 +18,11 @@ public class RandomVector<States extends Num> {
     }
 
     public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
-        return new RandomVector<>(x,P);
+        return new RandomVector<>(x, P);
     }
 
     public RandomVector<States> copy() {
         return make(x.copy(), P.copy());
-    }
-
-    /**
-     * Mean is subtracted, covariance is *added* which corresponds to assuming the
-     * variables are independent.
-     */
-    public RandomVector<States> minus(RandomVector<States> b) {
-        return make(x.minus(b.x), P.plus(b.P));
     }
 
     /**
@@ -39,6 +31,14 @@ public class RandomVector<States extends Num> {
      */
     public RandomVector<States> plus(RandomVector<States> b) {
         return make(x.plus(b.x), P.plus(b.P));
+    }
+
+    /**
+     * Mean is subtracted, covariance is *added* which corresponds to assuming the
+     * variables are independent.
+     */
+    public RandomVector<States> minus(RandomVector<States> b) {
+        return make(x.minus(b.x), P.plus(b.P));
     }
 
     /** euclidean version */
@@ -54,7 +54,13 @@ public class RandomVector<States extends Num> {
         return this.x.minus(otherx);
     }
 
-    /** return this + weight * (other - this) */
+    /**
+     * Weighted average with another variable.
+     * 
+     * @param weight the weight of the other variable, assuming the weight of this
+     *               variable is 1-weight.
+     * @return this + weight * (other - this)
+     */
     public RandomVector<States> combine(Matrix<States, States> weight, RandomVector<States> other) {
         Matrix<States, N1> xx = xplus(weight.times(other.xminus(this.x)));
         Matrix<States, States> PP = this.P.plus(weight.times(other.P.minus(this.P)));

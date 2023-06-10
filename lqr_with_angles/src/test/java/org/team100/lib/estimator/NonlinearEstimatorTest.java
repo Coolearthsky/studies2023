@@ -1,8 +1,11 @@
 package org.team100.lib.estimator;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.Sensor;
@@ -33,7 +36,9 @@ public class NonlinearEstimatorTest {
         // so delta is -0.02, should push negative across the boundary
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
         // initially, state estimate: at zero, motionless
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -101,7 +106,9 @@ public class NonlinearEstimatorTest {
                 };
             }
         };
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
         // start in negative territory
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -168,7 +175,9 @@ public class NonlinearEstimatorTest {
                 };
             }
         };
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
         // start in negative territory, a little positive of -PI.
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -212,7 +221,9 @@ public class NonlinearEstimatorTest {
         // so delta is -0.02, should push negative across the boundary
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
         // initially, state estimate: near -pi, motionless
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -259,4 +270,111 @@ public class NonlinearEstimatorTest {
         assertEquals(3.113, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.960, xhat.x.get(1, 0), kDelta);
     }
+
+
+    /** xdot for x */
+    public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
+    /** y for x */
+    public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
+        return x;
+    }
+
+    /** x for y */
+    public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
+        return y;
+    }
+
+    @Test
+    public void testStateForMeasurement() {
+
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, predictor, pooling);
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> y = new RandomVector<>(yx, yP);
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        xhat = observer.stateForMeasurement(u, y, this::hinv);
+        // since the state is just the measurement,
+        // you get the specified mean and variance of the measurement.
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+    }
+
+    /**
+     * this method converges *much* faster than the "kalman gain" method, and it
+     * seems more correct and less mysterious.
+     */
+    @Test
+    public void testCombineStateForMeasurement() {
+        DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> observer = new NonlinearEstimator<>(system, predictor, pooling);
+
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+        RandomVector<N2> xhatNew = xhat.copy();
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> y = new RandomVector<>(yx, yP);
+
+        LinearPooling<N2> p2 = new VarianceWeightedLinearPooling<N2>();
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        xhatNew = observer.stateForMeasurement(u, y, this::hinv);
+        xhat = p2.fuse(xhat, xhatNew);
+        // since the old and new have the same variance the mean is in the middle
+        assertArrayEquals(new double[] { 0.5, 0 }, xhat.x.getData(), kDelta);
+        // the difference in means adds to the variance but only of the first component
+        assertArrayEquals(new double[] { 0.26, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        xhatNew = observer.stateForMeasurement(u, y, this::hinv);
+        xhat = p2.fuse(xhat, xhatNew);
+        // new measurement has lower variance so it is preferred
+        assertArrayEquals(new double[] { 0.982, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion keeps increasing P
+        assertArrayEquals(new double[] { 0.028, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        xhatNew = observer.stateForMeasurement(u, y, this::hinv);
+        xhat = p2.fuse(xhat, xhatNew);
+        assertArrayEquals(new double[] { 0.995, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion is on the way down now
+        assertArrayEquals(new double[] { 0.015, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        // go all the way to the end
+        for (int i = 0; i < 100; ++i) {
+            xhatNew = observer.stateForMeasurement(u, y, this::hinv);
+            xhat = p2.fuse(xhat, xhatNew);
+        }
+        // now the estimate matches the measurement
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+    }
+
 }

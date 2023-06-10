@@ -3,6 +3,8 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -26,7 +28,9 @@ public class EKFMultiCorrectTest {
     @Test
     public void testMultipleSensors() {
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, kDt);
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(),Nat.N2());
         p.set(0,0,0.1);

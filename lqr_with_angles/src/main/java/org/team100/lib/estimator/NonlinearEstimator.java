@@ -1,5 +1,8 @@
 package org.team100.lib.estimator;
 
+import java.util.function.BiFunction;
+
+import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.Sensor;
@@ -7,7 +10,6 @@ import org.team100.lib.system.Sensor;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
-import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.numbers.N1;
 
 /**
@@ -15,29 +17,22 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final Matrix<Inputs, N1> m_uZero;
-    private final NonlinearPlant<States, Inputs, Outputs> m_system;
-    private final ConstantGainExtendedKalmanFilter<States, Inputs, Outputs> ekf;
+    private final NonlinearPlant<States, Inputs, Outputs> m_plant;
+    private final IntegratingPredictor<States, Inputs> m_predictor;
+    private final LinearPooling<States> m_pooling;
 
     /**
-     * @param plant           system dynamics, must be control-affine
-     * @param correctionDtSec scales (inversely) measurement noise in correction.
-     *                        This is used to discretize the DARE solution for gain
-     *                        calculation; choose any value you want (e.g. the
-     *                        robot loop period), and then tune the state and
-     *                        measurement variances around that.
+     * @param plant   system dynamics, must be control-affine
+     * @param pooling fuses state estimates
      */
-    public NonlinearEstimator(NonlinearPlant<States, Inputs, Outputs> plant, double correctionDtSec) {
+    public NonlinearEstimator(
+            NonlinearPlant<States, Inputs, Outputs> plant,
+            IntegratingPredictor<States, Inputs> predictor,
+            LinearPooling<States> pooling) {
         m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
-        m_system = plant;
-        ekf = new ConstantGainExtendedKalmanFilter<States, Inputs, Outputs>(
-                plant.states(),
-                plant.inputs(),
-                plant.outputs(),
-                plant::f,
-                plant.full()::h,
-                plant.stdev(),
-                plant.full().stdev(),
-                correctionDtSec);
+        m_plant = plant;
+        m_predictor = predictor;
+        m_pooling = pooling;
     }
 
     /**
@@ -47,32 +42,68 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
      * @param u            total control output
      * @param dtSec        time quantum (sec)
      */
-    public RandomVector<States> predictState(RandomVector<States> initialState, Matrix<Inputs, N1> u, double dtSec) {
-        final RandomVector<States> xhat = ekf.predict(initialState, u, dtSec);
-        final RandomVector<States> xhatXNormalized = m_system.xNormalize(xhat);
+    public RandomVector<States> predictState(
+            RandomVector<States> initialState,
+            Matrix<Inputs, N1> u,
+            double dtSec) {
+        final RandomVector<States> xhat = predict(m_plant::f, initialState, u, dtSec);
+        final RandomVector<States> xhatXNormalized = m_plant.xNormalize(xhat);
         return xhatXNormalized;
     }
 
     /**
      * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
-     * 
-     * TODO: what if x and y have different geometries (euclidean vs circular)?
      */
     public <Rows extends Num> RandomVector<States> correct(
             RandomVector<States> initialState,
             RandomVector<Rows> y,
             Sensor<States, Inputs, Rows> sensor) {
-        Matrix<Rows, Rows> contR = StateSpaceUtil.makeCovarianceMatrix(sensor.rows(), sensor.stdev());
-        return ekf.correctNew(
-                sensor.rows(),
+        return correctNew(
                 initialState,
                 m_uZero,
                 y,
-                sensor::h,
                 sensor::hinv,
-                contR,
-                sensor::yResidual,
-                m_system::xAdd);
+                m_pooling);
+    }
+
+    /**
+     * Project the model into the future with a new control input u.
+     *
+     * @param f     dynamics not including noise
+     * @param x     State at t0
+     * @param u     New control input from controller.
+     * @param dtSec Timestep for prediction.
+     */
+    public RandomVector<States> predict(
+            BiFunction<RandomVector<States>, Matrix<Inputs, N1>, RandomVector<States>> f,
+            RandomVector<States> x,
+            Matrix<Inputs, N1> u,
+            double dtSec) {
+        return m_predictor.predict(f, x, u, dtSec);
+    }
+
+    /**
+     * Use the inverse h function to get the state corresponding to the measurement.
+     */
+    public <Rows extends Num> RandomVector<States> correctNew(
+            RandomVector<States> m_xHat,
+            Matrix<Inputs, N1> u,
+            RandomVector<Rows> y,
+            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv,
+            LinearPooling<States> pooling) {
+        RandomVector<States> x = stateForMeasurement(u, y, hinv);
+        return pooling.fuse(x, m_xHat);
+    }
+
+    /**
+     * Use the inverse h function to get the state corresponding to the measurement.
+     */
+    public <Rows extends Num> RandomVector<States> stateForMeasurement(
+            Matrix<Inputs, N1> u,
+            RandomVector<Rows> y,
+            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv) {
+        RandomVector<States> x = hinv.apply(y, u);
+        return x;
     }
 }
