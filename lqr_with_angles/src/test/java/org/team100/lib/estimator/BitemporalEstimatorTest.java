@@ -153,12 +153,17 @@ public class BitemporalEstimatorTest {
         // assertEquals(1.435, xhat.get(1, 0), kDelta);
         // these are the new values; a little different because of constant (a little
         // higher) gain.
-        assertEquals(0.945, xhat.x.get(0, 0), kDelta);
-        assertEquals(1.655, xhat.x.get(1, 0), kDelta);
+        // assertEquals(0.945, xhat.x.get(0, 0), kDelta);
+        assertEquals(1, xhat.x.get(0, 0), kDelta);
+        // assertEquals(1.655, xhat.x.get(1, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
     }
 
     private RandomVector<N2> y2(double y0, double y1) {
-        return new RandomVector<>(VecBuilder.fill(y0, y1), new Matrix<>(Nat.N2(), Nat.N2()));
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        return new RandomVector<>(VecBuilder.fill(y0, y1), p);
     }
 
     /**
@@ -227,13 +232,18 @@ public class BitemporalEstimatorTest {
         // the real EKF, using fixed time-step 0.01 s
         // assertArrayEquals(new double[]{0.296, 0.06},xhat.x.getData(),kDelta);
         // these are the new ones, a little higher because of the higher constant gain.
-        assertArrayEquals(new double[] { 0.344, 0.072 }, xhat.x.getData(), kDelta);
+        // assertArrayEquals(new double[] { 0.344, 0.072 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
 
         // the real EKF
         // assertArrayEquals(new double[] { 0.00008, 0.00014, 0.00014, 0.00368 },
         // P.getData(), 0.00001);
         // P never changes which is WRONG WRONG WRONG
-        assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 }, xhat.P.getData(), 0.0001);
+        // assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 },
+        // xhat.P.getData(), 0.0001);
+
+        // now this just tracks the correction variance
+        assertArrayEquals(new double[] { 0.1, 0, 0, 0.1 }, xhat.P.getData(), 0.0001);
     }
 
     @Test
@@ -285,6 +295,7 @@ public class BitemporalEstimatorTest {
 
             // show both prediction and correction
 
+            // TODO this doesn't yet inject noise, i think.
             xhat = bitemporalEstimator.predict(u, recordTime, validTime);
             System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
                     validTime, xhat.x.get(0, 0),
@@ -303,13 +314,17 @@ public class BitemporalEstimatorTest {
         // the real EKF, using fixed time-step 0.01 s
         // assertArrayEquals(new double[]{1.052,1.435},xhat.x.getData(),kDelta);
         // prediction makes this more similar to EKF than the correction-only one above
-        assertArrayEquals(new double[] { 0.377, 0.071 }, xhat.x.getData(), kDelta);
+        // assertArrayEquals(new double[] { 0.377, 0.071 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
 
         // the real EKF
         // assertArrayEquals(new double[] { 0.00008, 0.00014, 0.00014, 0.00368 },
         // P.getData(), 0.00001);
         // P never changes which is WRONG WRONG WRONG
-        assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 }, xhat.P.getData(), 0.0001);
+        // assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 },
+        // xhat.P.getData(), 0.0001);
+        // now this just tracks the correction variance
+        assertArrayEquals(new double[] { 0.1, 0, 0, 0.100042 }, xhat.P.getData(), 0.0001);
     }
 
     @Test

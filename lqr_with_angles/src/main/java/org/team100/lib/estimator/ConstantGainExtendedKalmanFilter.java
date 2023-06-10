@@ -188,6 +188,7 @@ public class ConstantGainExtendedKalmanFilter<States extends Num, Inputs extends
             BiFunction<RandomVector<Rows>, RandomVector<Rows>, RandomVector<Rows>> residualFuncY,
             BiFunction<RandomVector<States>, RandomVector<States>, RandomVector<States>> addFuncX) {
         RandomVector<States> x = hinv.apply(y, u);
+        // should this wrap the output?
         return pooling.fuse(x, m_xHat);
     }
 

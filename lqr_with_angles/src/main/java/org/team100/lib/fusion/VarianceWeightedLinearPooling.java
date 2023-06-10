@@ -20,8 +20,18 @@ import edu.wpi.first.math.Num;
  * pb = (1/B)/(1/A + 1/B)
  */
 public class VarianceWeightedLinearPooling<States extends Num> extends LinearPooling<States> {
-    private static final double kThreshold = 1e-9;
+    private static final double kThreshold = 1e-15;
+
+    /**
+     * Note that a and b could involve non-cartesian dimensions, e.g. angle
+     * wrapping.
+     * The caller needs to handle normalization.
+     */
     public RandomVector<States> fuse(RandomVector<States> a, RandomVector<States> b) {
+        // TODO: turn off these checks somehow for matches, use some sort of backoff strategy
+        if (a.getClass() != b.getClass()) {
+            throw new IllegalArgumentException("a and b must be same type\n" + a.getClass() + " " + b.getClass());
+        }
         Matrix<States, States> aP = a.P;
         Matrix<States, States> bP = b.P;
         if (aP.det() < kThreshold) {

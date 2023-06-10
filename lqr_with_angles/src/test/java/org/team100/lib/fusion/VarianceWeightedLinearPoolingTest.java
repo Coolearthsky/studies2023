@@ -70,7 +70,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // the mean is like log-linear, weighted by inverse variance
         // the variance is bigger than log-linear due to the dispersion term
-        assert2(cV, 0.333, 0.333, 1.555, 0.222, 0.222, 1.555);
+        assert2(cV, 0.333, 0.333, 1.555, 0, 0, 1.555);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> bV = v2(1, 1, 2, 0, 0, 1);
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
-        assert2(cV, 0.333, 0.666, 1.555, 0.222, 0.222, 1.555);
+        assert2(cV, 0.333, 0.666, 1.555, 0, 0, 1.555);
     }
 
     @Test
@@ -88,7 +88,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> aV = v2(0, 0, 1, 0.5, 0.5, 1);
         RandomVector<N2> bV = v2(1, 1, 2, 0.5, 0.5, 2);
         RandomVector<N2> cV = p2.fuse(aV, bV);
-        assert2(cV, 0.375, 0.375, 1.547, 0.797, 0.797, 1.547);
+        assert2(cV, 0.375, 0.375, 1.523, 0.586, 0.586, 1.523);
     }
 
     @Test
@@ -99,7 +99,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
         // off-diagonals make this effect stronger
-        assert2(cV, 0.25, 0.75, 1.531, 0.781, 0.781, 1.531);
+        assert2(cV, 0.25, 0.75, 1.531, 0.562, 0.562, 1.531);
     }
 
     @Test
@@ -122,14 +122,15 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
 
     @Test
     public void testOKWeights() {
+        // means differ by 1
+        // variances are identical
         RandomVector<N2> aV = v2(0, 0, 1, 0, 0, 1);
         RandomVector<N2> bV = v2(1, 1, 1, 0, 0, 1);
         Matrix<N2, N2> pa = m2(0.5, 0, 0, 0.5);
         Matrix<N2, N2> pb = m2(0.5, 0, 0, 0.5);
         RandomVector<N2> cV = p2.fuse(aV, pa, bV, pb);
         // equal weight => mean is arithmetic, variance grows because of mean
-        // dispersion, also note off-diagonals
-        assert2(cV, 0.5, 0.5, 1.25, 0.25, 0.25, 1.25);
+        assert2(cV, 0.5, 0.5, 1.25, 0, 0, 1.25);
     }
 
     @Test

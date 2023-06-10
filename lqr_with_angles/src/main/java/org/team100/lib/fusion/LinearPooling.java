@@ -47,6 +47,11 @@ import edu.wpi.first.math.numbers.N1;
  */
 public abstract class LinearPooling<States extends Num> implements Pooling<States> {
 
+    /**
+     * Note that a and b could involve non-cartesian dimensions, e.g. angle
+     * wrapping.
+     * The caller needs to handle normalization.
+     */
     RandomVector<States> fuse(
             RandomVector<States> a,
             Matrix<States, States> pa,
@@ -80,19 +85,44 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         }
 
         // weighted mean:
-        Matrix<States, N1> cx = pa.times(ax).plus(pb.times(bx));
+        // this can be fixed up by the caller
+        // Matrix<States, N1> cx = pa.times(ax).plus(pb.times(bx));
+        Matrix<States, N1> meanMean = ax.plus(pb.times(bx.minus(ax)));
 
         // variance, transparent version
-        Matrix<States, States> cPA = pa.times(aP);
-        Matrix<States, States> cPB = pb.times(bP);
-        // dispersion term
-        Matrix<States, N1> d = ax.minus(bx);
-        double d2 = d.transpose().times(d).get(0,0);
-        Matrix<States, States> papb = pa.times(pb);
-        Matrix<States, States> dP = papb.times(d2);
-        Matrix<States, States> cP = cPA.plus(cPB).plus(dP);
 
-        return new RandomVector<States>(cx, cP);
+        // dispersion term
+        // this line needs to use the residual function.
+        //
+        //
+//        Matrix<States, N1> d = ax.minus(bx);
+// use the new x minus thing which does wrapping maybe?
+        Matrix<States, N1> d = a.xminus(b.x);
+        //
+        //
+        Matrix<States, States> ddiag = pa.copy();
+        ddiag.fill(0);
+        for (int i = 0; i < ddiag.getNumCols(); ++i) {
+            ddiag.set(i, i, d.get(i, 0));
+        }
+        Matrix<States, States> d2 = ddiag.times(ddiag);
+        Matrix<States, States> papb = pa.times(pb);
+        Matrix<States, States> dispersionTerm = papb.times(d2);
+
+        // Matrix<States, States> cPA = pa.times(aP);
+        // Matrix<States, States> cPB = pb.times(bP);
+        // Matrix<States, States> meanCovariance = cPA.plus(cPB);
+        // exactly like above
+        Matrix<States, States> meanCovariance = aP.plus(pb.times(bP.minus(aP)));
+        Matrix<States, States> cP = meanCovariance.plus(dispersionTerm);
+
+        RandomVector<States> cc = a.combine(pb,b);
+
+//        return new RandomVector<States>(meanMean, cP);
+
+// return new RandomVector<States>(cc.x, cc.P.plus(dispersionTerm));
+
+        return a.make(cc.x, cc.P.plus(dispersionTerm));
     }
 
     /**

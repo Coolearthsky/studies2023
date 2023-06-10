@@ -1,5 +1,6 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
@@ -30,6 +31,6 @@ public abstract class DoubleIntegratorRotary1D extends RotaryPlant1D {
         double pdot = v;
         double vdot = u;
         // TODO: handle P correctly
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        return new AngularRandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
     }
 }

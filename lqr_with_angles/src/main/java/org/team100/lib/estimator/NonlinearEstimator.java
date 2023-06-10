@@ -56,6 +56,8 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
     /**
      * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
+     * 
+     * TODO: what if x and y have different geometries (euclidean vs circular)?
      */
     public <Rows extends Num> RandomVector<States> correct(
             RandomVector<States> initialState,

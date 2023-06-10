@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
@@ -37,7 +38,7 @@ public class AngleLoopTest {
     NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, controller, feedforward, estimator);
 
     private RandomVector<N1> y1(double yd) {
-        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
+        return new AngularRandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     @Test
@@ -46,7 +47,7 @@ public class AngleLoopTest {
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
         p.set(0, 0, 0.1);
         p.set(1, 1, 0.1);
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(0, 0), p);
+        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(0, 0), p);
         assertEquals(0, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
@@ -78,8 +79,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.006, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.229, xhat.x.get(1, 0), kDelta);
-            assertEquals(0.006, totalU.get(0, 0), kDelta);
+            // assertEquals(0.229, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.231, xhat.x.get(1, 0), kDelta);
+            // assertEquals(0.006, totalU.get(0, 0), kDelta);
+            assertEquals(0.1, totalU.get(0, 0), kDelta);
         }
         {
             // update 2
@@ -88,8 +91,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.01, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.178, xhat.x.get(1, 0), kDelta);
-            assertEquals(-2.564, totalU.get(0, 0), kDelta);
+            // assertEquals(0.178, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.184, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-2.564, totalU.get(0, 0), kDelta);
+            assertEquals(-2.266, totalU.get(0, 0), kDelta);
         }
         {
             // update 3
@@ -98,8 +103,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.014, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.126, xhat.x.get(1, 0), kDelta);
-            assertEquals(-2.562, totalU.get(0, 0), kDelta);
+            // assertEquals(0.126, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.134, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-2.562, totalU.get(0, 0), kDelta);
+            assertEquals(-2.281, totalU.get(0, 0), kDelta);
         }
         {
             // update 4
@@ -109,7 +116,8 @@ public class AngleLoopTest {
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.016, xhat.x.get(0, 0), kDelta);
             assertEquals(0.085, xhat.x.get(1, 0), kDelta);
-            assertEquals(-2.044, totalU.get(0, 0), kDelta);
+            // assertEquals(-2.044, totalU.get(0, 0), kDelta);
+            assertEquals(-2.125, totalU.get(0, 0), kDelta);
         }
         {
             // update 5
@@ -119,7 +127,8 @@ public class AngleLoopTest {
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.017, xhat.x.get(0, 0), kDelta);
             assertEquals(0.056, xhat.x.get(1, 0), kDelta);
-            assertEquals(-1.448, totalU.get(0, 0), kDelta);
+            // assertEquals(-1.448, totalU.get(0, 0), kDelta);
+            assertEquals(-1.474, totalU.get(0, 0), kDelta);
         }
         {
             // update 6
@@ -128,8 +137,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.018, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.037, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.951, totalU.get(0, 0), kDelta);
+            // assertEquals(0.037, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.039, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.951, totalU.get(0, 0), kDelta);
+            assertEquals(-0.817, totalU.get(0, 0), kDelta);
         }
         {
             // update 7
@@ -138,8 +149,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.019, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.025, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.626, totalU.get(0, 0), kDelta);
+            // assertEquals(0.025, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.027, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.626, totalU.get(0, 0), kDelta);
+            assertEquals(-0.531, totalU.get(0, 0), kDelta);
         }
         {
             // update 8
@@ -148,8 +161,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.019, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.016, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.415, totalU.get(0, 0), kDelta);
+            assertEquals(0.014, xhat.x.get(1, 0), kDelta);
+            // assertEquals(0.016, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.415, totalU.get(0, 0), kDelta);
+            assertEquals(-0.210, totalU.get(0, 0), kDelta); // ??
         }
         {
             // update 9
@@ -158,8 +173,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.02, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.01, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.316, totalU.get(0, 0), kDelta);
+            // assertEquals(0.01, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.003, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.316, totalU.get(0, 0), kDelta);
+            assertEquals(-0.353, totalU.get(0, 0), kDelta);
         }
         {
             // update 10
@@ -168,8 +185,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(0.02, xhat.x.get(0, 0), kDelta);
-            assertEquals(0.005, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.206, totalU.get(0, 0), kDelta);
+            // assertEquals(0.005, xhat.x.get(1, 0), kDelta);
+            assertEquals(0.001, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.206, totalU.get(0, 0), kDelta);
+            assertEquals(-0.196, totalU.get(0, 0), kDelta);
         }
     }
 
@@ -179,7 +198,7 @@ public class AngleLoopTest {
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
         p.set(0, 0, 0.1);
         p.set(1, 1, 0.1);
-        RandomVector<N2> xhat = new RandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
+        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
@@ -207,8 +226,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(-3.138, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.232, xhat.x.get(1, 0), kDelta);
-            assertEquals(-0.204, totalU.get(0, 0), kDelta);
+            // assertEquals(-0.232, xhat.x.get(1, 0), kDelta);
+            assertEquals(-0.230, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.204, totalU.get(0, 0), kDelta);
+            assertEquals(-2.358, totalU.get(0, 0), kDelta); // ??
         }
         {
             // update 2: slowing down
@@ -216,9 +237,12 @@ public class AngleLoopTest {
             xhat = loop.correct(xhat, y1(-0.229), system.velocity());
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
-            assertEquals(3.141, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.181, xhat.x.get(1, 0), kDelta);
-            assertEquals(2.518, totalU.get(0, 0), kDelta);
+            // assertEquals(3.141, xhat.x.get(0, 0), kDelta);
+            assertEquals(-3.141, xhat.x.get(0, 0), kDelta);
+            // assertEquals(-0.181, xhat.x.get(1, 0), kDelta);
+            assertEquals(-0.192, xhat.x.get(1, 0), kDelta);
+            // assertEquals(2.518, totalU.get(0, 0), kDelta);
+            assertEquals(1.877, totalU.get(0, 0), kDelta);
         }
         ////////////////////////////////////////////////////////////////////
         //
@@ -231,8 +255,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(3.138, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.129, xhat.x.get(1, 0), kDelta);
-            assertEquals(2.59, totalU.get(0, 0), kDelta);
+            assertEquals(-0.142, xhat.x.get(1, 0), kDelta);
+            // assertEquals(-0.129, xhat.x.get(1, 0), kDelta);
+            // assertEquals(2.59, totalU.get(0, 0), kDelta);
+            assertEquals(2.458, totalU.get(0, 0), kDelta);
         }
         {
             // update 4
@@ -241,8 +267,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(3.136, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.087, xhat.x.get(1, 0), kDelta);
-            assertEquals(2.092, totalU.get(0, 0), kDelta);
+            // assertEquals(-0.087, xhat.x.get(1, 0), kDelta);
+            assertEquals(-0.091, xhat.x.get(1, 0), kDelta);
+            // assertEquals(2.092, totalU.get(0, 0), kDelta);
+            assertEquals(2.416, totalU.get(0, 0), kDelta);
         }
         {
             // update 5
@@ -251,8 +279,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(3.134, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.058, xhat.x.get(1, 0), kDelta);
-            assertEquals(1.482, totalU.get(0, 0), kDelta);
+            // assertEquals(-0.058, xhat.x.get(1, 0), kDelta);
+            assertEquals(-0.061, xhat.x.get(1, 0), kDelta);
+            // assertEquals(1.482, totalU.get(0, 0), kDelta);
+            assertEquals(1.665, totalU.get(0, 0), kDelta);
         }
         {
             // update 6
@@ -261,8 +291,10 @@ public class AngleLoopTest {
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertEquals(3.133, xhat.x.get(0, 0), kDelta);
-            assertEquals(-0.037, xhat.x.get(1, 0), kDelta);
-            assertEquals(1.036, totalU.get(0, 0), kDelta);
+            // assertEquals(-0.037, xhat.x.get(1, 0), kDelta);
+            assertEquals(-0.036, xhat.x.get(1, 0), kDelta);
+            // assertEquals(1.036, totalU.get(0, 0), kDelta);
+            assertEquals(1.330, totalU.get(0, 0), kDelta);
         }
     }
 

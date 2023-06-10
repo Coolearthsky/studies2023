@@ -2,6 +2,7 @@ package org.team100.lib.fusion;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
@@ -17,6 +18,12 @@ public class PoolingTest {
         Matrix<N1, N1> xV = VecBuilder.fill(x);
         Matrix<N1, N1> PV = VecBuilder.fill(P);
         return new RandomVector<>(xV, PV);
+    }
+
+    static AngularRandomVector<N1> a1(double x, double P) {
+        Matrix<N1, N1> xV = VecBuilder.fill(x);
+        Matrix<N1, N1> PV = VecBuilder.fill(P);
+        return new AngularRandomVector<>(xV, PV);
     }
 
     static void assert1(RandomVector<N1> v, double x, double P) {
