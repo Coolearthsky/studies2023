@@ -7,6 +7,8 @@ import edu.wpi.first.math.numbers.N1;
 /**
  * A vector-valued gaussian random variable, which represents a belief about a
  * hidden state.
+ * 
+ * TODO: make distinct classes for state vs measurement
  */
 public class RandomVector<States extends Num> {
     public final Matrix<States, N1> x;

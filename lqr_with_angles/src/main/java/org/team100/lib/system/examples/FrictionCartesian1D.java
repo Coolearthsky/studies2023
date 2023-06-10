@@ -47,7 +47,7 @@ public class FrictionCartesian1D extends CartesianPlant1D {
     }
 
     @Override
-    public Sensor<N2, N1, N1> newPosition() {
+    public Sensor<N2, N1, N2> newPosition() {
         return new PositionSensor() {
             // public Matrix<N1, N1> stdev() {
             //     return VecBuilder.fill(0.01);
@@ -56,7 +56,7 @@ public class FrictionCartesian1D extends CartesianPlant1D {
     }
 
     @Override
-    public Sensor<N2, N1, N1> newVelocity() {
+    public Sensor<N2, N1, N2> newVelocity() {
         return new VelocitySensor() {
             // public Matrix<N1, N1> stdev() {
             //     return VecBuilder.fill(0.1);

@@ -19,6 +19,7 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
     private final Matrix<Inputs, N1> m_uZero;
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final IntegratingPredictor<States, Inputs> m_predictor;
+    private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
     private final LinearPooling<States> m_pooling;
 
     /**
@@ -28,51 +29,38 @@ public class NonlinearEstimator<States extends Num, Inputs extends Num, Outputs 
     public NonlinearEstimator(
             NonlinearPlant<States, Inputs, Outputs> plant,
             IntegratingPredictor<States, Inputs> predictor,
+            PointEstimator<States, Inputs, Outputs> pointEstimator,
             LinearPooling<States> pooling) {
         m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
         m_plant = plant;
         m_predictor = predictor;
+        m_pointEstimator = pointEstimator;
         m_pooling = pooling;
     }
 
     /**
      * Predict state under output u for dtSec in the future and normalize.
      * 
-     * @param x xhat
-     * @param u            total control output
-     * @param dtSec        time quantum (sec)
+     * @param x     xhat
+     * @param u     total control output
+     * @param dtSec time quantum (sec)
      */
     public RandomVector<States> predictState(
             RandomVector<States> x,
             Matrix<Inputs, N1> u,
             double dtSec) {
-return m_predictor.predict(m_plant::f, x, u, dtSec);
-
-        // final RandomVector<States> xhat = m_predictor.predict(m_plant::f, x, u, dtSec);
-        // final RandomVector<States> xhatXNormalized = m_plant.xNormalize(xhat);
-        // return xhatXNormalized;
+        return m_predictor.predict(m_plant::f, x, u, dtSec);
     }
 
     /**
      * Update with specified measurement and zero u (because u doesn't affect state
      * updates)
      */
-    public <Rows extends Num> RandomVector<States> correct(
+    public RandomVector<States> correct(
             RandomVector<States> initialState,
-            RandomVector<Rows> y,
-            Sensor<States, Inputs, Rows> sensor) {
-        RandomVector<States> x = stateForMeasurement(m_uZero, y, sensor::hinv);
+            RandomVector<Outputs> y,
+            Sensor<States, Inputs, Outputs> sensor) {
+        RandomVector<States> x = m_pointEstimator.stateForMeasurement(m_uZero, y, sensor::hinv);
         return m_pooling.fuse(x, initialState);
-    }
-
-    /**
-     * Use the inverse h function to get the state corresponding to the measurement.
-     */
-    public <Rows extends Num> RandomVector<States> stateForMeasurement(
-            Matrix<Inputs, N1> u,
-            RandomVector<Rows> y,
-            BiFunction<RandomVector<Rows>, Matrix<Inputs, N1>, RandomVector<States>> hinv) {
-        RandomVector<States> x = hinv.apply(y, u);
-        return x;
     }
 }

@@ -56,7 +56,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param y      measurement
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public <Rows extends Num> RandomVector<States> correct(RandomVector<States> x, RandomVector<Rows> y, Sensor<States, Inputs, Rows> sensor) {
+    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y, Sensor<States, Inputs, Outputs> sensor) {
         return m_estimator.correct(x, y, sensor);
     }
 

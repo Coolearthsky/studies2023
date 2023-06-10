@@ -140,7 +140,7 @@ public class EstimatorLatencyTest {
                     };
                 }
 
-                public Sensor<N2, N1, N1> newPosition() {
+                public Sensor<N2, N1, N2> newPosition() {
                     return new PositionSensor() {
                         // public Matrix<N1, N1> stdev() {
                         //     return VecBuilder.fill(0.01);
@@ -148,7 +148,7 @@ public class EstimatorLatencyTest {
                     };
                 }
 
-                public Sensor<N2, N1, N1> newVelocity() {
+                public Sensor<N2, N1, N2> newVelocity() {
                     return new VelocitySensor() {
                         // public Matrix<N1, N1> stdev() {
                         //     return VecBuilder.fill(0.01);
@@ -289,9 +289,38 @@ public class EstimatorLatencyTest {
             return xhat;
         }
 
-        private RandomVector<N1> y1(double yd) {
-            return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0));
+
+
+        private RandomVector<N2> ypos(double yd) {
+
+            Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+            yx.set(0, 0, yd); // position
+            
+            Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+            yP.set(0, 0, 0.1); // TODO: pass variance somehow
+            yP.set(1, 1, 1e9); // velocity gets "don't know" variance
+            return new RandomVector<>(yx, yP);
+    
+    
+    
+            //return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
         }
+    
+        private RandomVector<N2> yvel(double yd) {
+    
+            Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+            yx.set(1, 0, yd); // velocity
+            
+            Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+            yP.set(0, 0, 1e9); // position gets "don't know" variance
+            yP.set(1, 1, 0.1); // TODO: pass variance somehow
+            return new RandomVector<>(yx, yP);
+    
+           // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
+        }
+
+
+
 
         /**
          * Correct the observer with current measurements.
@@ -300,8 +329,8 @@ public class EstimatorLatencyTest {
          * TODO: add measurement delay
          */
         RandomVector<N2> correctObserver(RandomVector<N2> xhat) {
-            xhat = estimator.correct(xhat, y1(state.observedPosition), system.position());
-            xhat = estimator.correct(xhat, y1(state.observedVelocity), system.velocity());
+            xhat = estimator.correct(xhat, ypos(state.observedPosition), system.position());
+            xhat = estimator.correct(xhat, yvel(state.observedVelocity), system.velocity());
             return xhat;
         }
 
@@ -331,8 +360,10 @@ public class EstimatorLatencyTest {
             double initialPosition = position(0);
             double initialVelocity = velocity(0);
             IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+            PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+
             LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
+            NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
 
             Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
             assertEquals(initialPosition, xhat.get(0, 0), kDelta);

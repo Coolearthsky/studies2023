@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.ConstantGainLinearizedLQR;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
@@ -27,8 +28,18 @@ public class EstimatorAndControlTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    private AngularRandomVector<N1> y1(double yd) {
-        return new AngularRandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
+    // this is position
+    private AngularRandomVector<N2> y1(double yd) {
+
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, yd); // position
+
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01); // TODO: pass variance somehow
+        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
+        return new AngularRandomVector<>(yx, yP);
+
+        // return new AngularRandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     private RandomVector<N2> updateAndCheck(
@@ -36,7 +47,7 @@ public class EstimatorAndControlTest {
             RandomVector<N2> xhat,
             Matrix<N1, N1> u,
             double y,
-            Sensor<N2, N1, N1> sensor,
+            Sensor<N2, N1, N2> sensor,
             double x0,
             double x1) {
         xhat = estimator.predictState(xhat, u, kDt);
@@ -67,8 +78,9 @@ public class EstimatorAndControlTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -82,65 +94,49 @@ public class EstimatorAndControlTest {
 
         Vector<N2> setpoint = VecBuilder.fill(0.02, 0);
 
-        // initial: push hard to get started
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
-        assertEquals(11.455, u.get(0, 0), kDelta);
+        Matrix<N1, N1> u = controlAndCheck(controller, xhat, setpoint, 11.455);
 
-        // update 1: coasting, approx zero output
         xhat = updateAndCheck(estimator, xhat, u, 0.002, system.position(), 0.002, 0.229);
-        u = controlAndCheck(controller, xhat, setpoint, 0.069);// 0.005);
+        u = controlAndCheck(controller, xhat, setpoint, 0.137);
 
-        // update 2: slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.006, system.position(), 0.006, 0.230);// 0.229);
-        u = controlAndCheck(controller, xhat, setpoint, -2.412);// -2.564);
+        xhat = updateAndCheck(estimator, xhat, u, 0.006, system.position(), 0.006, 0.232);
+        u = controlAndCheck(controller, xhat, setpoint, -2.390);
 
-        // update 3: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.01, system.position(), 0.01, 0.182);// 0.177);
-        u = controlAndCheck(controller, xhat, setpoint, -2.494);// -2.561);
+        xhat = updateAndCheck(estimator, xhat, u, 0.01, system.position(), 0.01, 0.184);
+        u = controlAndCheck(controller, xhat, setpoint, -2.529);
 
-        // update 4: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.013, system.position(), 0.013, 0.132);// 0.126);
-        u = controlAndCheck(controller, xhat, setpoint, -1.971);// -1.975);
+        xhat = updateAndCheck(estimator, xhat, u, 0.013, system.position(), 0.013, 0.133);
+        u = controlAndCheck(controller, xhat, setpoint, -2.001);
 
-        // update 5: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.015, system.position(), 0.015, 0.093);// 0.086);
-        u = controlAndCheck(controller, xhat, setpoint, -1.385);// -1.383);
+        xhat = updateAndCheck(estimator, xhat, u, 0.015, system.position(), 0.015, 0.093);
+        u = controlAndCheck(controller, xhat, setpoint, -1.400);
 
-        // update 6: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.017, system.position(), 0.017, 0.065);// 0.059);
-        u = controlAndCheck(controller, xhat, setpoint, -1.118);// -0.973);
+        xhat = updateAndCheck(estimator, xhat, u, 0.017, system.position(), 0.017, 0.065);
+        u = controlAndCheck(controller, xhat, setpoint, -1.127);
 
-        // update 7: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.018, system.position(), 0.018, 0.043);// 0.039);
-        u = controlAndCheck(controller, xhat, setpoint, -0.750);// -0.659);
+        xhat = updateAndCheck(estimator, xhat, u, 0.018, system.position(), 0.018, 0.043);
+        u = controlAndCheck(controller, xhat, setpoint, -0.753);
 
-        // update 8: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 0.019, system.position(), 0.019, 0.028);// 0.026);
-        u = controlAndCheck(controller, xhat, setpoint, -0.576);// -0.462);
+        xhat = updateAndCheck(estimator, xhat, u, 0.019, system.position(), 0.019, 0.028);
+        u = controlAndCheck(controller, xhat, setpoint, -0.576);
 
-        // update 9: passing through the setpoint (slowly)
         xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.017);
-        u = controlAndCheck(controller, xhat, setpoint, -0.521);// -0.350);
+        u = controlAndCheck(controller, xhat, setpoint, -0.521);
 
-        // update 10: almost there
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.006);// 0.01);
-        u = controlAndCheck(controller, xhat, setpoint, -0.224);// -0.223);
+        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.006);
+        u = controlAndCheck(controller, xhat, setpoint, -0.224);
 
-        // update 11: almost there
-        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.001);// 0.005);
-        u = controlAndCheck(controller, xhat, setpoint, -0.065);// -0.131);
+        xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.001);
+        u = controlAndCheck(controller, xhat, setpoint, -0.065);
 
-        // update 12: almost there
         xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
-        u = controlAndCheck(controller, xhat, setpoint, -0.011);// -0.072);
+        u = controlAndCheck(controller, xhat, setpoint, -0.011);
 
-        // update 13: almost there
         xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0.0001);
-        u = controlAndCheck(controller, xhat, setpoint, 0.001);// -0.039);
+        u = controlAndCheck(controller, xhat, setpoint, 0.001);
 
-        // update 14: pretty much done
         xhat = updateAndCheck(estimator, xhat, u, 0.02, system.position(), 0.02, 0);
-        u = controlAndCheck(controller, xhat, setpoint, 0.002);// -0.02);
+        u = controlAndCheck(controller, xhat, setpoint, 0.002);
     }
 
     @Test
@@ -158,8 +154,9 @@ public class EstimatorAndControlTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -179,65 +176,51 @@ public class EstimatorAndControlTest {
         // try to move +0.02
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
-        // should be same output as above since the motion is the same
-        assertEquals(11.455, u.get(0, 0), kDelta);
 
-        // update 1: coasting, approx zero output
+        Matrix<N1, N1> u;
+        u = controlAndCheck(controller, xhat, setpoint, 11.455);
+
         xhat = updateAndCheck(estimator, xhat, u, 3.114, system.position(), 3.114, 0.229);
-        u = controlAndCheck(controller, xhat, setpoint, -0.048); // -0.023
+        u = controlAndCheck(controller, xhat, setpoint, -0.058);
 
-        // update 2: slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.118, system.position(), 3.118, 0.229);
-        u = controlAndCheck(controller, xhat, setpoint, -2.477); // -2.591);
+        xhat = updateAndCheck(estimator, xhat, u, 3.118, system.position(), 3.118, 0.228);
+        u = controlAndCheck(controller, xhat, setpoint, -2.454);
 
-        // update 3: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.122, system.position(), 3.122, 0.178);// 0.177);
-        u = controlAndCheck(controller, xhat, setpoint, -2.517);// -2.581);
+        xhat = updateAndCheck(estimator, xhat, u, 3.122, system.position(), 3.122, 0.178);
+        u = controlAndCheck(controller, xhat, setpoint, -2.517);
 
-        // update 4: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.125, system.position(), 3.125, 0.128);// 0.125);
-        u = controlAndCheck(controller, xhat, setpoint, -1.977);// -1.988);
+        xhat = updateAndCheck(estimator, xhat, u, 3.125, system.position(), 3.125, 0.128);
+        u = controlAndCheck(controller, xhat, setpoint, -1.982);
 
-        // update 5: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.128, system.position(), 3.128, 0.089);// 0.086);
-        u = controlAndCheck(controller, xhat, setpoint, -1.671);// -1.462);
+        xhat = updateAndCheck(estimator, xhat, u, 3.128, system.position(), 3.128, 0.089);
+        u = controlAndCheck(controller, xhat, setpoint, -1.679);
 
-        // update 6: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.13, system.position(), 3.13, 0.056);
-        u = controlAndCheck(controller, xhat, setpoint, -1.277);// -1.047);
+        xhat = updateAndCheck(estimator, xhat, u, 3.130, system.position(), 3.130, 0.056);
+        u = controlAndCheck(controller, xhat, setpoint, -1.279);
 
-        // update 7: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.030);// 0.035);
-        u = controlAndCheck(controller, xhat, setpoint, -0.806);// -0.714);
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.030);
+        u = controlAndCheck(controller, xhat, setpoint, -0.806);
 
-        // update 8: still slowing down
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.014);// 0.021);
-        u = controlAndCheck(controller, xhat, setpoint, -0.302);// -0.431);
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.014);
+        u = controlAndCheck(controller, xhat, setpoint, -0.302);
 
-        // update 9: passing through the setpoint (slowly)
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);// 0.012);
-        u = controlAndCheck(controller, xhat, setpoint, -0.076);// -0.242);
-
-        // update 10: almost there
         xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
-        u = controlAndCheck(controller, xhat, setpoint, -0.008);// -0.129);
+        u = controlAndCheck(controller, xhat, setpoint, -0.076);
 
-        // update 11: almost there
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.007);
+        u = controlAndCheck(controller, xhat, setpoint, -0.008);
+
         xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
-        u = controlAndCheck(controller, xhat, setpoint, 0.004);// -0.066);
+        u = controlAndCheck(controller, xhat, setpoint, 0.004);
 
-        // update 12: almost there
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);// 0.003);
-        u = controlAndCheck(controller, xhat, setpoint, 0.003);// -0.031);
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.005);
+        u = controlAndCheck(controller, xhat, setpoint, 0.003);
 
-        // update 13: almost there
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);// 0.003);
-        u = controlAndCheck(controller, xhat, setpoint, 0.001);// -0.013);
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
+        u = controlAndCheck(controller, xhat, setpoint, 0.001);
 
-        // update 14: pretty much done
-        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);// 0.003);
-        u = controlAndCheck(controller, xhat, setpoint, 0.001);// -0.004);
+        xhat = updateAndCheck(estimator, xhat, u, 3.131, system.position(), 3.131, 0.006);
+        u = controlAndCheck(controller, xhat, setpoint, 0.001);
     }
 
     @Test
@@ -255,8 +238,9 @@ public class EstimatorAndControlTest {
 
         DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(system, predictor, pointEstimator, pooling);
         ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
                 stateTolerance, controlTolerance, kDt);
 
@@ -280,87 +264,48 @@ public class EstimatorAndControlTest {
         Matrix<N2, N1> setpoint = Matrix.mat(Nat.N2(), Nat.N1()).fill(Math.PI - 0.01, 0);
         assertEquals(3.132, setpoint.get(0, 0), kDelta);
 
-        Matrix<N1, N1> u = controller.calculate(xhat, setpoint);
-        // using the EKF this is the correct negative number
-        assertEquals(-11.455, u.get(0, 0), kDelta);
+        Matrix<N1, N1> u;
+        u = controlAndCheck(controller, xhat, setpoint, -11.455);
 
-        // update 1: coasting, approx zero output
         xhat = updateAndCheck(estimator, xhat, u, -3.133, system.position(), -3.133, -0.229);
-        // u = controlAndCheck(controller, xhat, setpoint, -0.048);
-        u = controlAndCheck(controller, xhat, setpoint, -0.238);
+        u = controlAndCheck(controller, xhat, setpoint, -0.312);
 
-        // update 2: slowing down
-        // xhat = updateAndCheck(estimator, xhat, u, -3.138, system.position(), -3.138,
-        // -0.229);
-        xhat = updateAndCheck(estimator, xhat, u, -3.138, system.position(), -3.138, -0.234);
-        // u = controlAndCheck(controller, xhat, setpoint, 2.595);
-        u = controlAndCheck(controller, xhat, setpoint, 2.604);
+        xhat = updateAndCheck(estimator, xhat, u, -3.138, system.position(), -3.138, -0.235);
+        u = controlAndCheck(controller, xhat, setpoint, 2.638);
 
-        ////////////////////////////////////////////////////////////////////
-        //
-        // SUCCESS
-        //
-        // update 3: still slowing down
-        // note boundary crossing here
-        // xhat = updateAndCheck(estimator, xhat, u, 3.141, system.position(), 3.141,
-        //////////////////////////////////////////////////////////////////// -0.177);
         xhat = updateAndCheck(estimator, xhat, u, 3.141, system.position(), 3.141, -0.182);
-        // u = controlAndCheck(controller, xhat, setpoint, 2.612);
-        u = controlAndCheck(controller, xhat, setpoint, 2.674);
+        u = controlAndCheck(controller, xhat, setpoint, 2.700);
 
-        // update 4: still slowing down
-        // xhat = updateAndCheck(estimator, xhat, u, 3.138, system.position(), 3.138,
-        // -0.125);
         xhat = updateAndCheck(estimator, xhat, u, 3.138, system.position(), 3.138, -0.128);
-        // u = controlAndCheck(controller, xhat, setpoint, 2.016);
-        u = controlAndCheck(controller, xhat, setpoint, 2.049);
+        u = controlAndCheck(controller, xhat, setpoint, 2.058);
 
-        // update 5: still slowing down
-        // xhat = updateAndCheck(estimator, xhat, u, 3.135, system.position(), 3.135,
-        // -0.086);
         xhat = updateAndCheck(estimator, xhat, u, 3.135, system.position(), 3.135, -0.087);
-        // u = controlAndCheck(controller, xhat, setpoint, 1.482);
-        u = controlAndCheck(controller, xhat, setpoint, 1.694);
+        u = controlAndCheck(controller, xhat, setpoint, 1.700);
 
-        // update 6: still slowing down
-        // xhat = updateAndCheck(estimator, xhat, u, 3.134, system.position(), 3.134,
-        // -0.056);
         xhat = updateAndCheck(estimator, xhat, u, 3.134, system.position(), 3.134, -0.053);
-        // u = controlAndCheck(controller, xhat, setpoint, 0.989);
-        u = controlAndCheck(controller, xhat, setpoint, 0.995);
+        u = controlAndCheck(controller, xhat, setpoint, 0.994);
 
-        // update 7: still slowing down
-        // xhat = updateAndCheck(estimator, xhat, u, 3.133, system.position(), 3.133,
-        // -0.036);
         xhat = updateAndCheck(estimator, xhat, u, 3.133, system.position(), 3.133, -0.033);
-        // u = controlAndCheck(controller, xhat, setpoint, 0.656);
         u = controlAndCheck(controller, xhat, setpoint, 0.646);
 
-        // update 8: still slowing down
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.021);
         u = controlAndCheck(controller, xhat, setpoint, 0.532);
 
-        // update 9: passing through the setpoint (slowly)
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.01);
         u = controlAndCheck(controller, xhat, setpoint, 0.222);
 
-        // update 10: almost there
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.063);
 
-        // update 11: almost there
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.005);
         u = controlAndCheck(controller, xhat, setpoint, 0.01);
 
-        // update 12: almost there, note very slightly negative control
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.002);
 
-        // update 13: almost there
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.002);
 
-        // update 14: pretty much done
         xhat = updateAndCheck(estimator, xhat, u, 3.132, system.position(), 3.132, -0.004);
         u = controlAndCheck(controller, xhat, setpoint, -0.001);
     }

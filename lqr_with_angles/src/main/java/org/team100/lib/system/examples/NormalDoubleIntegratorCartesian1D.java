@@ -38,11 +38,11 @@ public class NormalDoubleIntegratorCartesian1D extends DoubleIntegratorCartesian
     //     return stateStdev;
     // }
 
-    public Sensor<N2, N1, N1> newPosition() {
+    public Sensor<N2, N1, N2> newPosition() {
         return new NormalPositionSensor();
     }
 
-    public Sensor<N2, N1, N1> newVelocity() {
+    public Sensor<N2, N1, N2> newVelocity() {
         return new NormalVelocitySensor();
     }
 

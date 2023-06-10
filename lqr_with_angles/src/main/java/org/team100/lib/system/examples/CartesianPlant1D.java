@@ -14,8 +14,8 @@ import edu.wpi.first.math.numbers.N2;
 public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
     private static final double kBig = 1e9;
     private final Sensor<N2, N1, N2> full;
-    private final Sensor<N2, N1, N1> position;
-    private final Sensor<N2, N1, N1> velocity;
+    private final Sensor<N2, N1, N2> position;
+    private final Sensor<N2, N1, N2> velocity;
 
     public abstract class FullSensor implements Sensor<N2, N1, N2> {
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
@@ -30,23 +30,35 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
             return a.minus(b);
         }
 
-        public Nat<N2> rows() {
-            return Nat.N2();
-        }
+        // public Nat<N2> rows() {
+        //     return Nat.N2();
+        // }
     }
 
     // TODO get rid of these extra sensors, make the caller do the MAX_VALUE trick for every update.
-    public abstract class PositionSensor implements Sensor<N2, N1, N1> {
+    public abstract class PositionSensor implements Sensor<N2, N1, N2> {
         // y0 = x0, there is no y1
-        public RandomVector<N1> h(RandomVector<N2> x, Matrix<N1, N1> u) {
-            return new RandomVector<>(
-                    x.x.block(Nat.N1(), Nat.N1(), 0, 0),
-                    x.P.block(Nat.N1(), Nat.N1(), 0, 0));
+        @Override
+        public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
+
+            Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+            yx.set(0, 0, x.x.get(0, 0)); // pass position
+            
+            Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+            yP.set(0, 0, x.P.get(0, 0)); // variance is like state :( TODO: this variance is wrong
+            yP.set(1, 1, 1e9); // velocity gets "don't know" variance
+            return new RandomVector<>(yx, yP);
+
+
+            // return new RandomVector<>(
+            //         x.x.block(Nat.N1(), Nat.N1(), 0, 0),
+            //         x.P.block(Nat.N1(), Nat.N1(), 0, 0));
         }
 
         // x0 = y0
         // x1 = 0 with high variance
-        public RandomVector<N2> hinv(RandomVector<N1> y, Matrix<N1, N1> u) {
+        
+        public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
             xx.set(0, 0, y.x.get(0, 0));
             Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -55,24 +67,36 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
             return new RandomVector<>(xx, xP);
         }
 
-        public RandomVector<N1> yResidual(RandomVector<N1> a, RandomVector<N1> b) {
+        @Override
+        public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
             return a.minus(b);
         }
 
-        public Nat<N1> rows() {
-            return Nat.N1();
-        }
+        // public Nat<N1> rows() {
+        //     return Nat.N1();
+        // }
     }
 
-    public abstract class VelocitySensor implements Sensor<N2, N1, N1> {
+    public abstract class VelocitySensor implements Sensor<N2, N1, N2> {
         // y0 = x1, there is no y1
-        public RandomVector<N1> h(RandomVector<N2> x, Matrix<N1, N1> u) {
-            return new RandomVector<>(x.x.block(Nat.N1(), Nat.N1(), 1, 0), x.P.block(Nat.N1(), Nat.N1(), 1, 1));
+        @Override
+        public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
+
+            Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+            yx.set(1, 0, x.x.get(1, 0)); // pass velocity
+            
+            Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+            yP.set(0, 0, 1e9); // "don't know" variance
+            yP.set(1, 1, x.P.get(0, 0)); // variance is like state :( TODO: this variance is wrong
+            return new RandomVector<>(yx, yP);
+
+
+           // return new RandomVector<>(x.x.block(Nat.N1(), Nat.N1(), 1, 0), x.P.block(Nat.N1(), Nat.N1(), 1, 1));
         }
 
         // x0 = 0 with high variance
         // x1 = y0
-        public RandomVector<N2> hinv(RandomVector<N1> y, Matrix<N1, N1> u) {
+        public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
             xx.set(1, 0, y.x.get(0, 0));
             Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -81,13 +105,14 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
             return new RandomVector<>(xx, xP);
         }
 
-        public RandomVector<N1> yResidual(RandomVector<N1> a, RandomVector<N1> b) {
+        @Override
+        public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
             return a.minus(b);
         }
 
-        public Nat<N1> rows() {
-            return Nat.N1();
-        }
+        // public Nat<N1> rows() {
+        //     return Nat.N1();
+        // }
     }
 
     public CartesianPlant1D() {
@@ -112,11 +137,11 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
     /**
      * Measure position.
      */
-    public Sensor<N2, N1, N1> position() {
+    public Sensor<N2, N1, N2> position() {
         return position;
     }
 
-    public Sensor<N2, N1, N1> velocity() {
+    public Sensor<N2, N1, N2> velocity() {
         return velocity;
     }
 
@@ -146,7 +171,7 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
 
     public abstract Sensor<N2, N1, N2> newFull();
 
-    public abstract Sensor<N2, N1, N1> newPosition();
+    public abstract Sensor<N2, N1, N2> newPosition();
 
-    public abstract Sensor<N2, N1, N1> newVelocity();
+    public abstract Sensor<N2, N1, N2> newVelocity();
 }

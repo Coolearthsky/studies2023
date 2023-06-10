@@ -51,9 +51,9 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
      * valid time, and use it as the base for correction to estimate the state at
      * the valid time. Record the new state and time.
      */
-    public <Rows extends Num> RandomVector<States> correct(
-            RandomVector<Rows> y,
-            Sensor<States, Inputs, Rows> sensor,
+    public RandomVector<States> correct(
+            RandomVector<Outputs> y,
+            Sensor<States, Inputs, Outputs> sensor,
             long recordTimeUSec,
             double validTimeSec) {
         Entry<Double, Entry<Long, RandomVector<States>>> floor = floor(validTimeSec);

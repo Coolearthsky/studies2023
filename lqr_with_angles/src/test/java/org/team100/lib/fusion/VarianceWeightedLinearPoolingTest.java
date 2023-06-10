@@ -1,11 +1,13 @@
 package org.team100.lib.fusion;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
@@ -13,6 +15,8 @@ import edu.wpi.first.math.numbers.N2;
  * similar to the democratic case
  */
 public class VarianceWeightedLinearPoolingTest extends PoolingTest {
+    private static final double kDelta = 0.001;
+
     private static final LinearPooling<N1> p1 = new VarianceWeightedLinearPooling<N1>();
     private static final LinearPooling<N2> p2 = new VarianceWeightedLinearPooling<N2>();
 
@@ -141,5 +145,53 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         Matrix<N2, N2> pa = m2(0.5, 0, 0, 0.5);
         Matrix<N2, N2> pb = m2(1, 0, 0, 1);
         assertThrows(IllegalArgumentException.class, () -> p2.fuse(aV, pa, bV, pb));
+    }
+
+    /**
+     * this method converges *much* faster than the "kalman gain" method, and it
+     * seems more correct and less mysterious.
+     */
+    @Test
+    public void testIteration() {
+
+        // initial xhat is zero
+        Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
+        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        xP.set(0, 0, 0.01);
+        xP.set(1, 1, 0.01);
+        RandomVector<N2> xhat = new RandomVector<>(xx, xP);
+
+        // measurement is 1,0
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, 1);
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.01);
+        yP.set(1, 1, 0.01);
+        RandomVector<N2> estimateFromMeasurement = new RandomVector<>(yx, yP);
+
+        xhat = p2.fuse(xhat, estimateFromMeasurement);
+        // since the old and new have the same variance the mean is in the middle
+        assertArrayEquals(new double[] { 0.5, 0 }, xhat.x.getData(), kDelta);
+        // the difference in means adds to the variance but only of the first component
+        assertArrayEquals(new double[] { 0.26, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        xhat = p2.fuse(xhat, estimateFromMeasurement);
+        // new measurement has lower variance so it is preferred
+        assertArrayEquals(new double[] { 0.982, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion keeps increasing P
+        assertArrayEquals(new double[] { 0.028, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        xhat = p2.fuse(xhat, estimateFromMeasurement);
+        assertArrayEquals(new double[] { 0.995, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion is on the way down now
+        assertArrayEquals(new double[] { 0.015, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+
+        // go all the way to the end
+        for (int i = 0; i < 100; ++i) {
+            xhat = p2.fuse(xhat, estimateFromMeasurement);
+        }
+        // now the estimate matches the measurement
+        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
     }
 }

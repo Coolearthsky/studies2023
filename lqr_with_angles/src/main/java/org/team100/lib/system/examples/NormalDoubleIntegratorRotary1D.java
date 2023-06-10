@@ -31,11 +31,11 @@ public class NormalDoubleIntegratorRotary1D extends DoubleIntegratorRotary1D {
     //     return VecBuilder.fill(0.015, 0.17);
     // }
 
-    public Sensor<N2, N1, N1> newPosition() {
+    public Sensor<N2, N1, N2> newPosition() {
         return new NormalPositionSensor();
     }
 
-    public Sensor<N2, N1, N1> newVelocity() {
+    public Sensor<N2, N1, N2> newVelocity() {
         return new NormalVelocitySensor();
     }
 

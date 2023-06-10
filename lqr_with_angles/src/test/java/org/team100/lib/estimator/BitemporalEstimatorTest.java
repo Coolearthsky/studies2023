@@ -31,11 +31,12 @@ public class BitemporalEstimatorTest {
     public void testStopped() {
         NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
 
-                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // no motion
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -66,10 +67,12 @@ public class BitemporalEstimatorTest {
     public void testMotion() {
         NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
 
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // velocity = 1
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -103,9 +106,35 @@ public class BitemporalEstimatorTest {
         }
     }
 
-    private RandomVector<N1> y1(double yd) {
-        // assume a reasonable variance.
-        return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
+    // private RandomVector<N1> y1(double yd) {
+    // // assume a reasonable variance.
+    // return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
+    // }
+
+    private RandomVector<N2> ypos(double yd) {
+
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(0, 0, yd); // position
+
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 0.1); // TODO: pass variance somehow
+        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
+        return new RandomVector<>(yx, yP);
+
+        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
+    }
+
+    private RandomVector<N2> yvel(double yd) {
+
+        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
+        yx.set(1, 0, yd); // velocity
+
+        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
+        yP.set(0, 0, 1e9); // position gets "don't know" variance
+        yP.set(1, 1, 0.1); // TODO: pass variance somehow
+        return new RandomVector<>(yx, yP);
+
+        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     /** correct position and velocity separately every 0.005s */
@@ -114,9 +143,11 @@ public class BitemporalEstimatorTest {
         // System.out.println("SEPARATE");
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -139,7 +170,7 @@ public class BitemporalEstimatorTest {
         for (long i = 10; i < 1000; i += 10) {
             recordTime = i;
             validTime = 0.001 * i;
-            xhat = bitemporalEstimator.correct(y1(1), plant.position(), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(ypos(1), plant.position(), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -147,7 +178,7 @@ public class BitemporalEstimatorTest {
 
             recordTime += 5;
             validTime += 0.005;
-            xhat = bitemporalEstimator.correct(y1(0), plant.velocity(), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(yvel(0), plant.velocity(), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -155,8 +186,8 @@ public class BitemporalEstimatorTest {
         }
 
         // final correction
-        xhat = bitemporalEstimator.correct(y1(1), plant.position(), 1000l, 1.0);
-        xhat = bitemporalEstimator.correct(y1(0), plant.velocity(), 1010l, 1.005);
+        xhat = bitemporalEstimator.correct(ypos(1), plant.position(), 1000l, 1.0);
+        xhat = bitemporalEstimator.correct(yvel(0), plant.velocity(), 1010l, 1.005);
         // these are now the same because the time-step is the same fixed number as
         // below (0.01 s)
         // these are the EKF values
@@ -185,28 +216,33 @@ public class BitemporalEstimatorTest {
      */
     @Test
     public void testFullCorrection() {
-        if (kPrint) System.out.println("FULL MY VERSION");
+        if (kPrint)
+            System.out.println("FULL MY VERSION");
         // not much disturbance, very noisy measurement
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
                 VecBuilder.fill(0.01, 0.01),
                 VecBuilder.fill(0.1, 0.1));
 
         // so what *should* happen with variance?
-        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(),Nat.N2());
-        m_contQ.set(0,0,0.0001);
-        m_contQ.set(1,1,0.0001);
-        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
+        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(), Nat.N2());
+        m_contQ.set(0, 0, 0.0001);
+        m_contQ.set(1, 1, 0.0001);
+        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
+        // plant.stdev());
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
-        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(),Nat.N2());
-        m_contR.set(0,0,0.01);
-        m_contR.set(1,1,0.01);
+        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
+        // plant.full().stdev());
+        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(), Nat.N2());
+        m_contR.set(0, 0, 0.01);
+        m_contR.set(1, 1, 0.01);
 
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -228,10 +264,12 @@ public class BitemporalEstimatorTest {
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
 
-        if (kPrint)System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                validTime, xhat.x.get(0, 0),
-                xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+        if (kPrint)
+            System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                    validTime, xhat.x.get(0, 0),
+                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
         // measure position 1, velocity 0
         RandomVector<N2> y = y2(1, 0);
@@ -240,9 +278,10 @@ public class BitemporalEstimatorTest {
             recordTime = i;
             validTime = 0.001 * i;
             xhat = bitemporalEstimator.correct(y, plant.full(), recordTime, validTime);
-            if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                    validTime, xhat.x.get(0, 0),
-                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                        validTime, xhat.x.get(0, 0),
+                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
         }
 
         // final correction
@@ -266,27 +305,32 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testFullCorrectionAndPrediction() {
-        if (kPrint)System.out.println("FULL MY VERSION CORRECT AND PREDICT");
+        if (kPrint)
+            System.out.println("FULL MY VERSION CORRECT AND PREDICT");
         // not much disturbance, very noisy measurement
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
                 VecBuilder.fill(0.01, 0.01),
                 VecBuilder.fill(0.1, 0.1));
 
         // so what *should* happen with variance?
-        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.stdev());
-        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(),Nat.N2());
-        m_contQ.set(0,0,0.0001);
-        m_contQ.set(1,1,0.0001);
+        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
+        // plant.stdev());
+        Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(), Nat.N2());
+        m_contQ.set(0, 0, 0.0001);
+        m_contQ.set(1, 1, 0.0001);
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(), plant.full().stdev());
-        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(),Nat.N2());
-        m_contR.set(0,0,0.01);
-        m_contR.set(1,1,0.01);
+        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
+        // plant.full().stdev());
+        Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(), Nat.N2());
+        m_contR.set(0, 0, 0.01);
+        m_contR.set(1, 1, 0.01);
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
         IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
+
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         long recordTime = 0l;
         double validTime = 0;
@@ -303,10 +347,12 @@ public class BitemporalEstimatorTest {
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
 
-        if (kPrint) System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
-        if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
-                validTime, xhat.x.get(0, 0),
-                xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+        if (kPrint)
+            System.out.println(" time, xhat0, xhat1,     p00,     p01,     p10,     p11");
+        if (kPrint)
+            System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
+                    validTime, xhat.x.get(0, 0),
+                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
         // no control input
         Matrix<N1, N1> u = VecBuilder.fill(0);
@@ -321,16 +367,18 @@ public class BitemporalEstimatorTest {
 
             // TODO this doesn't yet inject noise, i think.
             xhat = bitemporalEstimator.predict(u, recordTime, validTime);
-            if (kPrint)  System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
-                    validTime, xhat.x.get(0, 0),
-                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
+                        validTime, xhat.x.get(0, 0),
+                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
 
             // there is no "u" here because the measurement function "h" is required to be
             // u-invariant
             xhat = bitemporalEstimator.correct(y, plant.full(), recordTime, validTime);
-            if (kPrint)System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
-                    validTime, xhat.x.get(0, 0),
-                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+            if (kPrint)
+                System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
+                        validTime, xhat.x.get(0, 0),
+                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
         }
 
         // final correction
@@ -355,10 +403,12 @@ public class BitemporalEstimatorTest {
     public void testFloor() {
         CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
                 VecBuilder.fill(0.01, 0.1));
-                IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
-                LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+        IntegratingPredictor<N2, N1> predictor = new IntegratingPredictor<>();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>();
 
-        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pooling);
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        NonlinearEstimator<N2, N1, N2> estimator = new NonlinearEstimator<>(plant, predictor, pointEstimator, pooling);
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, estimator);
         {
