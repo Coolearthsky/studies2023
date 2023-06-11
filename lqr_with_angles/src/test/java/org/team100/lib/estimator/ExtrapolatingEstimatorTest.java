@@ -124,7 +124,7 @@ public class ExtrapolatingEstimatorTest {
 
     static public class f1PlantWithNoise extends f1Plant  {
         @Override
-        public WhiteNoiseVector<N1> xi() {
+        public WhiteNoiseVector<N1> w() {
             return new WhiteNoiseVector<>(VecBuilder.fill(1));
         }
     }
@@ -167,7 +167,7 @@ public class ExtrapolatingEstimatorTest {
     }
     static public class f2PlantWithNoise extends f2Plant  {
         @Override
-        public WhiteNoiseVector<N2> xi() {
+        public WhiteNoiseVector<N2> w() {
             Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
             pp.set(0, 0, 2);
             pp.set(0, 1, 0);
@@ -358,7 +358,7 @@ public class ExtrapolatingEstimatorTest {
 
         NonlinearPlant<N1,N1,N1> system = new MockNonlinearPlant<>() {
             @Override
-            public WhiteNoiseVector<N1> xi() {
+            public WhiteNoiseVector<N1> w() {
                 Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
                 p.set(0, 0, 2);
                 return new WhiteNoiseVector<>(p);
@@ -377,7 +377,7 @@ public class ExtrapolatingEstimatorTest {
 
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D() {
             @Override
-            public WhiteNoiseVector<N2> xi() {
+            public WhiteNoiseVector<N2> w() {
                 Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
                 p.set(0, 0, 2);
                 p.set(0, 1, 0);

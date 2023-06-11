@@ -26,7 +26,7 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
 
     /** default is no noise */
     @Override
-    public WhiteNoiseVector<N2> xi() {
+    public WhiteNoiseVector<N2> w() {
         return new WhiteNoiseVector<>(new Matrix<>(Nat.N2(),Nat.N2()));
     }
 

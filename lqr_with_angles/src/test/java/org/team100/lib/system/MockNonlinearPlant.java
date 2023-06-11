@@ -44,7 +44,7 @@ public class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     }
 
     @Override
-    public WhiteNoiseVector<States> xi() {
+    public WhiteNoiseVector<States> w() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'xi'");
     }

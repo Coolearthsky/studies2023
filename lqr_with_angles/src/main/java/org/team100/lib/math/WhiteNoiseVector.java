@@ -4,7 +4,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
 
 /**
- * White noise (xi or ξ or w or η) is a process that produces uncorrelated
+ * White noise (w or xi or ξ or η) is a process that produces uncorrelated
  * samples drawn from a gaussian distribution with zero mean and the specified
  * covariance. It's not a random variable (which represents a belief about a
  * hidden state), it is the state itself. About the only thing you can do with

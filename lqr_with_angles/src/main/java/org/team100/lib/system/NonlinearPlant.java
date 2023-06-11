@@ -46,7 +46,7 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     /**
      * "Process noise" aka disturbance.
      */
-    WhiteNoiseVector<States> xi();
+    WhiteNoiseVector<States> w();
 
     /** Control limit */
     Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);

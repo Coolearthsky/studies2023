@@ -48,7 +48,7 @@ public class ExtrapolatingEstimator<States extends Num, Inputs extends Num, Outp
 
     /** Noise integration produces variance of t */
     RandomVector<States> addNoise(RandomVector<States> x, double dtSeconds) {
-        Matrix<States, States> noiseVariance = m_plant.xi().P.copy();
+        Matrix<States, States> noiseVariance = m_plant.w().P.copy();
         noiseVariance = noiseVariance.times(dtSeconds);
         return x.make(x.x, x.P.plus(noiseVariance));
     }
