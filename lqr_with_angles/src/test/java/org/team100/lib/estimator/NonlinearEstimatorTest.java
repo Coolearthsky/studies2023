@@ -109,7 +109,7 @@ public class NonlinearEstimatorTest {
         // so delta is -0.02, should push negative across the boundary
 
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 

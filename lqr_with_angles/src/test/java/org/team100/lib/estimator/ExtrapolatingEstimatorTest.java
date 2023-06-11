@@ -17,7 +17,7 @@ import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
-public class IntegratingPredictorTest {
+public class ExtrapolatingEstimatorTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
@@ -65,7 +65,7 @@ public class IntegratingPredictorTest {
     @Test
     public void testZero() {
         NonlinearPlant<N1, N1, N1> plant = new f1ZeroPlant();
-        IntegratingPredictor<N1, N1, N1> p = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N1, N1, N1> p = new ExtrapolatingEstimator<>(plant);
         Matrix<N1, N1> u = VecBuilder.fill(0);
         double dtS = 1;
         // if xdot is zero then the prediction is always the same as the input
@@ -90,7 +90,7 @@ public class IntegratingPredictorTest {
     public void testX() {
         NonlinearPlant<N1, N1, N1> plant = new f1XPlant();
 
-        IntegratingPredictor<N1, N1, N1> p = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N1, N1, N1> p = new ExtrapolatingEstimator<>(plant);
         Matrix<N1, N1> u = VecBuilder.fill(0);
         double dtS = 1;
         {
@@ -113,13 +113,19 @@ public class IntegratingPredictorTest {
     }
 
     static public class f1Plant extends MockNonlinearPlant<N1, N1, N1> {
-
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
             Matrix<N1, N1> xx = new Matrix<>(Nat.N1(), Nat.N1());
             Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
             p.set(0, 0, 1);
             return new RandomVector<>(xx, p);
+        }
+    }
+
+    static public class f1PlantWithNoise extends f1Plant  {
+        @Override
+        public WhiteNoiseVector<N1> xi() {
+            return new WhiteNoiseVector<>(VecBuilder.fill(1));
         }
     }
 
@@ -159,6 +165,17 @@ public class IntegratingPredictorTest {
         }
 
     }
+    static public class f2PlantWithNoise extends f2Plant  {
+        @Override
+        public WhiteNoiseVector<N2> xi() {
+            Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
+            pp.set(0, 0, 2);
+            pp.set(0, 1, 0);
+            pp.set(1, 0, 0);
+            pp.set(1, 1, 0.5);
+            return new WhiteNoiseVector<>(pp);
+        }
+    }
 
     public RandomVector<N2> f2(RandomVector<N2> x, Matrix<N1, N1> u) {
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
@@ -178,7 +195,7 @@ public class IntegratingPredictorTest {
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
         NonlinearPlant<N1, N1, N1> plant = new f1Plant();
-        IntegratingPredictor<N1, N1, N1> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N1, N1, N1> predictor = new ExtrapolatingEstimator<>(plant);
         RandomVector<N1> i1 = predictor.predict(v1, u, 1.0);
         // same as input
         assertArrayEquals(new double[] { 1 }, i1.x.getData(), kDelta);
@@ -195,10 +212,10 @@ public class IntegratingPredictorTest {
         RandomVector<N1> v1 = new RandomVector<>(x, p);
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
-        WhiteNoiseVector<N1> xi = new WhiteNoiseVector<>(VecBuilder.fill(1));
-        NonlinearPlant<N1, N1, N1> plant = new f1Plant();
-        IntegratingPredictor<N1, N1, N1> predictor = new IntegratingPredictor<>(plant);
-        RandomVector<N1> i1 = predictor.predictWithNoise(v1, u, xi, 1.0);
+        // WhiteNoiseVector<N1> xi = new WhiteNoiseVector<>(VecBuilder.fill(1));
+        NonlinearPlant<N1, N1, N1> plant = new f1PlantWithNoise();
+        ExtrapolatingEstimator<N1, N1, N1> predictor = new ExtrapolatingEstimator<>(plant);
+        RandomVector<N1> i1 = predictor.predictWithNoise(v1, u, 1.0);
         // same as input
         assertArrayEquals(new double[] { 1 }, i1.x.getData(), kDelta);
         // noise adds "t" worth of extra variance compared to the above case
@@ -216,7 +233,7 @@ public class IntegratingPredictorTest {
         // big time step here to see the effect
         NonlinearPlant<N1, N1, N1> plant = new f1xPlant();
 
-        IntegratingPredictor<N1, N1, N1> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N1, N1, N1> predictor = new ExtrapolatingEstimator<>(plant);
         RandomVector<N1> i1 = predictor.predict(v1, u, 1);
         // pretty close to e, which is the right answer.
         assertArrayEquals(new double[] { 2.708 }, i1.x.getData(), kDelta);
@@ -238,7 +255,7 @@ public class IntegratingPredictorTest {
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
         NonlinearPlant<N2, N1, N2> plant = new f2Plant();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         RandomVector<N2> i2 = predictor.predict(v2, u, 1);
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
         assertArrayEquals(new double[] { 1.278, 0, 0, 1.278 }, i2.P.getData(), kDelta);
@@ -257,17 +274,17 @@ public class IntegratingPredictorTest {
         RandomVector<N2> v2 = new RandomVector<>(x, p);
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
 
-        Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
-        pp.set(0, 0, 2);
-        pp.set(0, 1, 0);
-        pp.set(1, 0, 0);
-        pp.set(1, 1, 0.5);
+        // Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
+        // pp.set(0, 0, 2);
+        // pp.set(0, 1, 0);
+        // pp.set(1, 0, 0);
+        // pp.set(1, 1, 0.5);
 
-        WhiteNoiseVector<N2> xi = new WhiteNoiseVector<>(pp);
+        // WhiteNoiseVector<N2> xi = new WhiteNoiseVector<>(pp);
         // big time step here to see the effect
-        NonlinearPlant<N2, N1, N2> plant = new f2Plant();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
-        RandomVector<N2> i2 = predictor.predictWithNoise(v2, u, xi, 1);
+        NonlinearPlant<N2, N1, N2> plant = new f2PlantWithNoise();
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
+        RandomVector<N2> i2 = predictor.predictWithNoise(v2, u, 1);
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
         // noise variance varies by dimension; 0th is larger, 1st is smaller
         assertArrayEquals(new double[] { 3.278, 0, 0, 1.778 }, i2.P.getData(), kDelta);
@@ -282,7 +299,7 @@ public class IntegratingPredictorTest {
         // so delta is -0.02, should push negative across the boundary
 
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
         p.set(0, 0, 0.1);
@@ -310,7 +327,7 @@ public class IntegratingPredictorTest {
     @Test
     public void testCoastWrapping() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
         p.set(0, 0, 0.1);
@@ -334,6 +351,47 @@ public class IntegratingPredictorTest {
         xhat = predictor.predict(xhat, u, kDt);
         assertArrayEquals(new double[] { 2.352, -10 }, xhat.x.getData(), kDelta);
 
+    }
+
+    @Test
+    public void testIntegration1() {
+
+        NonlinearPlant<N1,N1,N1> system = new MockNonlinearPlant<>() {
+            @Override
+            public WhiteNoiseVector<N1> xi() {
+                Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
+                p.set(0, 0, 2);
+                return new WhiteNoiseVector<>(p);
+            }
+        };
+
+        ExtrapolatingEstimator<N1, N1, N1> predictor = new ExtrapolatingEstimator<>(system);
+        RandomVector<N1> x = new RandomVector<>(VecBuilder.fill(0), VecBuilder.fill(0));
+        x = predictor.addNoise(x, 0.02);
+        assertArrayEquals(new double[] { 0 }, x.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.04 }, x.P.getData(), kDelta);
+    }
+
+    @Test
+    public void testIntegration2() {
+
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D() {
+            @Override
+            public WhiteNoiseVector<N2> xi() {
+                Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+                p.set(0, 0, 2);
+                p.set(0, 1, 0);
+                p.set(1, 0, 0);
+                p.set(1, 1, 0.5);
+                return new WhiteNoiseVector<>(p);
+            }
+        };
+
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
+        RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+        x = predictor.addNoise(x, 0.02);
+        assertArrayEquals(new double[] { 0, 0 }, x.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.04, 0, 0, 0.01 }, x.P.getData(), kDelta);
     }
 
 }

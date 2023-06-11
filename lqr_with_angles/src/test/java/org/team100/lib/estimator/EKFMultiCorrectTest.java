@@ -42,7 +42,7 @@ public class EKFMultiCorrectTest {
     @Test
     public void testMultipleSensors() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -95,7 +95,7 @@ public class EKFMultiCorrectTest {
     @Test
     public void testMultipleSensorsWithTrend() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
         TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>(system);
 

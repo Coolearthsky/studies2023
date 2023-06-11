@@ -3,7 +3,7 @@ package org.team100.lib.simulation;
 import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.GainCalculator;
 import org.team100.lib.controller.InversionFeedforward;
-import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.ExtrapolatingEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.estimator.TrendEstimator;
 import org.team100.lib.fusion.LinearPooling;
@@ -27,7 +27,7 @@ public abstract class Scenario {
     private static final double kSecPerRioLoop = kUsecPerRioLoop * kSecPerUsec;
 
     private final CompleteState state;
-    private final IntegratingPredictor<N2, N1, N2> predictor;
+    private final ExtrapolatingEstimator<N2, N1, N2> predictor;
     private final PointEstimator<N2, N1, N2> pointEstimator;
     private final TrendEstimator<N2, N1, N2> trendEstimator;
     private final LinearPooling<N2> pooling;
@@ -38,7 +38,7 @@ public abstract class Scenario {
     public Scenario() {
         system = new DoubleIntegratorRotary1D();
         state = new CompleteState(position(0), velocity(0), acceleration(0));
-        predictor = new IntegratingPredictor<>(system);
+        predictor = new ExtrapolatingEstimator<>(system);
         pointEstimator = new PointEstimator<>(system);
         trendEstimator = new TrendEstimator<>(system);
         pooling = new VarianceWeightedLinearPooling<>();
@@ -90,7 +90,7 @@ public abstract class Scenario {
             // now we have a good estimate for whatever instant the measurements knew about
             // next predict ahead to the actuator target instant
 
-            xhat = predictor.predict(xhat, VecBuilder.fill(state.controlU), kSecPerRioLoop);
+            xhat = predictor.predictWithNoise(xhat, VecBuilder.fill(state.controlU), kSecPerRioLoop);
 
             // the actual time we want this control to have effect
             // TODO: make this dt/2 for midpoint actuation

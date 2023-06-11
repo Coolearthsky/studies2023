@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -41,6 +42,11 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
      * Inverse of h with respect to x. Usually both h and hinv are identity.
      */
     RandomVector<States> hinv(RandomVector<Outputs> y, Matrix<Inputs, N1> u);
+
+    /**
+     * "Process noise" aka disturbance.
+     */
+    WhiteNoiseVector<States> xi();
 
     /** Control limit */
     Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.GainCalculator;
-import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.ExtrapolatingEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
@@ -28,7 +28,7 @@ public class EstimatorAndControlTest {
     private static final double kDt = 0.02;
 
     final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-    final IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+    final ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
     final PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     final LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
     // angle (rad), velocity (rad/s)
@@ -55,7 +55,7 @@ public class EstimatorAndControlTest {
             double y,
             double x0,
             double x1) {
-        xhat = predictor.predict(xhat, u, kDt);
+        xhat = predictor.predictWithNoise(xhat, u, kDt);
 
         RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(y));
         xhat = pooling.fuse(x, xhat);

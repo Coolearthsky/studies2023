@@ -1,6 +1,7 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -21,6 +22,12 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
     @Override
     public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
         return y;
+    }
+
+    /** default is no noise */
+    @Override
+    public WhiteNoiseVector<N2> xi() {
+        return new WhiteNoiseVector<>(new Matrix<>(Nat.N2(),Nat.N2()));
     }
 
     @Override

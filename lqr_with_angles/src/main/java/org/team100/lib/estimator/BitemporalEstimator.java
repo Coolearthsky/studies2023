@@ -21,14 +21,14 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final BitemporalBuffer<RandomVector<States>> m_stateBuffer;
-    private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
+    private final ExtrapolatingEstimator<States, Inputs, Outputs> m_predictor;
     private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
     private final LinearPooling<States> m_pooling;
 
     public BitemporalEstimator(
             NonlinearPlant<States, Inputs, Outputs> plant,
             BitemporalBuffer<RandomVector<States>> stateBuffer,
-            IntegratingPredictor<States, Inputs, Outputs> predictor,
+            ExtrapolatingEstimator<States, Inputs, Outputs> predictor,
             PointEstimator<States, Inputs, Outputs> pointEstimator,
             LinearPooling<States> pooling) {
         m_stateBuffer = stateBuffer;

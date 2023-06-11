@@ -2,7 +2,7 @@ package org.team100.lib.system;
 
 import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.InversionFeedforward;
-import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.ExtrapolatingEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.math.RandomVector;
@@ -27,7 +27,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final FeedbackControl<States, Inputs, Outputs> m_controller;
     private final InversionFeedforward<States, Inputs, Outputs> m_feedforward;
-    private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
+    private final ExtrapolatingEstimator<States, Inputs, Outputs> m_predictor;
     private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
     private final LinearPooling<States> m_pooling;
 
@@ -43,7 +43,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      */
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
-            IntegratingPredictor<States, Inputs, Outputs> predictor,
+            ExtrapolatingEstimator<States, Inputs, Outputs> predictor,
             PointEstimator<States, Inputs, Outputs> pointEstimator,
             LinearPooling<States> pooling,
             FeedbackControl<States, Inputs, Outputs> controller,
@@ -75,7 +75,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      */
     public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU,
             double dtSeconds) {
-        return m_predictor.predict(initial, calculatedU, dtSeconds);
+        return m_predictor.predictWithNoise(initial, calculatedU, dtSeconds);
     }
 
     /**

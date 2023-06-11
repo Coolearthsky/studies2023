@@ -30,7 +30,7 @@ public class BitemporalEstimatorTest {
     public void testStopped() {
         // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -67,7 +67,7 @@ public class BitemporalEstimatorTest {
         // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
 
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -135,7 +135,7 @@ public class BitemporalEstimatorTest {
         // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
 
         CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -228,7 +228,7 @@ public class BitemporalEstimatorTest {
 
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
 
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -308,7 +308,7 @@ public class BitemporalEstimatorTest {
         m_contR.set(0, 0, 0.01);
         m_contR.set(1, 1, 0.01);
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -386,7 +386,7 @@ public class BitemporalEstimatorTest {
         // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
 
         CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();

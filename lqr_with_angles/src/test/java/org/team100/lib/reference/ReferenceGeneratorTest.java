@@ -1,7 +1,7 @@
 package org.team100.lib.reference;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.ExtrapolatingEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
@@ -17,7 +17,7 @@ public class ReferenceGeneratorTest {
     @Test
     public void testSimple() {
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
         ReferenceGenerator rg = new ReferenceGenerator();
