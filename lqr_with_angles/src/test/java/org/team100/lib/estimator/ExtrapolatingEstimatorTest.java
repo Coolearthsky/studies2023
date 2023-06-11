@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.MockNonlinearPlant;
@@ -298,7 +299,9 @@ public class ExtrapolatingEstimatorTest {
         // initial is -pi + 0.01
         // so delta is -0.02, should push negative across the boundary
 
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v);
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -326,7 +329,9 @@ public class ExtrapolatingEstimatorTest {
 
     @Test
     public void testCoastWrapping() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v);
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
@@ -374,8 +379,9 @@ public class ExtrapolatingEstimatorTest {
 
     @Test
     public void testIntegration2() {
-
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D() {
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v) {
             @Override
             public WhiteNoiseVector<N2> w() {
                 Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());

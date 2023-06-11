@@ -1,7 +1,9 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -14,7 +16,11 @@ import edu.wpi.first.math.numbers.N2;
  * State includes velocity and position, input is acceleration, output is
  * position.
  */
-public class Pendulum1D extends RotaryPlant1D {
+public class Pendulum1D extends Rotary1D {
+    public Pendulum1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w, v);
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v

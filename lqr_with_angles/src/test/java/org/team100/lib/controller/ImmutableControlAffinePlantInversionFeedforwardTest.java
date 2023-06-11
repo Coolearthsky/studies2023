@@ -3,6 +3,8 @@ package org.team100.lib.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.MeasurementUncertainty;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
@@ -21,8 +23,9 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the model is trivial
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
-
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(plant);
 
         // position does not matter here.
@@ -39,7 +42,9 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the r and nextR differ by 1
         // so u should be 1/dt or 50.
 
-        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w,v);
         InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(plant);
 
         {

@@ -58,7 +58,9 @@ public class JacobianTest {
     public void testDoubleIntegratorA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         {
             // at zero
             RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
@@ -95,7 +97,9 @@ public class JacobianTest {
     public void testDoubleIntegratorB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         {
             // at zero
             RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
@@ -132,7 +136,9 @@ public class JacobianTest {
     public void testPendulumA() {
         Nat<N2> rows = Nat.N2();
         Nat<N2> states = Nat.N2();
-        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w,v);
         {
             // at zero degrees (max gravity) the gravity force doesn't change much with position
             RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
@@ -179,7 +185,9 @@ public class JacobianTest {
     public void testPendulumB() {
         Nat<N2> rows = Nat.N2();
         Nat<N1> inputs = Nat.N1();
-        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w,v);
         {
             // at zero
             RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));

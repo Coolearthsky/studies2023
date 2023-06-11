@@ -3,6 +3,8 @@ package org.team100.lib.controller;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.MeasurementUncertainty;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.FrictionCartesian1D;
@@ -26,7 +28,9 @@ public class GainCalculatorTest {
     public void testPendulumK() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w, v);
         GainCalculator<N2, N1, N2> gc = new GainCalculator<>(plant, stateTolerance, controlTolerance, 0.01);
         Matrix<N1, N2> K = gc.getK();
         assertArrayEquals(new double[] { 818.6, 57.5 }, K.getData(), 0.1);
@@ -36,7 +40,9 @@ public class GainCalculatorTest {
     public void testFrictionK() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        NonlinearPlant<N2, N1, N2> plant = new FrictionCartesian1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0, 0);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new FrictionCartesian1D(w, v);
         GainCalculator<N2, N1, N2> gc = new GainCalculator<>(plant, stateTolerance, controlTolerance, 0.01);
         Matrix<N1, N2> K = gc.getK();
         assertArrayEquals(new double[] { 822.7, 56.8 }, K.getData(), 0.1);
@@ -49,7 +55,9 @@ public class GainCalculatorTest {
     public void testFrictionFK2() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        NonlinearPlant<N2, N1, N2> plant = new FrictionRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new FrictionRotary1D(w, v);
         GainCalculator<N2, N1, N2> gc = new GainCalculator<>(plant, stateTolerance, controlTolerance, 0.02);
         Matrix<N1, N2> K = gc.getK();
         assertArrayEquals(new double[] { 578.494, 43.763 }, K.getData(), kDelta);
@@ -83,7 +91,9 @@ public class GainCalculatorTest {
     public void testPendulumK2() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w, v);
         GainCalculator<N2, N1, N2> gc = new GainCalculator<>(plant, stateTolerance, controlTolerance, 0.02);
         Matrix<N1, N2> K = gc.getK();
         // same as double integrator when gravity is max
@@ -97,7 +107,9 @@ public class GainCalculatorTest {
     public void testFK() {
         Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
         Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         GainCalculator<N2, N1, N2> gc = new GainCalculator<>(plant, stateTolerance, controlTolerance, 0.02);
         Matrix<N1, N2> K = gc.getK();
         assertArrayEquals(new double[] { 572.773, 44.336 }, K.getData(), kDelta);

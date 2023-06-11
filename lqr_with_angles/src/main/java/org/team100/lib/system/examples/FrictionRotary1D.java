@@ -1,7 +1,9 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -15,7 +17,11 @@ import edu.wpi.first.math.numbers.N2;
  * 
  * In this case, we're modeling rotation, e.g. a wheel.
  */
-public class FrictionRotary1D extends RotaryPlant1D {
+public class FrictionRotary1D extends Rotary1D {
+    public FrictionRotary1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w, v);
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v
@@ -33,6 +39,7 @@ public class FrictionRotary1D extends RotaryPlant1D {
         // note that xdot needs no wrapping, don't return an AngularRandomVector here.
         return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
     }
+
     @Override
     public Matrix<N1, N1> finvWrtU(RandomVector<N2> x, RandomVector<N2> xdot) {
         double a = xdot.x.get(1, 0);
@@ -42,11 +49,11 @@ public class FrictionRotary1D extends RotaryPlant1D {
 
     @Override
     public RandomVector<N2> finvWrtX(RandomVector<N2> xdot, Matrix<N1, N1> u) {
-        double pdot = xdot.x.get(0,0);
-        double vdot = xdot.x.get(1,0);
-        double uu = u.get(0,0);
+        double pdot = xdot.x.get(0, 0);
+        double vdot = xdot.x.get(1, 0);
+        double uu = u.get(0, 0);
         // "pseudoinverse"
-        double v = (uu - vdot + pdot)/2;
+        double v = (uu - vdot + pdot) / 2;
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
         xx.set(1, 0, v);
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());

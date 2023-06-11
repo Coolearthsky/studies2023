@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.numbers.N1;
 
 public class LinearPoolingTest extends PoolingTest {

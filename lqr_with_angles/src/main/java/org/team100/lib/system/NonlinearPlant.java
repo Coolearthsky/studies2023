@@ -51,6 +51,9 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     /** Control limit */
     Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
+    /** Make a state of the correct type. */
+    RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P);
+
     Nat<States> states();
 
     Nat<Inputs> inputs();

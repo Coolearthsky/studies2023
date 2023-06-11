@@ -10,7 +10,9 @@ import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
@@ -27,7 +29,10 @@ public class EstimatorAndControlTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+    // for this test, zero noise
+    WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0, 0);
+    MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+    final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v);
     final ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
     final PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     final LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -39,16 +44,6 @@ public class EstimatorAndControlTest {
     Matrix<N1, N2> K = gc.getK();
     final FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
 
-    // this is position
-    private AngularRandomVector<N2> yPosition(double yd) {
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(0, 0, yd); // position
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.01); // TODO: pass variance somehow
-        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
-        return new AngularRandomVector<>(yx, yP);
-    }
-
     private RandomVector<N2> updateAndCheck(
             RandomVector<N2> xhat,
             Matrix<N1, N1> u,
@@ -57,7 +52,7 @@ public class EstimatorAndControlTest {
             double x1) {
         xhat = predictor.predictWithNoise(xhat, u, kDt);
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(y));
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(y));
         xhat = pooling.fuse(x, xhat);
         assertEquals(x0, xhat.x.get(0, 0), kDelta);
         assertEquals(x1, xhat.x.get(1, 0), kDelta);
@@ -148,7 +143,7 @@ public class EstimatorAndControlTest {
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(Math.PI - 0.03));
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(Math.PI - 0.03));
         xhat = pooling.fuse(x, xhat);
 
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
@@ -223,7 +218,7 @@ public class EstimatorAndControlTest {
 
         // starting point is the only difference
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-1.0 * Math.PI + 0.01));
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(-1.0 * Math.PI + 0.01));
         xhat = pooling.fuse(x, xhat);
 
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);

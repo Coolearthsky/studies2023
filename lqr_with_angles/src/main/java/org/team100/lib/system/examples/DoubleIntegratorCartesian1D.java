@@ -1,6 +1,8 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -13,7 +15,11 @@ import edu.wpi.first.math.numbers.N2;
  * State includes velocity and position, input is acceleration, output is
  * position.
  */
-public class DoubleIntegratorCartesian1D extends CartesianPlant1D {
+public class DoubleIntegratorCartesian1D extends Cartesian1D {
+    public DoubleIntegratorCartesian1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w,v);
+    }
+
     @Override
     public RandomVector<N2> f(RandomVector<N2> xmat, Matrix<N1, N1> umat) {
         double v = xmat.x.get(1, 0);
@@ -39,4 +45,6 @@ public class DoubleIntegratorCartesian1D extends CartesianPlant1D {
         xP.set(1, 1, xdot.P.get(0, 0));
         return new RandomVector<>(xx, xP); 
     }
+
+
 }

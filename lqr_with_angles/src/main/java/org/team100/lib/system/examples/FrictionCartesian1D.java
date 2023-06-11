@@ -1,6 +1,8 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -12,7 +14,11 @@ import edu.wpi.first.math.numbers.N2;
  * One-dimensional double-integrator with friction force proportional to
  * velocity.
  */
-public class FrictionCartesian1D extends CartesianPlant1D {
+public class FrictionCartesian1D extends Cartesian1D {
+    public FrictionCartesian1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w,v);
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v

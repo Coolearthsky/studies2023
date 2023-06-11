@@ -9,7 +9,9 @@ import org.team100.lib.estimator.TrendEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
@@ -36,7 +38,9 @@ public abstract class Scenario {
     private final DoubleIntegratorRotary1D system;
 
     public Scenario() {
-        system = new DoubleIntegratorRotary1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        system = new DoubleIntegratorRotary1D(w,v);
         state = new CompleteState(position(0), velocity(0), acceleration(0));
         predictor = new ExtrapolatingEstimator<>(system);
         pointEstimator = new PointEstimator<>(system);
@@ -83,9 +87,9 @@ public abstract class Scenario {
             RandomVector<N2> x;
             // TODO: predict to the current instant
             // or whatever instant these measurements refer to?
-            x = pointEstimator.stateForMeasurementWithZeroU(yPosition(state.observedPosition));
+            x = pointEstimator.stateForMeasurementWithZeroU(system.position(state.observedPosition));
             xhat = pooling.fuse(x, xhat);
-            x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(state.observedVelocity));
+            x = pointEstimator.stateForMeasurementWithZeroU(system.velocity(state.observedVelocity));
             xhat = pooling.fuse(x, xhat);
             // now we have a good estimate for whatever instant the measurements knew about
             // next predict ahead to the actuator target instant
@@ -171,23 +175,5 @@ public abstract class Scenario {
     void updateResidual() {
         state.residualPosition = MathUtil.angleModulus(state.actualPosition - state.predictedPosition);
         state.residualVelocity = state.actualVelocity - state.predictedVelocity;
-    }
-
-    private RandomVector<N2> yPosition(double yd) {
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(0, 0, yd); // position
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.1); // TODO: pass variance somehow
-        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
-        return new AngularRandomVector<>(yx, yP);
-    }
-
-    private RandomVector<N2> yVelocity(double yd) {
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(1, 0, yd); // velocity
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 1e9); // position gets "don't know" variance
-        yP.set(1, 1, 0.1); // TODO: pass variance somehow
-        return new AngularRandomVector<>(yx, yP);
     }
 }

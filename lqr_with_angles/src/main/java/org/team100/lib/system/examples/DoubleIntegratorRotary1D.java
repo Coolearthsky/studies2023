@@ -1,7 +1,9 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -16,7 +18,11 @@ import edu.wpi.first.math.numbers.N2;
  * 
  * In this case, we're modeling rotation, i.e. a wheel.
  */
-public class DoubleIntegratorRotary1D extends RotaryPlant1D {
+public class DoubleIntegratorRotary1D extends Rotary1D {
+    public DoubleIntegratorRotary1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w,v );
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v
@@ -52,4 +58,5 @@ public class DoubleIntegratorRotary1D extends RotaryPlant1D {
         // This is the full state, so it *does* need to be Angular.
         return new AngularRandomVector<>(xx, xP);
     }
+
 }

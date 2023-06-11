@@ -68,6 +68,11 @@ public class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs 
         throw new UnsupportedOperationException("Unimplemented method 'outputs'");
     }
 
+    @Override
+    public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
+        throw new UnsupportedOperationException("Unimplemented method 'make'");
+    }
+
 
 
 }
