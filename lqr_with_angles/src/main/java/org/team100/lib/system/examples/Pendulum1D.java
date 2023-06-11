@@ -35,8 +35,16 @@ public class Pendulum1D extends Rotary1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u - Math.cos(p);
-        // TODO: handle P correctly
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        Matrix<N2, N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2, N2> xdotP = xmat.P.copy();
+        xdotP.fill(0);
+        // propagate variance of x through f (u has zero variance)
+        double pP = xmat.P.get(0, 0);
+        double vP = xmat.P.get(1, 1);
+        xdotP.set(0, 0, vP);
+        // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+        xdotP.set(1, 1, Math.pow(Math.sin(p), 2) * pP);
+        return new RandomVector<>(xdotx, xdotP);
     }
 
     @Override

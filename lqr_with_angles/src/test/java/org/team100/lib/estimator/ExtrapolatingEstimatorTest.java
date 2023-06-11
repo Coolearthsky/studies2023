@@ -343,7 +343,6 @@ public class ExtrapolatingEstimatorTest {
 
         final Matrix<N1, N1> u = VecBuilder.fill(0);
 
-        System.out.println("*************************************");
         xhat = predictor.predict(xhat, u, kDt);
         assertArrayEquals(new double[] { 2.952, -10 }, xhat.x.getData(), kDelta);
 

@@ -32,5 +32,4 @@ public class TrendEstimator<States extends Num, Inputs extends Num, Outputs exte
         RandomVector<States> x = m_plant.finvWrtX(xdot, u);
         return x;
     }
-
 }

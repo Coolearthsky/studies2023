@@ -38,18 +38,19 @@ public class NonlinearSystemLoopTest {
     // for this test, zero noise
     WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0, 0);
     // note different uncertainties here
-    MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.1,0.1);
+    MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.1, 0.1);
     DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w, v);
-    
+
     GainCalculator<N2, N1, N2> gc = new GainCalculator<>(system, stateTolerance, controlTolerance, kDt);
     Matrix<N1, N2> K = gc.getK();
     FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
 
-    ExtrapolatingEstimator<N2, N1,N2> predictor = new ExtrapolatingEstimator<>(system);
+    ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
     InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(system);
-    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, pointEstimator, pooling, controller, feedforward);
+    NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, pointEstimator, pooling,
+            controller, feedforward);
 
     @Test
     public void testLoop() {
@@ -159,6 +160,9 @@ public class NonlinearSystemLoopTest {
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.02, 0.001 }, xhat.x.getData(), kDelta);
         }
+        // so what's the accumulated variance?
+        // doesn't look that bad.
+        assertArrayEquals(new double[] { 0.3, 0, 0, 0.15 }, xhat.P.getData(), kDelta);
     }
 
     @Test

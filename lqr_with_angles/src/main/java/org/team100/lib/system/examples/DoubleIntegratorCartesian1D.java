@@ -26,8 +26,12 @@ public class DoubleIntegratorCartesian1D extends Cartesian1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u;
-        // TODO: handle P correctly
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2,N2> xdotP = xmat.P.copy();
+        xdotP.fill(0);
+        // propagate variance of x through f (u has zero variance)
+        xdotP.set(0,0,xmat.P.get(1,1));
+        return new RandomVector<>(xdotx, xdotP);
     }
 
     @Override

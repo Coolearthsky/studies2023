@@ -33,8 +33,17 @@ public class FrictionCartesian1D extends Cartesian1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u - v;
-        // TODO: handle P correctly
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2,N2> xdotP = xmat.P.copy();
+        xdotP.fill(0);
+        // propagate variance of x through f (u has zero variance)
+        double vP = xmat.P.get(1,1);
+        // guessing what to do with the off-diagonals
+        xdotP.set(0,0,vP);
+        xdotP.set(0,1,vP*0.9);
+        xdotP.set(1,0,vP*0.9);
+        xdotP.set(1,1,vP);
+        return new RandomVector<>(xdotx, xdotP);
     }
 
     @Override
