@@ -18,16 +18,15 @@ public class PointEstimator<States extends Num, Inputs extends Num, Outputs exte
         m_uZero = new Matrix<>(plant.inputs(), Nat.N1());
     }
 
+    /** In practice, h is u-invariant */
+    public RandomVector<States> stateForMeasurementWithZeroU(RandomVector<Outputs> y) {
+        return stateForMeasurement(m_uZero, y);
+    }
+
     /**
      * Use the inverse h function to get the state corresponding to the measurement.
      */
     private RandomVector<States> stateForMeasurement(Matrix<Inputs, N1> u, RandomVector<Outputs> y) {
         return m_plant.hinv(y, u);
     }
-
-    /** In practice, h is u-invariant */
-    public RandomVector<States> stateForMeasurementWithZeroU(RandomVector<Outputs> y) {
-        return stateForMeasurement(m_uZero, y);
-    }
-
 }

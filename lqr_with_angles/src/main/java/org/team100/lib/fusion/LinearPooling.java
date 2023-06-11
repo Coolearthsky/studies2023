@@ -50,9 +50,10 @@ import edu.wpi.first.math.numbers.N1;
  */
 public abstract class LinearPooling<States extends Num> implements Pooling<States> {
     /**
-     * Note that a and b could involve non-cartesian dimensions, e.g. angle
-     * wrapping.
-     * The caller needs to handle normalization.
+     * Weights should add to one.
+     * 
+     * @param pa a weight
+     * @param pb b weight
      */
     RandomVector<States> fuse(
             RandomVector<States> a,

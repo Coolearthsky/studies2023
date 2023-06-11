@@ -1,16 +1,19 @@
 package org.team100.lib.system;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.GainCalculator;
-import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.ExtrapolatingEstimator;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
@@ -27,8 +30,11 @@ public class EstimatorAndControlTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-    final IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+    // for this test, zero noise
+    WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0, 0);
+    MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01, 0.1);
+    final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w, v);
+    final ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
     final PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     final LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
     // angle (rad), velocity (rad/s)
@@ -39,25 +45,14 @@ public class EstimatorAndControlTest {
     Matrix<N1, N2> K = gc.getK();
     final FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
 
-    // this is position
-    private AngularRandomVector<N2> yPosition(double yd) {
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(0, 0, yd); // position
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.01); // TODO: pass variance somehow
-        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
-        return new AngularRandomVector<>(yx, yP);
-    }
-
     private RandomVector<N2> updateAndCheck(
             RandomVector<N2> xhat,
             Matrix<N1, N1> u,
             double y,
             double x0,
             double x1) {
-        xhat = predictor.predict(xhat, u, kDt);
-
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(y));
+        xhat = predictor.predictWithNoise(xhat, u, kDt);
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(y));
         xhat = pooling.fuse(x, xhat);
         assertEquals(x0, xhat.x.get(0, 0), kDelta);
         assertEquals(x1, xhat.x.get(1, 0), kDelta);
@@ -102,34 +97,34 @@ public class EstimatorAndControlTest {
         u = controlAndCheck(xhat, setpoint, -2.001);
 
         xhat = updateAndCheck(xhat, u, 0.015, 0.015, 0.093);
-        u = controlAndCheck(xhat, setpoint, -1.400);
+        u = controlAndCheck(xhat, setpoint, -1.398);
 
         xhat = updateAndCheck(xhat, u, 0.017, 0.017, 0.065);
-        u = controlAndCheck(xhat, setpoint, -1.127);
+        u = controlAndCheck(xhat, setpoint, -1.129);
 
         xhat = updateAndCheck(xhat, u, 0.018, 0.018, 0.043);
         u = controlAndCheck(xhat, setpoint, -0.753);
 
         xhat = updateAndCheck(xhat, u, 0.019, 0.019, 0.028);
-        u = controlAndCheck(xhat, setpoint, -0.576);
+        u = controlAndCheck(xhat, setpoint, -0.584);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.017);
-        u = controlAndCheck(xhat, setpoint, -0.521);
+        u = controlAndCheck(xhat, setpoint, -0.549);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.006);
-        u = controlAndCheck(xhat, setpoint, -0.224);
+        u = controlAndCheck(xhat, setpoint, -0.213);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.001);
-        u = controlAndCheck(xhat, setpoint, -0.065);
+        u = controlAndCheck(xhat, setpoint, -0.046);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.0001);
-        u = controlAndCheck(xhat, setpoint, -0.011);
+        u = controlAndCheck(xhat, setpoint, -0.002);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.0001);
         u = controlAndCheck(xhat, setpoint, 0.001);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0);
-        u = controlAndCheck(xhat, setpoint, 0.002);
+        u = controlAndCheck(xhat, setpoint, 0.0004);
     }
 
     @Test
@@ -148,7 +143,7 @@ public class EstimatorAndControlTest {
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(Math.PI - 0.03));
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(Math.PI - 0.03));
         xhat = pooling.fuse(x, xhat);
 
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
@@ -174,34 +169,34 @@ public class EstimatorAndControlTest {
         u = controlAndCheck(xhat, setpoint, -1.982);
 
         xhat = updateAndCheck(xhat, u, 3.128, 3.128, 0.089);
-        u = controlAndCheck(xhat, setpoint, -1.679);
+        u = controlAndCheck(xhat, setpoint, -1.684);
 
         xhat = updateAndCheck(xhat, u, 3.130, 3.130, 0.056);
-        u = controlAndCheck(xhat, setpoint, -1.279);
+        u = controlAndCheck(xhat, setpoint, -1.289);
 
         xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.030);
-        u = controlAndCheck(xhat, setpoint, -0.806);
+        u = controlAndCheck(xhat, setpoint, -0.813);
 
         xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.014);
-        u = controlAndCheck(xhat, setpoint, -0.302);
+        u = controlAndCheck(xhat, setpoint, -0.283);
 
         xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, -0.076);
+        u = controlAndCheck(xhat, setpoint, -0.051);
 
         xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, -0.008);
+        u = controlAndCheck(xhat, setpoint, 0.011);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.005);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
+        u = controlAndCheck(xhat, setpoint, 0.017);
+
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
+        u = controlAndCheck(xhat, setpoint, 0.012);
+
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
+        u = controlAndCheck(xhat, setpoint, 0.008);
+
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
         u = controlAndCheck(xhat, setpoint, 0.004);
-
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.005);
-        u = controlAndCheck(xhat, setpoint, 0.003);
-
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.006);
-        u = controlAndCheck(xhat, setpoint, 0.001);
-
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.006);
-        u = controlAndCheck(xhat, setpoint, 0.001);
     }
 
     @Test
@@ -223,7 +218,7 @@ public class EstimatorAndControlTest {
 
         // starting point is the only difference
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-1.0 * Math.PI + 0.01));
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(system.position(-1.0 * Math.PI + 0.01));
         xhat = pooling.fuse(x, xhat);
 
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
@@ -249,33 +244,38 @@ public class EstimatorAndControlTest {
         u = controlAndCheck(xhat, setpoint, 2.058);
 
         xhat = updateAndCheck(xhat, u, 3.135, 3.135, -0.087);
-        u = controlAndCheck(xhat, setpoint, 1.700);
+        u = controlAndCheck(xhat, setpoint, 1.705);
 
         xhat = updateAndCheck(xhat, u, 3.134, 3.134, -0.053);
-        u = controlAndCheck(xhat, setpoint, 0.994);
+        u = controlAndCheck(xhat, setpoint, 0.991);
 
         xhat = updateAndCheck(xhat, u, 3.133, 3.133, -0.033);
         u = controlAndCheck(xhat, setpoint, 0.646);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.021);
-        u = controlAndCheck(xhat, setpoint, 0.532);
+        u = controlAndCheck(xhat, setpoint, 0.553);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.01);
-        u = controlAndCheck(xhat, setpoint, 0.222);
+        u = controlAndCheck(xhat, setpoint, 0.204);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, 0.063);
+        u = controlAndCheck(xhat, setpoint, 0.036);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, 0.01);
+        u = controlAndCheck(xhat, setpoint, -0.007);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.004);
-        u = controlAndCheck(xhat, setpoint, -0.002);
+        u = controlAndCheck(xhat, setpoint, -0.009);
 
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.004);
-        u = controlAndCheck(xhat, setpoint, -0.002);
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
+        u = controlAndCheck(xhat, setpoint, -0.006);
 
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.004);
-        u = controlAndCheck(xhat, setpoint, -0.001);
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
+        u = controlAndCheck(xhat, setpoint, -0.003);
+
+        // after all that, what's the accumulated variance?
+        // looks good in position, does not look good in velocity
+        // kinda makes sense because we never corrected velocity.
+        assertArrayEquals(new double[] { 0.02, 0, 0, 3276.788 }, xhat.P.getData(), kDelta);
     }
 }

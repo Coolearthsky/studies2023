@@ -19,7 +19,7 @@ public class RandomVector<States extends Num> {
         this.P = P;
     }
 
-    /** instantiation that preserves type */
+    /** Instantiation that preserves type, i.e. it can be overridden. */
     public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
         return new RandomVector<>(x, P);
     }
@@ -30,7 +30,7 @@ public class RandomVector<States extends Num> {
 
     /**
      * Mean and covariance are simply added, which corresponds to assuming the
-     * variables are independent.
+     * variables are independent.  This is Euclidean.
      */
     public RandomVector<States> plus(RandomVector<States> b) {
         return make(x.plus(b.x), P.plus(b.P));
@@ -38,20 +38,20 @@ public class RandomVector<States extends Num> {
 
     /**
      * Mean is subtracted, covariance is *added* which corresponds to assuming the
-     * variables are independent.
+     * variables are independent. This is Euclidean.
      */
     public RandomVector<States> minus(RandomVector<States> b) {
         return make(x.minus(b.x), P.plus(b.P));
     }
 
-    /** euclidean version */
+    /** Euclidean version */
     public Matrix<States, N1> xplus(Matrix<States, N1> otherx) {
         return this.x.plus(otherx);
     }
 
     /**
-     * euclidean version, makes the expressions a little cleaner to have both plus
-     * and minus
+     * Euclidean version, makes the expressions a little cleaner to have both plus
+     * and minus.
      */
     public Matrix<States, N1> xminus(Matrix<States, N1> otherx) {
         return this.x.minus(otherx);

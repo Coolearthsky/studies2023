@@ -1,6 +1,8 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -12,7 +14,11 @@ import edu.wpi.first.math.numbers.N2;
  * One-dimensional double-integrator with friction force proportional to
  * velocity.
  */
-public class FrictionCartesian1D extends CartesianPlant1D {
+public class FrictionCartesian1D extends Cartesian1D {
+    public FrictionCartesian1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w,v);
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v
@@ -27,8 +33,17 @@ public class FrictionCartesian1D extends CartesianPlant1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u - v;
-        // TODO: handle P correctly
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2,N2> xdotP = xmat.P.copy();
+        xdotP.fill(0);
+        // propagate variance of x through f (u has zero variance)
+        double vP = xmat.P.get(1,1);
+        // guessing what to do with the off-diagonals
+        xdotP.set(0,0,vP);
+        xdotP.set(0,1,vP*0.9);
+        xdotP.set(1,0,vP*0.9);
+        xdotP.set(1,1,vP);
+        return new RandomVector<>(xdotx, xdotP);
     }
 
     @Override

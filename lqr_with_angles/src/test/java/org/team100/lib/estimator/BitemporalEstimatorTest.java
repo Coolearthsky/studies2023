@@ -10,11 +10,13 @@ import java.util.Map.Entry;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.examples.CartesianPlant1D;
 import org.team100.lib.system.examples.DoubleIntegratorCartesian1D;
+import org.team100.lib.system.examples.NoisyLimitedPlant1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -28,9 +30,10 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testStopped() {
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D(w,v);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -64,10 +67,11 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testMotion() {
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-
-        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        // note different uncertainties here
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.1,0.1);
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D(w,v);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -106,36 +110,14 @@ public class BitemporalEstimatorTest {
         }
     }
 
-    private RandomVector<N2> ypos(double yd) {
-
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(0, 0, yd); // position
-
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.1); // TODO: pass variance somehow
-        yP.set(1, 1, 1e9); // velocity gets "don't know" variance
-        return new RandomVector<>(yx, yP);
-    }
-
-    private RandomVector<N2> yvel(double yd) {
-
-        Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(1, 0, yd); // velocity
-
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 1e9); // position gets "don't know" variance
-        yP.set(1, 1, 0.1); // TODO: pass variance somehow
-        return new RandomVector<>(yx, yP);
-    }
-
     /** correct position and velocity separately every 0.005s */
     @Test
     public void testCorrection() {
-        // System.out.println("SEPARATE");
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-
-        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        if (kPrint) System.out.println("SEPARATE");
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NoisyLimitedPlant1D plant = new DoubleIntegratorCartesian1D(w,v);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -162,7 +144,7 @@ public class BitemporalEstimatorTest {
         for (long i = 10; i < 1000; i += 10) {
             recordTime = i;
             validTime = 0.001 * i;
-            xhat = bitemporalEstimator.correct(ypos(1), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(plant.position(1), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -170,7 +152,7 @@ public class BitemporalEstimatorTest {
 
             recordTime += 5;
             validTime += 0.005;
-            xhat = bitemporalEstimator.correct(yvel(0), recordTime, validTime);
+            xhat = bitemporalEstimator.correct(plant.velocity(0), recordTime, validTime);
             // P = estimator.getP();
             // System.out.printf("%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f\n",
             // validTime, xhat.get(0, 0),
@@ -178,8 +160,8 @@ public class BitemporalEstimatorTest {
         }
 
         // final correction
-        xhat = bitemporalEstimator.correct(ypos(1), 1000l, 1.0);
-        xhat = bitemporalEstimator.correct(yvel(0),  1010l, 1.005);
+        xhat = bitemporalEstimator.correct(plant.position(1), 1000l, 1.0);
+        xhat = bitemporalEstimator.correct(plant.velocity(0),  1010l, 1.005);
         // these are now the same because the time-step is the same fixed number as
         // below (0.01 s)
         // these are the EKF values
@@ -210,10 +192,9 @@ public class BitemporalEstimatorTest {
     public void testFullCorrection() {
         if (kPrint)
             System.out.println("FULL MY VERSION");
-        // not much disturbance, very noisy measurement
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-
-        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NoisyLimitedPlant1D plant = new DoubleIntegratorCartesian1D(w,v);
 
         // so what *should* happen with variance?
         Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(), Nat.N2());
@@ -228,7 +209,7 @@ public class BitemporalEstimatorTest {
 
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
 
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -289,10 +270,9 @@ public class BitemporalEstimatorTest {
     public void testFullCorrectionAndPrediction() {
         if (kPrint)
             System.out.println("FULL MY VERSION CORRECT AND PREDICT");
-        // not much disturbance, very noisy measurement
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-
-        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NoisyLimitedPlant1D plant = new DoubleIntegratorCartesian1D(w,v);
 
         // so what *should* happen with variance?
         // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
@@ -308,7 +288,7 @@ public class BitemporalEstimatorTest {
         m_contR.set(0, 0, 0.01);
         m_contR.set(1, 1, 0.01);
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -383,10 +363,10 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testFloor() {
-        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
-
-        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
+        NoisyLimitedPlant1D plant = new DoubleIntegratorCartesian1D(w,v);
+        ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();

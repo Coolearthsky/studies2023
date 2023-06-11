@@ -1,11 +1,14 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.AngularRandomVector;
+import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
@@ -16,7 +19,11 @@ import edu.wpi.first.math.numbers.N2;
  * 
  * In this case, we're modeling rotation, i.e. a wheel.
  */
-public class DoubleIntegratorRotary1D extends RotaryPlant1D {
+public class DoubleIntegratorRotary1D extends Rotary1D {
+    public DoubleIntegratorRotary1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
+        super(w,v );
+    }
+
     /**
      * xdot = f(x,u)
      * pdot = v
@@ -31,9 +38,13 @@ public class DoubleIntegratorRotary1D extends RotaryPlant1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u;
-        // TODO: handle P correctly
+        Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2,N2> xdotP = xmat.P.copy();
+        xdotP.fill(0);
+        // propagate variance of x through f (u has zero variance)
+        xdotP.set(0,0,xmat.P.get(1,1));
         // note that xdot needs no wrapping, don't return an AngularRandomVector here.
-        return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+        return new RandomVector<>(xdotx, xdotP);
     }
 
     @Override
@@ -49,6 +60,8 @@ public class DoubleIntegratorRotary1D extends RotaryPlant1D {
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
         xP.set(0, 0, 1e9); // "don't know" variance
         xP.set(1, 1, xdot.P.get(0, 0));
+        // This is the full state, so it *does* need to be Angular.
         return new AngularRandomVector<>(xx, xP);
     }
+
 }
