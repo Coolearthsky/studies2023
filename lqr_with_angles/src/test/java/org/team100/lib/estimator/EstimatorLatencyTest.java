@@ -1,14 +1,12 @@
 package org.team100.lib.estimator;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.controller.FeedbackControl;
+import org.team100.lib.controller.GainCalculator;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.RandomVector;
-import org.team100.lib.system.Sensor;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
@@ -124,45 +122,15 @@ public class EstimatorLatencyTest {
         final PointEstimator<N2, N1, N2> pointEstimator;
         final LinearPooling<N2> pooling;
         final LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward;
-        final ConstantGainLinearizedLQR<N2, N1, N2> controller;
+        final FeedbackControl<N2, N1, N2> controller;
         final DoubleIntegratorRotary1D system;
 
         public Scenario() {
-            system = new DoubleIntegratorRotary1D() {
-
-                // public Matrix<N2, N1> stdev() {
-                // return VecBuilder.fill(0.1, 0.1);
-                // }
-
-                public Sensor<N2, N1, N2> newFull() {
-                    return new FullSensor() {
-                        // public Matrix<N2, N1> stdev() {
-                        // return VecBuilder.fill(0.01, 0.01);
-                        // }
-                    };
-                }
-
-                public Sensor<N2, N1, N2> newPosition() {
-                    return new PositionSensor() {
-                        // public Matrix<N1, N1> stdev() {
-                        // return VecBuilder.fill(0.01);
-                        // }
-                    };
-                }
-
-                public Sensor<N2, N1, N2> newVelocity() {
-                    return new VelocitySensor() {
-                        // public Matrix<N1, N1> stdev() {
-                        // return VecBuilder.fill(0.01);
-                        // }
-                    };
-                }
-            };
+            system = new DoubleIntegratorRotary1D();
             state = initial();
             predictor = new IntegratingPredictor<>(system);
             pointEstimator = new PointEstimator<>(Nat.N1());
             pooling = new VarianceWeightedLinearPooling<>();
-            // estimator = newEstimator(predictor);
             feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
             label();
@@ -295,29 +263,21 @@ public class EstimatorLatencyTest {
         }
 
         private RandomVector<N2> ypos(double yd) {
-
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(0, 0, yd); // position
-
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, 0.1); // TODO: pass variance somehow
             yP.set(1, 1, 1e9); // velocity gets "don't know" variance
             return new RandomVector<>(yx, yP);
-
-            // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
         }
 
         private RandomVector<N2> yvel(double yd) {
-
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(1, 0, yd); // velocity
-
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, 1e9); // position gets "don't know" variance
             yP.set(1, 1, 0.1); // TODO: pass variance somehow
             return new RandomVector<>(yx, yP);
-
-            // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
         }
 
         /**
@@ -334,8 +294,6 @@ public class EstimatorLatencyTest {
             x = pointEstimator.stateForMeasurementWithZeroU(yvel(state.observedVelocity), system.velocity()::hinv);
             xhat = pooling.fuse(x, xhat);
 
-           // xhat = estimator.correct(xhat, ypos(state.observedPosition), system.position());
-           // xhat = estimator.correct(xhat, yvel(state.observedVelocity), system.velocity());
             return xhat;
         }
 
@@ -361,24 +319,13 @@ public class EstimatorLatencyTest {
             state.controlU = u.plus(uff).get(0, 0);
         }
 
-        // NonlinearEstimator<N2, N1, N2> newEstimator(IntegratingPredictor<N2, N1, N2> predictor) {
-
-        //     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
-
-        //     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-
-        //     double initialPosition = position(0);
-        //     double initialVelocity = velocity(0);
-        //     Matrix<N2, N1> xhat = VecBuilder.fill(initialPosition, initialVelocity);
-        //     assertEquals(initialPosition, xhat.get(0, 0), kDelta);
-        //     assertEquals(initialVelocity, xhat.get(1, 0), kDelta);
-        //     return estimator;
-        // }
-
-        ConstantGainLinearizedLQR<N2, N1, N2> newController() {
+        FeedbackControl<N2, N1, N2> newController() {
             final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
             final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-            return new ConstantGainLinearizedLQR<>(system, stateTolerance, controlTolerance, kSecPerRioLoop);
+            GainCalculator<N2, N1, N2> gc = new GainCalculator<>(system, stateTolerance, controlTolerance,
+                    kSecPerRioLoop);
+            Matrix<N1, N2> K = gc.getK();
+            return new FeedbackControl<>(system, K);
         }
 
         void printHeader() {

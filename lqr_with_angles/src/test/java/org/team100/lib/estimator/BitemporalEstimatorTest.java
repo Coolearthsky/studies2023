@@ -14,7 +14,7 @@ import org.team100.lib.math.RandomVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.examples.CartesianPlant1D;
-import org.team100.lib.system.examples.NormalDoubleIntegratorCartesian1D;
+import org.team100.lib.system.examples.DoubleIntegratorCartesian1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -28,8 +28,8 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testStopped() {
-        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
-                VecBuilder.fill(0.01, 0.1));
+                // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
@@ -63,8 +63,9 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testMotion() {
-        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
-                VecBuilder.fill(0.01, 0.1));
+                // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorCartesian1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
@@ -103,10 +104,6 @@ public class BitemporalEstimatorTest {
         }
     }
 
-    // private RandomVector<N1> y1(double yd) {
-    // // assume a reasonable variance.
-    // return new RandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
-    // }
 
     private RandomVector<N2> ypos(double yd) {
 
@@ -117,8 +114,6 @@ public class BitemporalEstimatorTest {
         yP.set(0, 0, 0.1); // TODO: pass variance somehow
         yP.set(1, 1, 1e9); // velocity gets "don't know" variance
         return new RandomVector<>(yx, yP);
-
-        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     private RandomVector<N2> yvel(double yd) {
@@ -130,16 +125,15 @@ public class BitemporalEstimatorTest {
         yP.set(0, 0, 1e9); // position gets "don't know" variance
         yP.set(1, 1, 0.1); // TODO: pass variance somehow
         return new RandomVector<>(yx, yP);
-
-        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     /** correct position and velocity separately every 0.005s */
     @Test
     public void testCorrection() {
         // System.out.println("SEPARATE");
-        CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
-                VecBuilder.fill(0.01, 0.1));
+        // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+        
+        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
@@ -215,25 +209,23 @@ public class BitemporalEstimatorTest {
         if (kPrint)
             System.out.println("FULL MY VERSION");
         // not much disturbance, very noisy measurement
-        CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
-                VecBuilder.fill(0.01, 0.01),
-                VecBuilder.fill(0.1, 0.1));
+                // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+
+        CartesianPlant1D plant = new DoubleIntegratorCartesian1D(  );
 
         // so what *should* happen with variance?
         Matrix<N2, N2> m_contQ = new Matrix<>(Nat.N2(), Nat.N2());
         m_contQ.set(0, 0, 0.0001);
         m_contQ.set(1, 1, 0.0001);
-        // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
-        // plant.stdev());
+
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, m_contQ.getData(), 0.0001);
 
-        // Matrix<N2, N2> m_contR = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
-        // plant.full().stdev());
         Matrix<N2, N2> m_contR = new Matrix<>(Nat.N2(), Nat.N2());
         m_contR.set(0, 0, 0.01);
         m_contR.set(1, 1, 0.01);
 
         assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, m_contR.getData(), 0.0001);
+
         IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 
@@ -247,14 +239,6 @@ public class BitemporalEstimatorTest {
         RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), m_contQ);
         assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
         assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.P.getData(), 0.0001);
-
-        // initial xhat is zero
-        // RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()),
-        // new Matrix<>(Nat.N2(), Nat.N2()));
-        // assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
-
-        // assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 },
-        // xhat.P.getData(), 0.0001);
 
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, predictor, pointEstimator, pooling);
@@ -303,9 +287,9 @@ public class BitemporalEstimatorTest {
         if (kPrint)
             System.out.println("FULL MY VERSION CORRECT AND PREDICT");
         // not much disturbance, very noisy measurement
-        CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(
-                VecBuilder.fill(0.01, 0.01),
-                VecBuilder.fill(0.1, 0.1));
+                // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+
+        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
 
         // so what *should* happen with variance?
         // Matrix<N2, N2> m_contQ = StateSpaceUtil.makeCovarianceMatrix(Nat.N2(),
@@ -395,8 +379,9 @@ public class BitemporalEstimatorTest {
 
     @Test
     public void testFloor() {
-        CartesianPlant1D plant = new NormalDoubleIntegratorCartesian1D(VecBuilder.fill(0.015, 0.17),
-                VecBuilder.fill(0.01, 0.1));
+                // TODO: variances (VecBuilder.fill(0.015, 0.17), VecBuilder.fill(0.01, 0.1));
+
+        CartesianPlant1D plant = new DoubleIntegratorCartesian1D();
         IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(plant);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
 

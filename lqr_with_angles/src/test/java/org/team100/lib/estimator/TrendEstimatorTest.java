@@ -61,13 +61,15 @@ public class TrendEstimatorTest {
 
         // for this weird system, x0dot is 1 so x0 is 1 x1dot is 0 so x1 is 0
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
-        // for this weird system there are no don't-know values, just the additive variance
+        // for this weird system there are no don't-know values, just the additive
+        // variance
         assertArrayEquals(new double[] { 0.02, 0, 0, 0.02 }, xhat.P.getData(), kDelta);
     }
 
     public static class DoubleIntegrator {
 
         /**
+         * dynamics, xdot = f(x,u)
          * x0dot = x1
          * x1dot = u
          */
@@ -82,6 +84,7 @@ public class TrendEstimatorTest {
         }
 
         /**
+         * inverse of f with respect to x
          * x0 = ?
          * x1 = x0dot
          */
@@ -94,12 +97,18 @@ public class TrendEstimatorTest {
             return xdot.make(xx, xP);
         }
 
-        /** y for x */
+        /**
+         * measurement, y = h(x,u)
+         * y for x
+         */
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
 
-        /** x for y */
+        /**
+         * inverse of h with respect to x
+         * x for y
+         */
         public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             return y;
         }

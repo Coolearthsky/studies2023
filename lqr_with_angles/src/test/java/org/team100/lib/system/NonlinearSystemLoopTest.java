@@ -4,7 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.controller.FeedbackControl;
+import org.team100.lib.controller.GainCalculator;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.PointEstimator;
@@ -13,7 +14,6 @@ import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
-import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -33,9 +33,12 @@ public class NonlinearSystemLoopTest {
             0.2); // velocity (rad/s)
     final Vector<N1> controlTolerance = VecBuilder.fill(12.0); // output (volts)
 
-    DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
-    ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
-            stateTolerance, controlTolerance, kDt);
+    DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+    
+    GainCalculator<N2, N1, N2> gc = new GainCalculator<>(system, stateTolerance, controlTolerance, kDt);
+    Matrix<N1, N2> K = gc.getK();
+    FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
+
     IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -51,8 +54,6 @@ public class NonlinearSystemLoopTest {
         yP.set(0, 0, 0.1); // TODO: pass variance somehow
         yP.set(1, 1, 1e9); // velocity gets "don't know" variance
         return new AngularRandomVector<>(yx, yP);
-
-        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     private RandomVector<N2> yvel(double yd) {
@@ -64,8 +65,6 @@ public class NonlinearSystemLoopTest {
         yP.set(0, 0, 1e9); // position gets "don't know" variance
         yP.set(1, 1, 0.1); // TODO: pass variance somehow
         return new AngularRandomVector<>(yx, yP);
-
-        // return new RandomVector<>(VecBuilder.fill(yd),VecBuilder.fill(0.1));
     }
 
     @Test

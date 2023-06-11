@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 import org.team100.lib.system.examples.Pendulum1D;
 
 import edu.wpi.first.math.Matrix;
@@ -22,7 +22,7 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // the r and nextR v differ by 1
         // so u should be 1/dt or 50.
 
-        NonlinearPlant<N2, N1, N2> plant = new NormalDoubleIntegratorRotary1D();
+        NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
         LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(plant);
 
         // position does not matter here.
@@ -49,6 +49,13 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
             Matrix<N2, N1> rDot = VecBuilder.fill(0, 0);
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(r, rDot);
             assertEquals(1, uff.get(0, 0), kDelta);
+        }
+        {
+            // r position pi/2 means some gravity so u = sqrt 2
+            Matrix<N2, N1> r = VecBuilder.fill(Math.PI / 4, 0);
+            Matrix<N2, N1> rDot = VecBuilder.fill(0, 0);
+            Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(r, rDot);
+            assertEquals(0.7071, uff.get(0, 0), kDelta);
         }
         {
             // r position pi/2 means no gravity so u = 0

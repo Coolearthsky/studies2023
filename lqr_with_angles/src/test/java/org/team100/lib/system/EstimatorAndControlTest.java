@@ -3,7 +3,8 @@ package org.team100.lib.system;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.controller.FeedbackControl;
+import org.team100.lib.controller.GainCalculator;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
@@ -11,7 +12,6 @@ import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
-import org.team100.lib.system.examples.NormalDoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -27,7 +27,7 @@ public class EstimatorAndControlTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    final DoubleIntegratorRotary1D system = new NormalDoubleIntegratorRotary1D();
+    final DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
     final IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
     final PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
     final LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
@@ -35,21 +35,18 @@ public class EstimatorAndControlTest {
     final Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.2);
     // output (volts)
     final Vector<N1> controlTolerance = VecBuilder.fill(12.0);
-    final ConstantGainLinearizedLQR<N2, N1, N2> controller = new ConstantGainLinearizedLQR<>(system,
-            stateTolerance, controlTolerance, kDt);
+    GainCalculator<N2, N1, N2> gc = new GainCalculator<>(system, stateTolerance, controlTolerance, kDt);
+    Matrix<N1, N2> K = gc.getK();
+    final FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
 
     // this is position
     private AngularRandomVector<N2> y1(double yd) {
-
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, yd); // position
-
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
         yP.set(0, 0, 0.01); // TODO: pass variance somehow
         yP.set(1, 1, 1e9); // velocity gets "don't know" variance
         return new AngularRandomVector<>(yx, yP);
-
-        // return new AngularRandomVector<>(VecBuilder.fill(yd), VecBuilder.fill(0.1));
     }
 
     private RandomVector<N2> updateAndCheck(
@@ -63,8 +60,6 @@ public class EstimatorAndControlTest {
 
         RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(y1(y), sensor::hinv);
         xhat = pooling.fuse(x, xhat);
-
-       // xhat = estimator.correct(xhat, y1(y), sensor);
         assertEquals(x0, xhat.x.get(0, 0), kDelta);
         assertEquals(x1, xhat.x.get(1, 0), kDelta);
         return xhat;
@@ -157,7 +152,6 @@ public class EstimatorAndControlTest {
         RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(y1(Math.PI - 0.03), system.position()::hinv);
         xhat = pooling.fuse(x, xhat);
 
-        // xhat = estimator.correct(xhat, y1(Math.PI - 0.03), system.position());
         assertEquals(3.112, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);
 
@@ -233,8 +227,6 @@ public class EstimatorAndControlTest {
         RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(y1(-1.0 * Math.PI + 0.01),
                 system.position()::hinv);
         xhat = pooling.fuse(x, xhat);
-
-        // xhat = estimator.correct(xhat, y1, system.position());
 
         assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
         assertEquals(0, xhat.x.get(1, 0), kDelta);

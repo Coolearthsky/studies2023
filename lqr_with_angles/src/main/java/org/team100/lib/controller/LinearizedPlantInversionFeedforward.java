@@ -1,47 +1,41 @@
 package org.team100.lib.controller;
 
-import org.team100.lib.math.Jacobian;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
 /**
- * Feedforward for a control-affine system, i.e. control response depends only
- * on state:
+ * General plant inverse feedforward.
  * 
- * dx/dt = f(x,u) = f(x) + g(x)u
+ * For general system dynamics:
  * 
- * Feedforward is calculated by linearizing g(x) and inverting the dynamics.
+ * dx/dt = f(x,u)
  * 
- * Linearizing all the time might be slow; maybe this should accept only
- * constant control response.
- *
- * This is similar to the WPI version but it's immutable.
+ * Feedforward is calculated using the provided f inverse:
+ * 
+ * u = finv(x, dx/dt)
  */
 public class LinearizedPlantInversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
-    private final Matrix<Inputs, N1> uZero;
 
     /**
-     * @param f the full dynamics f(x,u)
+     * @param plant includes f and finv
      */
     public LinearizedPlantInversionFeedforward(NonlinearPlant<States, Inputs, Outputs> plant) {
         m_plant = plant;
-        uZero = new Matrix<>(plant.inputs(), Nat.N1());
     }
 
     /**
+     * @param r    the desired state
+     * @param rdot rate of change of desired state
      * @return feedforward as linearized and inverted control response
      */
     public Matrix<Inputs, N1> calculateWithRAndRDot(Matrix<States, N1> r, Matrix<States, N1> rDot) {
-        // TODO something better with this non-random random vector
         RandomVector<States> rv = new RandomVector<>(r, new Matrix<>(m_plant.states(), m_plant.states()));
-        Matrix<States, Inputs> B = Jacobian.numericalJacobianU(m_plant.states(), m_plant.inputs(), m_plant::f,
-                rv, uZero);
-        return B.solve(rDot.minus(m_plant.f(rv, uZero).x));
+        RandomVector<States> rdotv = new RandomVector<>(rDot, new Matrix<>(m_plant.states(), m_plant.states()));
+        return m_plant.finv(rv, rdotv);
     }
 }

@@ -8,7 +8,6 @@ import org.team100.lib.system.Sensor;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.StateSpaceUtil;
-import edu.wpi.first.math.estimator.AngleStatistics;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
@@ -19,7 +18,7 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
     private final Sensor<N2, N1, N2> position;
     private final Sensor<N2, N1, N2> velocity;
 
-    public abstract class FullSensor implements Sensor<N2, N1, N2> {
+    public class FullSensor implements Sensor<N2, N1, N2> {
         @Override
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
@@ -29,32 +28,17 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
         public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             return y;
         }
-
-        @Override
-        public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
-            return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
-        }
-
-        // @Override
-        // public Nat<N2> rows() {
-        //     return Nat.N2();
-        // }
     }
 
-    public abstract class PositionSensor implements Sensor<N2, N1, N2> {
+    public class PositionSensor implements Sensor<N2, N1, N2> {
         @Override
         public AngularRandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(0, 0, x.x.get(0, 0)); // pass position
-            
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, x.P.get(0, 0)); // variance is like state :( TODO: this variance is wrong
             yP.set(1, 1, 1e9); // velocity gets "don't know" variance
             return new AngularRandomVector<>(yx, yP);
-
-            // return new AngularRandomVector<>(
-            //         x.x.block(Nat.N1(), Nat.N1(), 0, 0),
-            //         x.P.block(Nat.N1(), Nat.N1(), 0, 0));
         }
 
         // x0 = y0
@@ -68,32 +52,17 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
             xP.set(1, 1, kBig); // which means it could be anything
             return new AngularRandomVector<>(xx, xP);
         }
-
-        @Override
-        public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
-            return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
-        }
-
-        // @Override
-        // public Nat<N1> rows() {
-        //     return Nat.N1();
-        // }
     }
 
-    public abstract class VelocitySensor implements Sensor<N2, N1, N2> {
+    public class VelocitySensor implements Sensor<N2, N1, N2> {
         @Override
         public AngularRandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(1, 0, x.x.get(1, 0)); // pass velocity
-            
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
             yP.set(0, 0, 1e9); // "don't know" variance
             yP.set(1, 1, x.P.get(1, 1)); // variance is like state :( TODO: this variance is wrong
             return new AngularRandomVector<>(yx, yP);
-
-            // return new AngularRandomVector<>(
-            //     x.x.block(Nat.N1(), Nat.N1(), 1, 0),
-            //  x.P.block(Nat.N1(), Nat.N1(), 1, 1));
         }
 
         // x0 = 0 with high variance
@@ -107,32 +76,13 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
             xP.set(1, 1, y.P.get(1, 1));
             return new AngularRandomVector<>(xx, xP);
         }
-
-        @Override
-        public RandomVector<N2> yResidual(RandomVector<N2> a, RandomVector<N2> b) {
-            return a.minus(b);
-        }
-
-        // @Override
-        // public Nat<N1> rows() {
-        //     return Nat.N1();
-        // }
     }
 
     public RotaryPlant1D() {
-        full = newFull();
-        position = newPosition();
-        velocity = newVelocity();
+        full = new FullSensor();
+        position = new PositionSensor();
+        velocity = new VelocitySensor();
     }
-
-    public RandomVector<N2> xResidual(RandomVector<N2> a, RandomVector<N2> b) {
-        return new RandomVector<>(AngleStatistics.angleResidual(a.x, b.x, 0), a.P.plus(b.P));
-    }
-
-    // public RandomVector<N2> xAdd(RandomVector<N2> a, RandomVector<N2> b) {
-    //     // note independent assumption
-    //     return new RandomVector<>(AngleStatistics.angleAdd(a.x, b.x, 0), a.P.plus(b.P));
-    // }
 
     public Sensor<N2, N1, N2> position() {
         return position;
@@ -142,36 +92,28 @@ public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
         return velocity;
     }
 
+    @Override
     public Sensor<N2, N1, N2> full() {
         return full;
     }
 
-    // @Override
-    // public RandomVector<N2> xNormalize(RandomVector<N2> xmat) {
-    //     RandomVector<N2> x = xmat.copy();
-    //     x.x.set(0, 0, MathUtil.angleModulus(x.x.get(0, 0)));
-    //     return x;
-    // }
-
+    @Override
     public Matrix<N1, N1> limit(Matrix<N1, N1> u) {
         return StateSpaceUtil.desaturateInputVector(u, 12.0);
     }
 
+    @Override
     public Nat<N2> states() {
         return Nat.N2();
     }
 
+    @Override
     public Nat<N1> inputs() {
         return Nat.N1();
     }
 
+    @Override
     public Nat<N2> outputs() {
         return Nat.N2();
     }
-
-    public abstract Sensor<N2, N1, N2> newFull();
-
-    public abstract Sensor<N2, N1, N2> newPosition();
-
-    public abstract Sensor<N2, N1, N2> newVelocity();
 }

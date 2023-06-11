@@ -19,6 +19,7 @@ public class RandomVector<States extends Num> {
         this.P = P;
     }
 
+    /** instantiation that preserves type */
     public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
         return new RandomVector<>(x, P);
     }

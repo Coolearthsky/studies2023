@@ -16,11 +16,6 @@ public  class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs
     }
 
     @Override
-    public RandomVector<States> xResidual(RandomVector<States> a, RandomVector<States> b) {
-        throw new UnsupportedOperationException("Unimplemented method 'xResidual'");
-    }
-
-    @Override
     public Sensor<States, Inputs, Outputs> full() {
         throw new UnsupportedOperationException("Unimplemented method 'full'");
     }
@@ -43,6 +38,11 @@ public  class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs
     @Override
     public Nat<Outputs> outputs() {
         throw new UnsupportedOperationException("Unimplemented method 'outputs'");
+    }
+
+    @Override
+    public Matrix<Inputs, N1> finv(RandomVector<States> x, RandomVector<States> xdot) {
+        throw new UnsupportedOperationException("Unimplemented method 'finv'");
     }
 
 }

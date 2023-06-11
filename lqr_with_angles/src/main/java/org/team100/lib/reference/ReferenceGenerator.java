@@ -1,8 +1,5 @@
 package org.team100.lib.reference;
 
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N2;
-
 /**
  * ReferenceGenerator provides feasible trajectories of full state references
  * for control, based on full, partial, and/or infeasible state input, and a

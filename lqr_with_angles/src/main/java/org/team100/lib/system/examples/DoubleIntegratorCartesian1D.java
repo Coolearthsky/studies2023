@@ -12,7 +12,7 @@ import edu.wpi.first.math.numbers.N2;
  * State includes velocity and position, input is acceleration, output is
  * position.
  */
-public abstract class DoubleIntegratorCartesian1D extends CartesianPlant1D {
+public class DoubleIntegratorCartesian1D extends CartesianPlant1D {
     @Override
     public RandomVector<N2> f(RandomVector<N2> xmat, Matrix<N1, N1> umat) {
         double v = xmat.x.get(1, 0);
@@ -23,4 +23,9 @@ public abstract class DoubleIntegratorCartesian1D extends CartesianPlant1D {
         return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
     }
 
+    @Override
+    public Matrix<N1, N1> finv(RandomVector<N2> x, RandomVector<N2> xdot) {
+        double a = xdot.x.get(1,0);
+        return VecBuilder.fill(a);
+    }
 }

@@ -3,21 +3,23 @@ package org.team100.lib.estimator;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.MockNonlinearPlant;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.Sensor;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.Num;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 public class IntegratingPredictorTest {
     private static final double kDelta = 0.001;
+    private static final double kDt = 0.02;
 
     static RandomVector<N1> v1(double x, double P) {
         Matrix<N1, N1> xV = VecBuilder.fill(x);
@@ -269,6 +271,69 @@ public class IntegratingPredictorTest {
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
         // noise variance varies by dimension; 0th is larger, 1st is smaller
         assertArrayEquals(new double[] { 3.278, 0, 0, 1.778 }, i2.P.getData(), kDelta);
+    }
+
+    @Test
+    public void testObserverWrappingPredictOnly() {
+        // just test the observer prediction across the boundary
+        // it just predicts over and over.
+        // goal is pi-0.01,
+        // initial is -pi + 0.01
+        // so delta is -0.02, should push negative across the boundary
+
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+
+        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
+        assertArrayEquals(new double[] { -3.132, 0 }, xhat.x.getData(), kDelta);
+
+        // saturate negative-going
+        final Matrix<N1, N1> u = VecBuilder.fill(-12);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { -3.134, -0.240 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { -3.141, -0.480 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 3.130, -0.720 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 3.113, -0.960 }, xhat.x.getData(), kDelta);
+    }
+
+    @Test
+    public void testCoastWrapping() {
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        Vector<N2> x = VecBuilder.fill(-1.0 * Math.PI + 0.01, -10);
+        RandomVector<N2> xhat = new AngularRandomVector<>(x, p);
+        assertArrayEquals(new double[] { -3.132, -10 }, xhat.x.getData(), kDelta);
+
+        final Matrix<N1, N1> u = VecBuilder.fill(0);
+
+        System.out.println("*************************************");
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 2.952, -10 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 2.752, -10 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 2.552, -10 }, xhat.x.getData(), kDelta);
+
+        xhat = predictor.predict(xhat, u, kDt);
+        assertArrayEquals(new double[] { 2.352, -10 }, xhat.x.getData(), kDelta);
+
     }
 
 }

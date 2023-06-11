@@ -1,6 +1,6 @@
 package org.team100.lib.system;
 
-import org.team100.lib.controller.ConstantGainLinearizedLQR;
+import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.PointEstimator;
@@ -25,7 +25,7 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
-    private final ConstantGainLinearizedLQR<States, Inputs, Outputs> m_controller;
+    private final FeedbackControl<States, Inputs, Outputs> m_controller;
     private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
     private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
     private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
@@ -46,7 +46,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
             IntegratingPredictor<States, Inputs, Outputs> predictor,
             PointEstimator<States, Inputs, Outputs> pointEstimator,
             LinearPooling<States> pooling,
-            ConstantGainLinearizedLQR<States, Inputs, Outputs> controller,
+            FeedbackControl<States, Inputs, Outputs> controller,
             LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward) {
         m_plant = plant;
         m_predictor = predictor;
@@ -64,25 +64,27 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * @param y      measurement
      * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y, Sensor<States, Inputs, Outputs> sensor) {
-         RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
-     return m_pooling.fuse(xx, x);
-       // return m_estimator.correct(x, y, sensor);
+    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y,
+            Sensor<States, Inputs, Outputs> sensor) {
+        RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
+        return m_pooling.fuse(xx, x);
     }
 
     /**
      * integrate forward dt.
      * TODO: use absolute time
      */
-    public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
-       return m_predictor.predict(initial, calculatedU, dtSeconds);
+    public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU,
+            double dtSeconds) {
+        return m_predictor.predict(initial, calculatedU, dtSeconds);
     }
 
     /**
      * find controller output to get to reference at dt; uses observer xhat.
      * TODO: use absolute time
      */
-    public Matrix<Inputs, N1> calculateTotalU(RandomVector<States> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
+    public Matrix<Inputs, N1> calculateTotalU(RandomVector<States> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot,
+            double dtSeconds) {
         Matrix<Inputs, N1> controllerU = m_controller.calculate(xhat, r);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));

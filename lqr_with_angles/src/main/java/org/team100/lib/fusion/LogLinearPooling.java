@@ -52,6 +52,6 @@ public abstract class LogLinearPooling<States extends Num> implements Pooling<St
         
         Matrix<States, N1> cx = cP.times(cax.plus(cbx));
 
-        return new RandomVector<States>(cx, cP);
+        return a.make(cx, cP);
     }
 }

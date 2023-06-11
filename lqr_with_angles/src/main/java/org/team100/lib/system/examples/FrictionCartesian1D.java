@@ -1,7 +1,6 @@
 package org.team100.lib.system.examples;
 
 import org.team100.lib.math.RandomVector;
-import org.team100.lib.system.Sensor;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -27,41 +26,14 @@ public class FrictionCartesian1D extends CartesianPlant1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u - v;
-
         // TODO: handle P correctly
         return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
     }
 
-    // @Override
-    // public Matrix<N2, N1> stdev() {
-    //     return VecBuilder.fill(0.015, 0.17);
-    // }
-
     @Override
-    public Sensor<N2, N1, N2> newFull() {
-        return new FullSensor() {
-            // public Matrix<N2, N1> stdev() {
-            //     return VecBuilder.fill(0.01, 0.1);
-            // }
-        };
+    public Matrix<N1, N1> finv(RandomVector<N2> x, RandomVector<N2> xdot) {
+        double a = xdot.x.get(1, 0);
+        double v = x.x.get(1, 0);
+        return VecBuilder.fill(a + v);
     }
-
-    @Override
-    public Sensor<N2, N1, N2> newPosition() {
-        return new PositionSensor() {
-            // public Matrix<N1, N1> stdev() {
-            //     return VecBuilder.fill(0.01);
-            // }
-        };
-    }
-
-    @Override
-    public Sensor<N2, N1, N2> newVelocity() {
-        return new VelocitySensor() {
-            // public Matrix<N1, N1> stdev() {
-            //     return VecBuilder.fill(0.1);
-            // }
-        };
-    }
-
 }

@@ -43,4 +43,8 @@ public class AngularRandomVector<States extends Num> extends RandomVector<States
         x.set(0, 0, MathUtil.angleModulus(x.get(0, 0)));
         return x;
     }
+    @Override
+    public String toString() {
+        return "AngularRandomVector [x=" + x + ", P=" + P + "]";
+    }
 }

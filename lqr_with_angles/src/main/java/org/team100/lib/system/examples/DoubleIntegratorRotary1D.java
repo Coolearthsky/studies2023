@@ -14,7 +14,7 @@ import edu.wpi.first.math.numbers.N2;
  * 
  * In this case, we're modeling rotation, i.e. a wheel.
  */
-public abstract class DoubleIntegratorRotary1D extends RotaryPlant1D {
+public class DoubleIntegratorRotary1D extends RotaryPlant1D {
     /**
      * xdot = f(x,u)
      * pdot = v
@@ -32,5 +32,11 @@ public abstract class DoubleIntegratorRotary1D extends RotaryPlant1D {
         // TODO: handle P correctly
         // note that xdot needs no wrapping, don't return an AngularRandomVector here.
         return new RandomVector<>(VecBuilder.fill(pdot, vdot), xmat.P);
+    }
+
+    @Override
+    public Matrix<N1, N1> finv(RandomVector<N2> x, RandomVector<N2> xdot) {
+        double a = xdot.x.get(1,0);
+        return VecBuilder.fill(a);
     }
 }
