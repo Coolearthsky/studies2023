@@ -2,7 +2,7 @@ package org.team100.lib.simulation;
 
 import edu.wpi.first.math.MathUtil;
 
-public  class ConstantAcceleration extends Scenario {
+public class ConstantAcceleration extends Scenario {
     private static final double kAcceleration = 1.0;
 
     double position(double timeSec) {
@@ -19,5 +19,11 @@ public  class ConstantAcceleration extends Scenario {
 
     String label() {
         return "CONSTANT ACCELERATION";
+    }
+
+    // @Test
+    public void test() {
+        init();
+        execute();
     }
 }

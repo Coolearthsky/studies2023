@@ -27,7 +27,7 @@ public class CompleteState {
 
     double controlU;
 
-    public CompleteState(
+    public void init(
             double initialPosition,
             double initialVelocity,
             double initialAcceleration) {
@@ -49,6 +49,7 @@ public class CompleteState {
 
         controlU = initialAcceleration;
     }
+
 
     public String header() {
         return "     sysTime,   actualTime, " +

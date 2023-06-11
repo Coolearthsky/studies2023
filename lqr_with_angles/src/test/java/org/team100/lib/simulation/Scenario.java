@@ -41,7 +41,7 @@ public abstract class Scenario {
         WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
         MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01,0.1);
         system = new DoubleIntegratorRotary1D(w,v);
-        state = new CompleteState(position(0), velocity(0), acceleration(0));
+        state = new CompleteState();
         predictor = new ExtrapolatingEstimator<>(system);
         pointEstimator = new PointEstimator<>(system);
         trendEstimator = new TrendEstimator<>(system);
@@ -54,6 +54,10 @@ public abstract class Scenario {
         feedback = new FeedbackControl<>(system, gc.getK());
         System.out.println("\n\n" + label());
         System.out.println(state.header());
+    }
+
+    public void init() {
+        state.init(position(0), velocity(0), acceleration(0));
     }
 
     public void execute() {
@@ -104,7 +108,7 @@ public abstract class Scenario {
 
             // drive the expected system dynamics
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, nextRDot);
-
+ 
             // correct for disturbance
             Matrix<N1, N1> u = feedback.calculate(xhat, nextReference);
 

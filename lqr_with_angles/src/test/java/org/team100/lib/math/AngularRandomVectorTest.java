@@ -11,6 +11,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N2;
 
+/** Verify non-Euclidean arithmetic. */
 public class AngularRandomVectorTest {
     private static final double kDelta = 0.001;
 

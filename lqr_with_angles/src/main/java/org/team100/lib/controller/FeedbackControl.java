@@ -33,6 +33,9 @@ public class FeedbackControl<States extends Num, Inputs extends Num, Outputs ext
      */
     public Matrix<Inputs, N1> calculate(RandomVector<States> x, Matrix<States, N1> r) {
         RandomVector<States> rv = x.make(r, new Matrix<>(m_plant.states(), m_plant.states()));
-        return m_K.times(rv.minus(x).x);
+        //System.out.println("K: " + m_K);
+        Matrix<States, N1> residual = rv.minus(x).x;
+        //System.out.println("residual: " + residual);
+        return m_K.times(residual);
     }
 }

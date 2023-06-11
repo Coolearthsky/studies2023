@@ -1,5 +1,7 @@
 package org.team100.lib.simulation;
 
+import org.junit.jupiter.api.Test;
+
 import edu.wpi.first.math.MathUtil;
 
 public  class Sinusoidal extends Scenario {
@@ -17,5 +19,11 @@ public  class Sinusoidal extends Scenario {
 
     String label() {
         return "SINUSOIDAL";
+    }
+
+   // @Test
+    public void test() {
+        init();
+        execute();
     }
 }
