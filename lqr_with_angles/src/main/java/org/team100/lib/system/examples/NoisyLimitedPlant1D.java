@@ -20,20 +20,26 @@ public abstract class NoisyLimitedPlant1D implements NonlinearPlant<N2, N1, N2> 
         m_v = v;
     }
 
-    /** Construct a random vector representing a measurement of position. */
-    public RandomVector<N2> position(double yd) {
+    /**
+     * Construct a random vector representing a measurement of position, using the
+     * measurement uncertainty you gave the constructor.
+     */
+    public RandomVector<N2> position(double p) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(0, 0, yd);
+        yx.set(0, 0, p);
         Matrix<N2, N2> yP = m_v.P.copy();
         // measuring position only, so velocity gets "don't know" variance
         yP.set(1, 1, 1e9);
         return make(yx, yP);
     }
 
-    /** Construct a random vector representing a measurement of velocity. */
-    public RandomVector<N2> velocity(double yd) {
+    /**
+     * Construct a random vector representing a measurement of velocity, using the
+     * measurement uncertainty you gave the constructor.
+     */
+    public RandomVector<N2> velocity(double v) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
-        yx.set(1, 0, yd);
+        yx.set(1, 0, v);
         Matrix<N2, N2> yP = m_v.P.copy();
         // measuring velocity only, so position gets "don't know" variance
         yP.set(0, 0, 1e9);
