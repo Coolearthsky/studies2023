@@ -12,8 +12,6 @@ import edu.wpi.first.math.numbers.N2;
 
 /** Base class for one-dimensional cartesian plants. */
 public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
-    private static final double kBig = 1e9;
-
     @Override
     public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
         return x;
@@ -24,7 +22,7 @@ public abstract class CartesianPlant1D implements NonlinearPlant<N2, N1, N2> {
         return y;
     }
 
-    /** default is no noise */
+    /** Default noise is zero. */
     @Override
     public WhiteNoiseVector<N2> w() {
         return new WhiteNoiseVector<>(new Matrix<>(Nat.N2(),Nat.N2()));

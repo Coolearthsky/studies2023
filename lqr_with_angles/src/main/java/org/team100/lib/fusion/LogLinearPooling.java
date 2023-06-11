@@ -27,7 +27,6 @@ import edu.wpi.first.math.numbers.N1;
  * 
  * Bayesian inference and inverse variance weighting are the same idea, without
  * the 'w' factor.
- * 
  */
 public abstract class LogLinearPooling<States extends Num> implements Pooling<States> {
 

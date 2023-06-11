@@ -1,5 +1,6 @@
 package org.team100.lib.system.examples;
 
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
@@ -52,6 +53,7 @@ public class Pendulum1D extends RotaryPlant1D {
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
         xP.set(0, 0, 1e9); // position: "don't know" variance
         xP.set(1, 1, xdot.P.get(0, 0)); // TODO: better P?
-        return new RandomVector<>(xx, xP);
+        // Full state, return angular.
+        return new AngularRandomVector<>(xx, xP);
     }
 }

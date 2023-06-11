@@ -10,26 +10,32 @@ import edu.wpi.first.math.Num;
  * weighted average of probability functions where the weights are the inverse
  * variances.
  * 
- * This has the advantage of linear mixing -- the variance respects the
- * dispersion in means -- and also the advantage of log-linear mixing -- the
- * mean is precision-weighted.
+ * This has the advantage of linear mixing: the variance respects the
+ * dispersion in means, weighted by their variances (so given two very different
+ * variances, the result will be close to the narrow one, but given two equal
+ * variances, the result will try to cover both means)
  * 
+ * It also the advantage of log-linear mixing: the mean is variance-weighted, so
+ * tighter variances "pull" the resulting mean towards themselves.
+ * 
+ * One thing it should do, but doesn't do, is to respect the covariance implied
+ * by the dispersion of means, i.e. shape the resulting variance to minimally
+ * contain the mass of the inputs.
  * The weights are as follows:
  * 
  * pa = (1/A)/(1/A + 1/B)
  * pb = (1/B)/(1/A + 1/B)
  * 
  * If you are representing non-Euclidean geometry you'd better be using the
- * right RandomVector class, because this class doesn't handle it.
+ * right RandomVector class, because this class doesn't know about geometry.
+ * 
+ * Visualization of this pooling method is available here:
+ * 
+ * https://colab.research.google.com/drive/1W0YVYi4eXLpfdkSNpOy4otiW2Poliems#scrollTo=ps1ulO5dYUL4
  */
 public class VarianceWeightedLinearPooling<States extends Num> extends LinearPooling<States> {
     private static final double kThreshold = 1e-15;
 
-    /**
-     * Note that a and b could involve non-cartesian dimensions, e.g. angle
-     * wrapping.
-     * The caller needs to handle normalization, wrapping, etc.
-     */
     public RandomVector<States> fuse(RandomVector<States> a, RandomVector<States> b) {
         // TODO: turn off these checks somehow for matches, use some sort of backoff
         // strategy

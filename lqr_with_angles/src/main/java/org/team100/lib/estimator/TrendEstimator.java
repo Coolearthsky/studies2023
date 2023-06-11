@@ -15,6 +15,12 @@ public class TrendEstimator<States extends Num, Inputs extends Num, Outputs exte
         m_plant = plant;
     }
 
+    /**
+     * Computes the discrete derivative of state and uses the inverse dynamics to
+     * compute the corresponding state. The resulting variance is very high if the
+     * time step is small (think about beta variance estimation in regression);
+     * choose a wide window.
+     */
     public RandomVector<States> stateForMeasurementPair(
             Matrix<Inputs, N1> u,
             RandomVector<Outputs> y0,
@@ -22,7 +28,7 @@ public class TrendEstimator<States extends Num, Inputs extends Num, Outputs exte
             double dtS) {
         RandomVector<States> x0 = m_plant.hinv(y0, u);
         RandomVector<States> x1 = m_plant.hinv(y1, u);
-        RandomVector<States> xdot = x1.minus(x0).times(1.0/dtS);
+        RandomVector<States> xdot = x1.minus(x0).times(1.0 / dtS);
         RandomVector<States> x = m_plant.finvWrtX(xdot, u);
         return x;
     }

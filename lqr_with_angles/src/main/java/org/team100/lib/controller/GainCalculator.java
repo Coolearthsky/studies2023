@@ -21,11 +21,9 @@ public class GainCalculator<States extends Num, Inputs extends Num, Outputs exte
 
     /**
      * Calculate LQR gain linearized around zero. I don't think it's worth the
-     * trouble
-     * to make K sensitive to x, since all our systems are well behaved.
+     * trouble to make K sensitive to x, since all our systems are well behaved.
      * 
-     * TODO: i think that we can require B to be constant, since all the real
-     * systems we use are like that. In any case it should match the feedforward.
+     * This is all cribbed from WPI code, I don't really understand what it's doing.
      * 
      * @param dtSeconds time step for discretization. choose a value that's
      *                  convenient, e.g. the robot loop period.

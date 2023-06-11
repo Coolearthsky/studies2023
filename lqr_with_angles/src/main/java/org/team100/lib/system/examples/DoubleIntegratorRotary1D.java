@@ -49,6 +49,7 @@ public class DoubleIntegratorRotary1D extends RotaryPlant1D {
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
         xP.set(0, 0, 1e9); // "don't know" variance
         xP.set(1, 1, xdot.P.get(0, 0));
+        // This is the full state, so it *does* need to be Angular.
         return new AngularRandomVector<>(xx, xP);
     }
 }

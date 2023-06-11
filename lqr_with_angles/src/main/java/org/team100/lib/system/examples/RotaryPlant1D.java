@@ -12,8 +12,6 @@ import edu.wpi.first.math.numbers.N2;
 
 /** Base class for one-dimensional rotational plants. */
 public abstract class RotaryPlant1D implements NonlinearPlant<N2, N1, N2> {
-    private static final double kBig = 1e9;
-
     @Override
     public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
         return x;
