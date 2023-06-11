@@ -61,12 +61,11 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * 
      * TODO: allow time travel, measurement from the past.
      * 
+     * @param x state to fuse with, get rid of this
      * @param y      measurement
-     * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y,
-            Sensor<States, Inputs, Outputs> sensor) {
-        RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
+    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y) {
+        RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y);
         return m_pooling.fuse(xx, x);
     }
 

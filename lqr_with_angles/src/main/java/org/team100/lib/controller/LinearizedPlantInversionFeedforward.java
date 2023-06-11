@@ -36,6 +36,6 @@ public class LinearizedPlantInversionFeedforward<States extends Num, Inputs exte
     public Matrix<Inputs, N1> calculateWithRAndRDot(Matrix<States, N1> r, Matrix<States, N1> rDot) {
         RandomVector<States> rv = new RandomVector<>(r, new Matrix<>(m_plant.states(), m_plant.states()));
         RandomVector<States> rdotv = new RandomVector<>(rDot, new Matrix<>(m_plant.states(), m_plant.states()));
-        return m_plant.finv(rv, rdotv);
+        return m_plant.finvWrtU(rv, rdotv);
     }
 }

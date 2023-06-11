@@ -7,8 +7,15 @@ import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
-/** to make testing easier */
-public  class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num> implements NonlinearPlant<States, Inputs, Outputs> {
+/**
+ * to make testing easier
+ * 
+ * @param <States>  states
+ * @param <Inputs>  inputs
+ * @param <Outputs> outputs
+ */
+public class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num>
+        implements NonlinearPlant<States, Inputs, Outputs> {
 
     @Override
     public RandomVector<States> f(RandomVector<States> x, Matrix<Inputs, N1> u) {
@@ -16,8 +23,13 @@ public  class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs
     }
 
     @Override
-    public Sensor<States, Inputs, Outputs> full() {
-        throw new UnsupportedOperationException("Unimplemented method 'full'");
+    public RandomVector<Outputs> h(RandomVector<States> x, Matrix<Inputs, N1> u) {
+        throw new UnsupportedOperationException("Unimplemented method 'h'");
+    }
+
+    @Override
+    public RandomVector<States> hinv(RandomVector<Outputs> y, Matrix<Inputs, N1> u) {
+        throw new UnsupportedOperationException("Unimplemented method 'hinv'");
     }
 
     @Override
@@ -41,7 +53,12 @@ public  class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs
     }
 
     @Override
-    public Matrix<Inputs, N1> finv(RandomVector<States> x, RandomVector<States> xdot) {
+    public Matrix<Inputs, N1> finvWrtU(RandomVector<States> x, RandomVector<States> xdot) {
+        throw new UnsupportedOperationException("Unimplemented method 'finv'");
+    }
+
+    @Override
+    public RandomVector<States> finvWrtX(RandomVector<States> xdot, Matrix<Inputs, N1> u) {
         throw new UnsupportedOperationException("Unimplemented method 'finv'");
     }
 

@@ -18,7 +18,7 @@ public class ReferenceGeneratorTest {
     public void testSimple() {
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(plant);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(plant);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
         ReferenceGenerator rg = new ReferenceGenerator();
     }

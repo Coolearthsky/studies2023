@@ -22,20 +22,30 @@ import edu.wpi.first.math.numbers.N1;
  */
 public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** State evolution */
-    public RandomVector<States> f(RandomVector<States> x, Matrix<Inputs, N1> u);
+    RandomVector<States> f(RandomVector<States> x, Matrix<Inputs, N1> u);
 
-    /** Inverse with respect to u, for feedforward */
-    public Matrix<Inputs, N1> finv(RandomVector<States> x, RandomVector<States> xdot);
+    /** Inverse of f with respect to u, for feedforward. */
+    Matrix<Inputs, N1> finvWrtU(RandomVector<States> x, RandomVector<States> xdot);
 
-    /** Measure all states; this is really only used for initialization. */
-    public Sensor<States, Inputs, Outputs> full();
+    /**
+     * Inverse of f with respect to x, for trending measurement. It's not that
+     * important to perfectly invert f; if you get the velocity term, that's
+     * probably enough.  Use wide variances for unknowns.
+     */
+    RandomVector<States> finvWrtX(RandomVector<States> xdot, Matrix<Inputs, N1> u);
+
+    /** Measurement from state. May use don't-know variances for some rows. */
+    RandomVector<Outputs> h(RandomVector<States> x, Matrix<Inputs, N1> u);
+
+    /** Inverse of h with respect to x. Don't use noninvertible sensors. */
+    RandomVector<States> hinv(RandomVector<Outputs> y, Matrix<Inputs, N1> u);
 
     /** Control limit */
-    public Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
+    Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
-    public Nat<States> states();
+    Nat<States> states();
 
-    public Nat<Inputs> inputs();
+    Nat<Inputs> inputs();
 
-    public Nat<Outputs> outputs();
+    Nat<Outputs> outputs();
 }

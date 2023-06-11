@@ -20,7 +20,7 @@ public class NonlinearEstimatorTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    private RandomVector<N2> ypos(double yd) {
+    private RandomVector<N2> yPosition(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, yd); // position
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -29,7 +29,7 @@ public class NonlinearEstimatorTest {
         return new AngularRandomVector<>(yx, yP);
     }
 
-    private RandomVector<N2> yvel(double yd) {
+    private RandomVector<N2> yVelocity(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(1, 0, yd); // velocity
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -42,7 +42,7 @@ public class NonlinearEstimatorTest {
     public void testObserverWrappingCorrectVelocityOnly() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
         // IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
         // start in negative territory
@@ -56,21 +56,21 @@ public class NonlinearEstimatorTest {
         // check that the velocity measurement is right.
         // it has high variance for the don't-know row and low variance for the
         // measurement
-        RandomVector<N2> yvel = yvel(-0.240);
+        RandomVector<N2> yvel = yVelocity(-0.240);
         assertArrayEquals(new double[] { 0, -0.240, }, yvel.x.getData(), kDelta);
         assertArrayEquals(new double[] { 1e9, 0, 0, 0.1 }, yvel.P.getData(), kDelta);
 
         // the measurement and xhat have the same variance so the result should be in
         // the middle
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yvel, system.velocity()::hinv);
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yvel);
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.132, -0.12 }, xhat.x.getData(), kDelta);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.480), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.480));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.132, -0.312 }, xhat.x.getData(), kDelta);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.720), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.720));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.132, -0.55 }, xhat.x.getData(), kDelta);
     }
@@ -79,7 +79,7 @@ public class NonlinearEstimatorTest {
     public void testObserverWrappingCorrectPositionOnly() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
         // IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
         // start in negative territory, a little positive of -PI.
@@ -90,11 +90,11 @@ public class NonlinearEstimatorTest {
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertArrayEquals(new double[] { -3.132, 0 }, xhat.x.getData(), kDelta);
 
-        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.3), system.position()::hinv);
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.3));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.067, 0 }, xhat.x.getData(), kDelta);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.5), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.5));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 2.920, 0 }, xhat.x.getData(), kDelta);
 
@@ -110,7 +110,7 @@ public class NonlinearEstimatorTest {
 
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
         // initially, state estimate: near -pi, motionless
@@ -128,22 +128,22 @@ public class NonlinearEstimatorTest {
         RandomVector<N2> x;
 
         xhat = predictor.predict(xhat, u, kDt);
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.134), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.134));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.134, -0.240 }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.141), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.141));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.141, -0.480, }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.13), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.13));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.130, -0.720 }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.113), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.113));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.113, -0.960 }, xhat.x.getData(), kDelta);
     }

@@ -40,27 +40,23 @@ public class NonlinearSystemLoopTest {
     FeedbackControl<N2, N1, N2> controller = new FeedbackControl<>(system, K);
 
     IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
-    PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+    PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
     LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
     NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, pointEstimator, pooling, controller, feedforward);
 
-    private RandomVector<N2> ypos(double yd) {
-
+    private RandomVector<N2> yPosition(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, yd); // position
-
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
         yP.set(0, 0, 0.1); // TODO: pass variance somehow
         yP.set(1, 1, 1e9); // velocity gets "don't know" variance
         return new AngularRandomVector<>(yx, yP);
     }
 
-    private RandomVector<N2> yvel(double yd) {
-
+    private RandomVector<N2> yVelocity(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(1, 0, yd); // velocity
-
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
         yP.set(0, 0, 1e9); // position gets "don't know" variance
         yP.set(1, 1, 0.1); // TODO: pass variance somehow
@@ -84,8 +80,8 @@ public class NonlinearSystemLoopTest {
 
         {
             // initially, push to get started
-            xhat = loop.correct(xhat, ypos(0), system.position());
-            xhat = loop.correct(xhat, yvel(0), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0));
+            xhat = loop.correct(xhat, yVelocity(0));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(11.455, totalU.get(0, 0), kDelta);
 
@@ -96,80 +92,80 @@ public class NonlinearSystemLoopTest {
         rDot = VecBuilder.fill(0, 0);
 
         {
-            xhat = loop.correct(xhat, ypos(0.002), system.position());
-            xhat = loop.correct(xhat, yvel(0.229), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.002));
+            xhat = loop.correct(xhat, yVelocity(0.229));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(0.1, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.006, 0.231 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.006), system.position());
-            xhat = loop.correct(xhat, yvel(0.229), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.006));
+            xhat = loop.correct(xhat, yVelocity(0.229));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-2.266, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.01, 0.184 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.01), system.position());
-            xhat = loop.correct(xhat, yvel(0.178), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.010));
+            xhat = loop.correct(xhat, yVelocity(0.178));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-2.281, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.014, 0.134 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.014), system.position());
-            xhat = loop.correct(xhat, yvel(0.126), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.014));
+            xhat = loop.correct(xhat, yVelocity(0.126));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-2.125, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.016, 0.086 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.016), system.position());
-            xhat = loop.correct(xhat, yvel(0.085), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.016));
+            xhat = loop.correct(xhat, yVelocity(0.085));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-1.474, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.017, 0.056 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.017), system.position());
-            xhat = loop.correct(xhat, yvel(0.056), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.017));
+            xhat = loop.correct(xhat, yVelocity(0.056));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-0.817, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.018, 0.039 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.018), system.position());
-            xhat = loop.correct(xhat, yvel(0.037), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.018));
+            xhat = loop.correct(xhat, yVelocity(0.037));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-0.531, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.019, 0.027 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.019), system.position());
-            xhat = loop.correct(xhat, yvel(0.016), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.019));
+            xhat = loop.correct(xhat, yVelocity(0.016));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-0.210, totalU.get(0, 0), kDelta); // ??
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.019, 0.015 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.02), system.position());
-            xhat = loop.correct(xhat, yvel(0.009), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.020));
+            xhat = loop.correct(xhat, yVelocity(0.009));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-0.353, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 0.02, 0.003 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(0.02), system.position());
-            xhat = loop.correct(xhat, yvel(0.005), system.velocity());
+            xhat = loop.correct(xhat, yPosition(0.020));
+            xhat = loop.correct(xhat, yVelocity(0.005));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-0.196, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
@@ -193,8 +189,8 @@ public class NonlinearSystemLoopTest {
         Vector<N2> rDot = VecBuilder.fill((Math.PI - 0.01) / 0.02, 0);
 
         {
-            xhat = loop.correct(xhat, ypos(-1.0 * Math.PI + 0.01), system.position());
-            xhat = loop.correct(xhat, yvel(0), system.velocity());
+            xhat = loop.correct(xhat, yPosition(-1.0 * Math.PI + 0.01));
+            xhat = loop.correct(xhat, yVelocity(0));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-11.455, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
@@ -202,48 +198,48 @@ public class NonlinearSystemLoopTest {
         }
         rDot = VecBuilder.fill(0, 0);
         {
-            xhat = loop.correct(xhat, ypos(-3.133), system.position());
-            xhat = loop.correct(xhat, yvel(-0.166), system.velocity());
+            xhat = loop.correct(xhat, yPosition(-3.133));
+            xhat = loop.correct(xhat, yVelocity(-0.166));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(-2.358, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { -3.138, -0.230 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(-3.137), system.position());
-            xhat = loop.correct(xhat, yvel(-0.229), system.velocity());
+            xhat = loop.correct(xhat, yPosition(-3.137));
+            xhat = loop.correct(xhat, yVelocity(-0.229));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(1.877, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { -3.141, -0.191 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(-3.141), system.position());
-            xhat = loop.correct(xhat, yvel(-0.191), system.velocity());
+            xhat = loop.correct(xhat, yPosition(-3.141));
+            xhat = loop.correct(xhat, yVelocity(-0.191));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(2.458, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.138, -0.142 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(3.138), system.position());
-            xhat = loop.correct(xhat, yvel(-0.139), system.velocity());
+            xhat = loop.correct(xhat, yPosition(3.138));
+            xhat = loop.correct(xhat, yVelocity(-0.139));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(2.416, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.136, -0.091 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(3.136), system.position());
-            xhat = loop.correct(xhat, yvel(-0.095), system.velocity());
+            xhat = loop.correct(xhat, yPosition(3.136));
+            xhat = loop.correct(xhat, yVelocity(-0.095));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(1.665, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.134, -0.061 }, xhat.x.getData(), kDelta);
         }
         {
-            xhat = loop.correct(xhat, ypos(3.134), system.position());
-            xhat = loop.correct(xhat, yvel(-0.063), system.velocity());
+            xhat = loop.correct(xhat, yPosition(3.134));
+            xhat = loop.correct(xhat, yVelocity(-0.063));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
             assertEquals(1.330, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);

@@ -65,7 +65,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
         {
@@ -74,7 +74,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
         {
@@ -83,7 +83,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(10000);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
     }
@@ -102,7 +102,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
         {
@@ -111,7 +111,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
         {
@@ -120,7 +120,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(10000);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
     }
@@ -139,7 +139,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 1 }, uu.getData(), kDelta);
         }
         {
@@ -148,7 +148,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0.5, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0.866 }, uu.getData(), kDelta);
         }
         {
@@ -157,7 +157,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0.866, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0.5 }, uu.getData(), kDelta);
         }
         {
@@ -166,7 +166,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 1, 0 }, A.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 0 }, uu.getData(), kDelta);
         }
     }
@@ -186,7 +186,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             assertArrayEquals(new double[] { 1 }, uu.getData(), kDelta);
 
         }
@@ -196,7 +196,7 @@ public class JacobianTest {
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
-            Matrix<N1, N1> uu = plant.finv(x, xZero);
+            Matrix<N1, N1> uu = plant.finvWrtU(x, xZero);
             // this is cos(1)
             assertArrayEquals(new double[] { 0.540 }, uu.getData(), kDelta);
         }

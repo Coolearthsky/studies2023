@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.system.MockNonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -13,23 +14,26 @@ import edu.wpi.first.math.numbers.N2;
 public class TrendEstimatorTest {
     private static final double kDelta = 0.001;
 
-    public static class Thing {
-
+    public static class Thing extends MockNonlinearPlant<N2, N1, N2> {
         /** xdot for x */
+        @Override
         public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
 
-        public RandomVector<N2> finv(RandomVector<N2> xdot, Matrix<N1, N1> u) {
+        @Override
+        public RandomVector<N2> finvWrtX(RandomVector<N2> xdot, Matrix<N1, N1> u) {
             return xdot;
         }
 
         /** y for x */
+        @Override
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
 
         /** x for y */
+        @Override
         public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             return y;
         }
@@ -37,7 +41,8 @@ public class TrendEstimatorTest {
 
     @Test
     public void testStateForMeasurementPair() {
-        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>();
+        Thing thing = new Thing();
+        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>(thing);
 
         // y0 is 1,0 +/- 0.01
         Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
@@ -56,8 +61,8 @@ public class TrendEstimatorTest {
         RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
 
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
-        Thing thing = new Thing();
-        RandomVector<N2> xhat = trendEstimator.stateForMeasurementPair(u, y0, y1, thing::finv, thing::hinv, 1.0);
+        
+        RandomVector<N2> xhat = trendEstimator.stateForMeasurementPair(u, y0, y1, 1.0);
 
         // for this weird system, x0dot is 1 so x0 is 1 x1dot is 0 so x1 is 0
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
@@ -66,13 +71,14 @@ public class TrendEstimatorTest {
         assertArrayEquals(new double[] { 0.02, 0, 0, 0.02 }, xhat.P.getData(), kDelta);
     }
 
-    public static class DoubleIntegrator {
+    public static class DoubleIntegrator extends MockNonlinearPlant<N2, N1, N2> {
 
         /**
          * dynamics, xdot = f(x,u)
          * x0dot = x1
          * x1dot = u
          */
+        @Override
         public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
             Matrix<N2, N1> xdotx = new Matrix<>(Nat.N2(), Nat.N1());
             xdotx.set(0, 0, x.x.get(1, 0));
@@ -88,7 +94,8 @@ public class TrendEstimatorTest {
          * x0 = ?
          * x1 = x0dot
          */
-        public RandomVector<N2> finv(RandomVector<N2> xdot, Matrix<N1, N1> u) {
+        @Override
+        public RandomVector<N2> finvWrtX(RandomVector<N2> xdot, Matrix<N1, N1> u) {
             Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
             xx.set(1, 0, xdot.x.get(0, 0));
             Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -101,6 +108,7 @@ public class TrendEstimatorTest {
          * measurement, y = h(x,u)
          * y for x
          */
+        @Override
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
@@ -109,6 +117,7 @@ public class TrendEstimatorTest {
          * inverse of h with respect to x
          * x for y
          */
+        @Override
         public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             return y;
         }
@@ -116,7 +125,8 @@ public class TrendEstimatorTest {
 
     @Test
     public void testDoubleIntegrator() {
-        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>();
+        DoubleIntegrator doubleIntegrator = new DoubleIntegrator();
+        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>(doubleIntegrator);
 
         // y0 is 1,0 +/- 0.01
         Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
@@ -135,9 +145,7 @@ public class TrendEstimatorTest {
         RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
 
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
-        DoubleIntegrator doubleIntegrator = new DoubleIntegrator();
-        RandomVector<N2> xhat = trendEstimator.stateForMeasurementPair(u, y0, y1, doubleIntegrator::finv,
-                doubleIntegrator::hinv, 1.0);
+        RandomVector<N2> xhat = trendEstimator.stateForMeasurementPair(u, y0, y1, 1.0);
 
         // for the double integrator there should be no estimate for position (zero)
         // but there should be an estimate of 1 for velocity

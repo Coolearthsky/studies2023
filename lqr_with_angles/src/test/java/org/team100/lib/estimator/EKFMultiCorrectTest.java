@@ -20,7 +20,7 @@ public class EKFMultiCorrectTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
-    private RandomVector<N2> ypos(double yd) {
+    private RandomVector<N2> yPosition(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, yd); // position
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -29,20 +29,20 @@ public class EKFMultiCorrectTest {
         return new AngularRandomVector<>(yx, yP);
     }
 
-    private RandomVector<N2> yvel(double yd) {
+    private RandomVector<N2> yVelocity(double yd) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(1, 0, yd); // velocity
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
         yP.set(0, 0, 1e9); // position gets "don't know" variance
         yP.set(1, 1, 0.1); // TODO: pass variance somehow
-        return new RandomVector<>(yx, yP);
+        return new AngularRandomVector<>(yx, yP);
     }
 
     @Test
     public void testMultipleSensors() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
         IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
 
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
@@ -59,36 +59,36 @@ public class EKFMultiCorrectTest {
 
         xhat = predictor.predict(xhat, u, kDt);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.134), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.134));
         xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.240), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.240));
         xhat = pooling.fuse(x, xhat);
         assertEquals(-3.134, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.240, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(-3.141), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.141));
         xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.480), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.480));
         xhat = pooling.fuse(x, xhat);
         assertEquals(-3.141, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.480, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.13), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.13));
         xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.720), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.720));
         xhat = pooling.fuse(x, xhat);
         assertEquals(3.130, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.720, xhat.x.get(1, 0), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
 
-        x = pointEstimator.stateForMeasurementWithZeroU(ypos(3.113), system.position()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.113));
         xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yvel(-0.960), system.velocity()::hinv);
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.960));
         xhat = pooling.fuse(x, xhat);
         assertEquals(3.113, xhat.x.get(0, 0), kDelta);
         assertEquals(-0.960, xhat.x.get(1, 0), kDelta);

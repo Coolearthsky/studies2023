@@ -6,7 +6,6 @@ import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
-import org.team100.lib.system.Sensor;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -60,12 +59,11 @@ public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs
      */
     public RandomVector<States> correct(
             RandomVector<Outputs> y,
-            Sensor<States, Inputs, Outputs> sensor,
             long recordTimeUSec,
             double validTimeSec) {
         Entry<Double, Entry<Long, RandomVector<States>>> floor = floor(validTimeSec);
         RandomVector<States> xhat = floor.getValue().getValue();
-        RandomVector<States> x = m_pointEstimator.stateForMeasurementWithZeroU(y, sensor::hinv);
+        RandomVector<States> x = m_pointEstimator.stateForMeasurementWithZeroU(y);
         xhat = m_pooling.fuse(x, xhat);
         //xhat = m_estimator.correct(xhat, y, sensor);
         return update(xhat, recordTimeUSec, validTimeSec);

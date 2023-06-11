@@ -129,7 +129,7 @@ public class EstimatorLatencyTest {
             system = new DoubleIntegratorRotary1D();
             state = initial();
             predictor = new IntegratingPredictor<>(system);
-            pointEstimator = new PointEstimator<>(Nat.N1());
+            pointEstimator = new PointEstimator<>(system);
             pooling = new VarianceWeightedLinearPooling<>();
             feedforward = new LinearizedPlantInversionFeedforward<>(system);
             controller = newController();
@@ -262,7 +262,7 @@ public class EstimatorLatencyTest {
             return xhat;
         }
 
-        private RandomVector<N2> ypos(double yd) {
+        private RandomVector<N2> yPosition(double yd) {
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(0, 0, yd); // position
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -271,7 +271,7 @@ public class EstimatorLatencyTest {
             return new RandomVector<>(yx, yP);
         }
 
-        private RandomVector<N2> yvel(double yd) {
+        private RandomVector<N2> yVelocity(double yd) {
             Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
             yx.set(1, 0, yd); // velocity
             Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
@@ -289,9 +289,9 @@ public class EstimatorLatencyTest {
         RandomVector<N2> correctObserver(RandomVector<N2> xhat) {
 
             RandomVector<N2> x;
-            x = pointEstimator.stateForMeasurementWithZeroU(ypos(state.observedPosition), system.position()::hinv);
+            x = pointEstimator.stateForMeasurementWithZeroU(yPosition(state.observedPosition));
             xhat = pooling.fuse(x, xhat);
-            x = pointEstimator.stateForMeasurementWithZeroU(yvel(state.observedVelocity), system.velocity()::hinv);
+            x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(state.observedVelocity));
             xhat = pooling.fuse(x, xhat);
 
             return xhat;

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.system.MockNonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -13,19 +14,27 @@ import edu.wpi.first.math.numbers.N2;
 public class PointEstimatorTest {
     private static final double kDelta = 0.001;
 
-    public static class Thing {
+    public static class Thing extends MockNonlinearPlant<N2, N1, N2> {
 
         /** xdot for x */
+        @Override
         public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
 
+        @Override
+        public Nat<N1> inputs() {
+            return Nat.N1();
+        }
+
         /** y for x */
+        @Override
         public RandomVector<N2> h(RandomVector<N2> x, Matrix<N1, N1> u) {
             return x;
         }
 
         /** x for y */
+        @Override
         public RandomVector<N2> hinv(RandomVector<N2> y, Matrix<N1, N1> u) {
             return y;
         }
@@ -33,7 +42,8 @@ public class PointEstimatorTest {
 
     @Test
     public void testStateForFullMeasurement() {
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        Thing system = new Thing();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
 
         // measurement is 1,0
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
@@ -44,8 +54,7 @@ public class PointEstimatorTest {
         yP.set(1, 1, 0.01);
         RandomVector<N2> y = new RandomVector<>(yx, yP);
 
-        Thing thing = new Thing();
-        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU( y, thing::hinv);
+        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
@@ -54,7 +63,8 @@ public class PointEstimatorTest {
 
     @Test
     public void testStateForPartialMeasurement() {
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(Nat.N1());
+        Thing system = new Thing();
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
 
         // measurement is 1,x
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
@@ -65,8 +75,7 @@ public class PointEstimatorTest {
         yP.set(1, 1, 1e9); // enormous variance; TODO: how big shouild this be?
         RandomVector<N2> y = new RandomVector<>(yx, yP);
 
-        Thing thing = new Thing();
-        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y, thing::hinv);
+        RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
