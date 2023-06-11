@@ -25,7 +25,7 @@ public class PointEstimator<States extends Num, Inputs extends Num, Outputs exte
         return m_plant.hinv(y, u);
     }
 
-    /** in practice h is u-invariant */
+    /** In practice, h is u-invariant */
     public RandomVector<States> stateForMeasurementWithZeroU(RandomVector<Outputs> y) {
         return stateForMeasurement(m_uZero, y);
     }

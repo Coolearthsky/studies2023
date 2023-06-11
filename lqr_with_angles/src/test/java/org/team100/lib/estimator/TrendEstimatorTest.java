@@ -153,4 +153,40 @@ public class TrendEstimatorTest {
         // and the variance of position should be large
         assertArrayEquals(new double[] { 1e9, 0, 0, 0.02 }, xhat.P.getData(), kDelta);
     }
+
+    @Test
+    public void testDoubleIntegratorSmallTimeStep() {
+        DoubleIntegrator doubleIntegrator = new DoubleIntegrator();
+        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>(doubleIntegrator);
+
+        // y0 is 1,0 +/- 0.01
+        Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
+        yx0.set(0, 0, 1);
+        Matrix<N2, N2> yP0 = new Matrix<>(Nat.N2(), Nat.N2());
+        yP0.set(0, 0, 0.01);
+        yP0.set(1, 1, 0.01);
+        RandomVector<N2> y0 = new RandomVector<>(yx0, yP0);
+
+        // y1 is 2,0 +/- 0.01
+        Matrix<N2, N1> yx1 = new Matrix<>(Nat.N2(), Nat.N1());
+        yx1.set(0, 0, 2);
+        Matrix<N2, N2> yP1 = new Matrix<>(Nat.N2(), Nat.N2());
+        yP1.set(0, 0, 0.01);
+        yP1.set(1, 1, 0.01);
+        RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
+
+        Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
+        // note small time step here
+        RandomVector<N2> xhat = trendEstimator.stateForMeasurementPair(u, y0, y1, 0.02);
+
+        // for the double integrator there should be no estimate for position (zero)
+        // but there should be an estimate of 50 for velocity
+        assertArrayEquals(new double[] { 0, 50 }, xhat.x.getData(), kDelta);
+        // and the variance of position should be large
+        // the individual sample variance is low 0.02 but the time step is also
+        // very low and it's squared.
+        // so this means the trend signal will never have much effect over very small
+        // time steps.  Use as wide a window as possible.
+        assertArrayEquals(new double[] { 1e9, 0, 0, 50 }, xhat.P.getData(), kDelta);
+    }
 }
