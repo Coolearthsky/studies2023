@@ -18,13 +18,13 @@ import edu.wpi.first.math.numbers.N1;
  * 
  * u = finv(x, dx/dt)
  */
-public class LinearizedPlantInversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
+public class InversionFeedforward<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
 
     /**
      * @param plant includes f and finv
      */
-    public LinearizedPlantInversionFeedforward(NonlinearPlant<States, Inputs, Outputs> plant) {
+    public InversionFeedforward(NonlinearPlant<States, Inputs, Outputs> plant) {
         m_plant = plant;
     }
 

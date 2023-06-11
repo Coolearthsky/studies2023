@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.controller.FeedbackControl;
 import org.team100.lib.controller.GainCalculator;
-import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.controller.InversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
@@ -42,7 +42,7 @@ public class NonlinearSystemLoopTest {
     IntegratingPredictor<N2, N1,N2> predictor = new IntegratingPredictor<>(system);
     PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
     LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-    LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(system);
+    InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(system);
     NonlinearSystemLoop<N2, N1, N2> loop = new NonlinearSystemLoop<>(system, predictor, pointEstimator, pooling, controller, feedforward);
 
     private RandomVector<N2> yPosition(double yd) {

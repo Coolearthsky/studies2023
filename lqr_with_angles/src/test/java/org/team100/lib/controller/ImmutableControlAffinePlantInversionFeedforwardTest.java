@@ -23,7 +23,7 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // so u should be 1/dt or 50.
 
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D();
-        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(plant);
+        InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(plant);
 
         // position does not matter here.
         Matrix<N2, N1> r = VecBuilder.fill(0, 2);
@@ -40,7 +40,7 @@ public class ImmutableControlAffinePlantInversionFeedforwardTest {
         // so u should be 1/dt or 50.
 
         NonlinearPlant<N2, N1, N2> plant = new Pendulum1D();
-        LinearizedPlantInversionFeedforward<N2, N1, N2> feedforward = new LinearizedPlantInversionFeedforward<>(plant);
+        InversionFeedforward<N2, N1, N2> feedforward = new InversionFeedforward<>(plant);
 
         {
             // r position 0 means maximum gravity so u = 1

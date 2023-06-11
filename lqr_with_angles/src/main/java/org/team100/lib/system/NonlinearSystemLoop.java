@@ -1,7 +1,7 @@
 package org.team100.lib.system;
 
 import org.team100.lib.controller.FeedbackControl;
-import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
+import org.team100.lib.controller.InversionFeedforward;
 import org.team100.lib.estimator.IntegratingPredictor;
 import org.team100.lib.estimator.PointEstimator;
 import org.team100.lib.fusion.LinearPooling;
@@ -26,7 +26,7 @@ import edu.wpi.first.math.numbers.N1;
 public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final FeedbackControl<States, Inputs, Outputs> m_controller;
-    private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
+    private final InversionFeedforward<States, Inputs, Outputs> m_feedforward;
     private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
     private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
     private final LinearPooling<States> m_pooling;
@@ -47,7 +47,7 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
             PointEstimator<States, Inputs, Outputs> pointEstimator,
             LinearPooling<States> pooling,
             FeedbackControl<States, Inputs, Outputs> controller,
-            LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward) {
+            InversionFeedforward<States, Inputs, Outputs> feedforward) {
         m_plant = plant;
         m_predictor = predictor;
         m_pointEstimator = pointEstimator;
