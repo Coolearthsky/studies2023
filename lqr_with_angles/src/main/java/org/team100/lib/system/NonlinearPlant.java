@@ -1,47 +1,53 @@
 package org.team100.lib.system;
 
+import org.team100.lib.math.RandomVector;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
-/** Represents a plant with nonlinear dynamics. */
+/**
+ * Represents a plant with nonlinear dynamics.
+ * 
+ * xdot = f(x,u) + w
+ * y = h(x,u)
+ * 
+ * where
+ * 
+ * x: system state
+ * u: control input
+ * y: measurement output
+ * w: noise process
+ */
 public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** State evolution */
-    public Matrix<States, N1> f(Matrix<States, N1> x, Matrix<Inputs, N1> u);
+    RandomVector<States> f(RandomVector<States> x, Matrix<Inputs, N1> u);
+
+    /** Inverse of f with respect to u, for feedforward. */
+    Matrix<Inputs, N1> finvWrtU(RandomVector<States> x, RandomVector<States> xdot);
 
     /**
-     * State addition, used by the filter to correct the state towards the
-     * measurement.
+     * Inverse of f with respect to x, for trending measurement. It's not that
+     * important to perfectly invert f; if you get the velocity term, that's
+     * probably enough. Use wide variances for unknowns.
      */
-    public Matrix<States, N1> xAdd(Matrix<States, N1> a, Matrix<States, N1> b);
+    RandomVector<States> finvWrtX(RandomVector<States> xdot, Matrix<Inputs, N1> u);
+
+    /** Measurement from state. Use wide variances for unknowns. */
+    RandomVector<Outputs> h(RandomVector<States> x, Matrix<Inputs, N1> u);
 
     /**
-     * Normalize state, used by predict, e.g. for angle wrapping.
+     * Inverse of h with respect to x. Usually both h and hinv are identity.
      */
-    public Matrix<States, N1> xNormalize(Matrix<States, N1> x);
-
-    /**
-     * State residual, e.g. subtraction, used by the controller to compare the
-     * reference with the estimate.
-     */
-    public Matrix<States, N1> xResidual(Matrix<States, N1> a, Matrix<States, N1> b);
-
-    /** Measure all states; this is really only used for initialization. */
-    public Sensor<States, Inputs, Outputs> full();
-
-    /**
-     * Standard deviations of the state, used by the filter; i guess this represents
-     * the stdev of the disturbance?
-     */
-    public Matrix<States, N1> stdev();
+    RandomVector<States> hinv(RandomVector<Outputs> y, Matrix<Inputs, N1> u);
 
     /** Control limit */
-    public Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
+    Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
-    public Nat<States> states();
+    Nat<States> states();
 
-    public Nat<Inputs> inputs();
+    Nat<Inputs> inputs();
 
-    public Nat<Outputs> outputs();
+    Nat<Outputs> outputs();
 }

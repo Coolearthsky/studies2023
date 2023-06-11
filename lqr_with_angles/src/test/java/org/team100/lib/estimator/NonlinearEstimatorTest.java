@@ -16,8 +16,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
-/** Illustrates multiple measurement sources. */
-public class EKFMultiCorrectTest {
+public class NonlinearEstimatorTest {
     private static final double kDelta = 0.001;
     private static final double kDt = 0.02;
 
@@ -40,127 +39,113 @@ public class EKFMultiCorrectTest {
     }
 
     @Test
-    public void testMultipleSensors() {
+    public void testObserverWrappingCorrectVelocityOnly() {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        // IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
         PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
-
         LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
 
+        // start in negative territory
         Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
         p.set(0, 0, 0.1);
         p.set(1, 1, 0.1);
-        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
-        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
-        assertEquals(0, xhat.x.get(1, 0), kDelta);
 
-        Matrix<N1, N1> u = VecBuilder.fill(-12);
-
-        RandomVector<N2> x;
-
-        xhat = predictor.predict(xhat, u, kDt);
-
-        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.134));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.240));
-        xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { -3.134, -0.240 }, xhat.x.getData(), kDelta);
-
-        xhat = predictor.predict(xhat, u, kDt);
-
-        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.141));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.480));
-        xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { -3.141, -0.480 }, xhat.x.getData(), kDelta);
-
-        xhat = predictor.predict(xhat, u, kDt);
-
-        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.13));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.720));
-        xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { 3.130, -0.720 }, xhat.x.getData(), kDelta);
-
-        xhat = predictor.predict(xhat, u, kDt);
-
-        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.113));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.960));
-        xhat = pooling.fuse(x, xhat);
-
-        assertArrayEquals(new double[] { 3.113, -0.960 }, xhat.x.getData(), kDelta);
-    }
-
-    @Test
-    public void testMultipleSensorsWithTrend() {
-        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
-        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
-        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
-        TrendEstimator<N2, N1, N2> trendEstimator = new TrendEstimator<>(system);
-
-        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
-
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertArrayEquals(new double[] { -3.132, 0 }, xhat.x.getData(), kDelta);
 
-        Matrix<N1, N1> u = VecBuilder.fill(-12);
+        // check that the velocity measurement is right.
+        // it has high variance for the don't-know row and low variance for the
+        // measurement
+        RandomVector<N2> yvel = yVelocity(-0.240);
+        assertArrayEquals(new double[] { 0, -0.240, }, yvel.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 1e9, 0, 0, 0.1 }, yvel.P.getData(), kDelta);
+
+        // the measurement and xhat have the same variance so the result should be in
+        // the middle
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yvel);
+        xhat = pooling.fuse(x, xhat);
+        assertArrayEquals(new double[] { -3.132, -0.12 }, xhat.x.getData(), kDelta);
+
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.480));
+        xhat = pooling.fuse(x, xhat);
+        assertArrayEquals(new double[] { -3.132, -0.312 }, xhat.x.getData(), kDelta);
+
+        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.720));
+        xhat = pooling.fuse(x, xhat);
+        assertArrayEquals(new double[] { -3.132, -0.55 }, xhat.x.getData(), kDelta);
+    }
+
+    @Test
+    public void testObserverWrappingCorrectPositionOnly() {
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        // IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        // start in negative territory, a little positive of -PI.
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+
+        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
+        assertArrayEquals(new double[] { -3.132, 0 }, xhat.x.getData(), kDelta);
+
+        RandomVector<N2> x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.3));
+        xhat = pooling.fuse(x, xhat);
+        assertArrayEquals(new double[] { 3.067, 0 }, xhat.x.getData(), kDelta);
+
+        x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.5));
+        xhat = pooling.fuse(x, xhat);
+        assertArrayEquals(new double[] { 2.920, 0 }, xhat.x.getData(), kDelta);
+
+    }
+
+    @Test
+    public void testObserverWrappingPredictAndCorrect() {
+        // just test the observer across the boundary
+        // with both predict and correct
+        // goal is pi-0.01,
+        // initial is -pi + 0.01
+        // so delta is -0.02, should push negative across the boundary
+
+        DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D();
+        IntegratingPredictor<N2, N1, N2> predictor = new IntegratingPredictor<>(system);
+        PointEstimator<N2, N1, N2> pointEstimator = new PointEstimator<>(system);
+        LinearPooling<N2> pooling = new VarianceWeightedLinearPooling<>();
+
+        // initially, state estimate: near -pi, motionless
+        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
+        p.set(0, 0, 0.1);
+        p.set(1, 1, 0.1);
+        RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
+
+        assertEquals(-3.132, xhat.x.get(0, 0), kDelta);
+        assertEquals(0, xhat.x.get(1, 0), kDelta);
+
+        // saturate negative-going
+        final Matrix<N1, N1> u = VecBuilder.fill(-12);
 
         RandomVector<N2> x;
 
         xhat = predictor.predict(xhat, u, kDt);
-
         x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.134));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.240));
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.134, -0.240 }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-
         x = pointEstimator.stateForMeasurementWithZeroU(yPosition(-3.141));
         xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.480));
-        xhat = pooling.fuse(x, xhat);
-        // trend the past two observations
-        x = trendEstimator.stateForMeasurementPair(u, yPosition(-3.134), yPosition(-3.141), kDt);
-        // what does the trend say?
-        assertArrayEquals(new double[] { 0, -0.350 }, x.x.getData(), kDelta);
-        //
-        //
-        // weight 500 is very high, no wonder it doesn't have any effect.
-        //
-        //
-        assertArrayEquals(new double[] { 1e9, 0, 0, 500 }, x.P.getData(), kDelta);
-
-        xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { -3.141, -0.480 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { -3.141, -0.480, }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-
         x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.13));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.720));
-        xhat = pooling.fuse(x, xhat);
-        // trend the past two observations
-        x = trendEstimator.stateForMeasurementPair(u, yPosition(-3.141), yPosition(3.13), kDt);
-        assertArrayEquals(new double[] { 0, -0.609 }, x.x.getData(), kDelta);
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.130, -0.720 }, xhat.x.getData(), kDelta);
 
         xhat = predictor.predict(xhat, u, kDt);
-
         x = pointEstimator.stateForMeasurementWithZeroU(yPosition(3.113));
-        xhat = pooling.fuse(x, xhat);
-        x = pointEstimator.stateForMeasurementWithZeroU(yVelocity(-0.960));
-        xhat = pooling.fuse(x, xhat);
-        // trend the past two observations
-        x = trendEstimator.stateForMeasurementPair(u, yPosition(3.13), yPosition(3.113), kDt);
-        assertArrayEquals(new double[] { 0, -0.850 }, x.x.getData(), kDelta);
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.113, -0.960 }, xhat.x.getData(), kDelta);
     }
+
 }

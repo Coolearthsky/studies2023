@@ -1,18 +1,21 @@
 package org.team100.lib.fusion;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.RandomVector;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.numbers.N1;
 
 public class LinearPoolingTest extends PoolingTest {
-    private static final Pooling<N1> p = new LinearPooling<N1>();
+    private static final Pooling<N1> p = new DemocraticLinearPooling<N1>();
 
     @Test
     public void testUnanimity() {
         RandomVector<N1> aV = v1(0, 1);
         RandomVector<N1> bV = v1(0, 1);
         RandomVector<N1> cV = p.fuse(aV, bV);
+        // fuse with yourself => no change
         assert1(cV, 0, 1);
     }
 
@@ -22,7 +25,7 @@ public class LinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(1, 1);
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean is right in the middle
-        // aggregate variance is a bit bigger
+        // aggregate variance is a bit bigger since the means are different
         assert1(cV, 0.5, 1.25);
     }
 
@@ -32,7 +35,7 @@ public class LinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(0, 2);
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean is the same
-        // variance is right in the middle
+        // variance is right in the middle of the estimate variances
         assert1(cV, 0.0, 1.5);
     }
 
@@ -42,7 +45,52 @@ public class LinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(1, 2);
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean is right in the middle
-        // aggregate variance is a bit bigger
+        // aggregate variance is a bit bigger, both mean and variance affect it
         assert1(cV, 0.5, 1.75);
+    }
+
+    @Test
+    public void testZeroVariance() {
+        RandomVector<N1> aV = v1(0, 0);
+        RandomVector<N1> bV = v1(1, 1);
+        RandomVector<N1> cV = p.fuse(aV, bV);
+        // aggregate mean in the middle
+        // aggregate variance is ... ok i guess?
+        assert1(cV, 0.5, 0.75);
+    }
+
+    // overwrites cV which kinda violates the whole immutability thing man
+    public void normalize(RandomVector<N1> aV, RandomVector<N1> bV, RandomVector<N1> cV) {
+        if (Math.abs(aV.x.get(0, 0) - bV.x.get(0, 0)) > Math.PI) {
+            cV.x.set(0,0,MathUtil.angleModulus(cV.x.get(0,0)+Math.PI));
+        }
+    }
+
+    @Test
+    public void testNotWrapping() {
+        // in this example position is an angle
+        // but wrapping is not required
+        AngularRandomVector<N1> aV = a1(- Math.PI / 4, 1);
+        AngularRandomVector<N1> bV = a1(Math.PI / 4 + 0.01, 1);
+
+        RandomVector<N1> cV = p.fuse(aV, bV);
+        // so the mean should be around zero
+        // and the variance is a bit bigger since the inputs are pi/2 apart
+        assert1(cV, 0.005, 1.625);
+    }
+
+    @Test
+    public void testWrapping() {
+        // in this example position is an angle
+        AngularRandomVector<N1> aV = a1(-3 * Math.PI / 4, 1);
+        // a little less so it ends up positive
+        AngularRandomVector<N1> bV = a1(3 * Math.PI / 4 - 0.01, 1);
+
+        RandomVector<N1> cV = p.fuse(aV, bV);
+        // this sucks.  do it another way.
+     //  normalize(aV,bV,cV);
+        // so the mean should be around pi
+        // and the variance is a bit bigger since the inputs are pi/2 apart
+        assert1(cV, Math.PI - 0.005, 1.625);
     }
 }

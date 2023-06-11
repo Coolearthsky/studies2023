@@ -1,8 +1,11 @@
 package org.team100.lib.system;
 
-import org.team100.lib.controller.ConstantGainLinearizedLQR;
-import org.team100.lib.controller.LinearizedPlantInversionFeedforward;
-import org.team100.lib.estimator.NonlinearEstimator;
+import org.team100.lib.controller.FeedbackControl;
+import org.team100.lib.controller.InversionFeedforward;
+import org.team100.lib.estimator.IntegratingPredictor;
+import org.team100.lib.estimator.PointEstimator;
+import org.team100.lib.fusion.LinearPooling;
+import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -22,9 +25,11 @@ import edu.wpi.first.math.numbers.N1;
  */
 public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
-    private final ConstantGainLinearizedLQR<States, Inputs, Outputs> m_controller;
-    private final LinearizedPlantInversionFeedforward<States, Inputs, Outputs> m_feedforward;
-    private final NonlinearEstimator<States, Inputs, Outputs> m_estimator;
+    private final FeedbackControl<States, Inputs, Outputs> m_controller;
+    private final InversionFeedforward<States, Inputs, Outputs> m_feedforward;
+    private final IntegratingPredictor<States, Inputs, Outputs> m_predictor;
+    private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
+    private final LinearPooling<States> m_pooling;
 
     /**
      * Constructs a state-space loop with the given controller, feedforward, and
@@ -38,13 +43,17 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      */
     public NonlinearSystemLoop(
             NonlinearPlant<States, Inputs, Outputs> plant,
-            ConstantGainLinearizedLQR<States, Inputs, Outputs> controller,
-            LinearizedPlantInversionFeedforward<States, Inputs, Outputs> feedforward,
-            NonlinearEstimator<States, Inputs, Outputs> estimator) {
+            IntegratingPredictor<States, Inputs, Outputs> predictor,
+            PointEstimator<States, Inputs, Outputs> pointEstimator,
+            LinearPooling<States> pooling,
+            FeedbackControl<States, Inputs, Outputs> controller,
+            InversionFeedforward<States, Inputs, Outputs> feedforward) {
         m_plant = plant;
+        m_predictor = predictor;
+        m_pointEstimator = pointEstimator;
+        m_pooling = pooling;
         m_controller = controller;
         m_feedforward = feedforward;
-        m_estimator = estimator;
     }
 
     /**
@@ -52,26 +61,29 @@ public class NonlinearSystemLoop<States extends Num, Inputs extends Num, Outputs
      * 
      * TODO: allow time travel, measurement from the past.
      * 
+     * @param x state to fuse with, get rid of this
      * @param y      measurement
-     * @param sensor provides h, residual, and stdev involved with the measurement
      */
-    public <Rows extends Num> Matrix<States, N1> correct(Matrix<States, N1> x, Matrix<Rows, N1> y, Sensor<States, Inputs, Rows> sensor) {
-        return m_estimator.correct(x, y, sensor);
+    public RandomVector<States> correct(RandomVector<States> x, RandomVector<Outputs> y) {
+        RandomVector<States> xx = m_pointEstimator.stateForMeasurementWithZeroU(y);
+        return m_pooling.fuse(xx, x);
     }
 
     /**
      * integrate forward dt.
      * TODO: use absolute time
      */
-    public Matrix<States, N1> predictState(Matrix<States, N1> initial, Matrix<Inputs, N1> calculatedU, double dtSeconds) {
-       return m_estimator.predictState(initial, calculatedU, dtSeconds);
+    public RandomVector<States> predictState(RandomVector<States> initial, Matrix<Inputs, N1> calculatedU,
+            double dtSeconds) {
+        return m_predictor.predict(initial, calculatedU, dtSeconds);
     }
 
     /**
      * find controller output to get to reference at dt; uses observer xhat.
      * TODO: use absolute time
      */
-    public Matrix<Inputs, N1> calculateTotalU(Matrix<States, N1> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot, double dtSeconds) {
+    public Matrix<Inputs, N1> calculateTotalU(RandomVector<States> xhat, Matrix<States, N1> r, Matrix<States, N1> rDot,
+            double dtSeconds) {
         Matrix<Inputs, N1> controllerU = m_controller.calculate(xhat, r);
         Matrix<Inputs, N1> feedforwardU = m_feedforward.calculateWithRAndRDot(r, rDot);
         return m_plant.limit(controllerU.plus(feedforwardU));
