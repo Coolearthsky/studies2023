@@ -15,7 +15,11 @@ import com.acmerobotics.roadrunner.profile.MotionState;
 /**
  * Exercises the profile generator in Roadrunner.
  * 
- * Note this library is in Kotlin.
+ * Note the Roadrunner library is in Kotlin.
+ *
+ * Results from this test are available here:
+ *
+ * https://docs.google.com/spreadsheets/d/1amz21b9WxrN5SeUJqb0lktHwPy58V_cjU9X08Xd59qk
  */
 public class RoadrunnerTest {
     /**
