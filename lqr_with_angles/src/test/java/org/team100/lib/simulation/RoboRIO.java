@@ -42,9 +42,9 @@ public class RoboRIO {
     private final Scenario m_scenario;
 
     // the last recordTime we've seen from the buffer
-   // private long recordTime;
+    // private long recordTime;
 
-  //  private RandomVector<N2> xhat;
+    // private RandomVector<N2> xhat;
 
     public RoboRIO(Scenario scenario) {
         m_scenario = scenario;
@@ -93,7 +93,8 @@ public class RoboRIO {
 
         if (state.systemTimeMicrosec % kUsecPerRioLoop == 0) {
 
-            // ok currently this doesn't do *BI* temporal at all, it just looks at valid times.
+            // ok currently this doesn't do *BI* temporal at all, it just looks at valid
+            // times.
             // TODO: fix that
 
             // STEP 1: update the state history with any measurements that are pending
@@ -115,12 +116,14 @@ public class RoboRIO {
 
             // roll the prior state to the measurement time
             // TODO fix the "u" value here, is WRONG WRONG WRONG
-            RandomVector <N2> predicted1 = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU), stateToMeasurementS);
+            RandomVector<N2> predicted1 = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU),
+                    stateToMeasurementS);
 
             // now find the state for the measurement at this time
-            RandomVector <N2> measured1 = pointEstimator.stateForMeasurementWithZeroU(system.velocity(state.observedVelocity));
+            RandomVector<N2> measured1 = pointEstimator
+                    .stateForMeasurementWithZeroU(system.velocity(state.observedVelocity));
             // since these are for the same time we can pool them
-            RandomVector <N2> fused1 = pooling.fuse(predicted1, measured1);
+            RandomVector<N2> fused1 = pooling.fuse(predicted1, measured1);
 
             // record the estimate we just made
             m_stateBuffer.put(state.systemTimeMicrosec, obsTimeS, fused1);
@@ -134,9 +137,11 @@ public class RoboRIO {
             priorState = entry.getValue().getValue();
             stateToMeasurementS = obsTimeS - stateTimeS;
 
-            RandomVector <N2> predicted2 = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU), stateToMeasurementS);
-            RandomVector <N2> measured2   = pointEstimator.stateForMeasurementWithZeroU(system.position(state.observedPosition));
-            RandomVector <N2> fused2 = pooling.fuse(predicted2, measured2);
+            RandomVector<N2> predicted2 = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU),
+                    stateToMeasurementS);
+            RandomVector<N2> measured2 = pointEstimator
+                    .stateForMeasurementWithZeroU(system.position(state.observedPosition));
+            RandomVector<N2> fused2 = pooling.fuse(predicted2, measured2);
 
             // this is another good estimate so remember it
             m_stateBuffer.put(state.systemTimeMicrosec, obsTimeS, fused2);
@@ -144,15 +149,17 @@ public class RoboRIO {
             // STEP 2: predict the state for the actuation time we want
 
             // this should find the thing we just put in there
-            // .. or it might find a more-recent valid time but older record time 
+            // .. or it might find a more-recent valid time but older record time
             // TODO: fix that
-            double actuationTimeSec = state.actualTimeSec() + kSecPerRioLoop;
+            // try midpoint
+            double actuationTimeSec = state.actualTimeSec() + kSecPerRioLoop / 2;
             entry = m_stateBuffer.floor(actuationTimeSec);
             stateTimeS = entry.getKey();
             priorState = entry.getValue().getValue();
             double stateToActuationS = actuationTimeSec - stateTimeS;
 
-            RandomVector <N2> predicted3  = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU), stateToActuationS);
+            RandomVector<N2> predicted3 = predictor.predictWithNoise(priorState, VecBuilder.fill(state.totalU),
+                    stateToActuationS);
 
             // this is the final estimate (in the future), remember it.
             m_stateBuffer.put(state.systemTimeMicrosec, actuationTimeSec, predicted3);
@@ -167,9 +174,9 @@ public class RoboRIO {
             // drive the expected system dynamics
             Matrix<N1, N1> uff = feedforward.calculateWithRAndRDot(nextReference, nextRDot);
 
-            Matrix<N2,N1> error = nextReference.minus(predicted3.x);
-            state.errorPosition = error.get(0,0);
-            state.errorVelocity = error.get(1,0);
+            Matrix<N2, N1> error = nextReference.minus(predicted3.x);
+            state.errorPosition = error.get(0, 0);
+            state.errorVelocity = error.get(1, 0);
             // correct for disturbance between reference and estimate
             Matrix<N1, N1> u = feedback.calculate(predicted3, nextReference);
 
