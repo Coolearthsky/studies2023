@@ -60,7 +60,7 @@ public class JerkLimitedTrajectory extends Scenario {
 
     @Test
     public void test() {
-        init();
-        execute();
+        Loop loop = new Loop(this);
+        loop.run();
     }
 }
