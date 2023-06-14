@@ -2,6 +2,7 @@ package org.team100.lib.system.examples;
 
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.NonlinearPlant;
 
@@ -27,9 +28,8 @@ public abstract class NoisyLimitedPlant1D implements NonlinearPlant<N2, N1, N2> 
     public RandomVector<N2> position(double p) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, p);
-        Matrix<N2, N2> yP = m_v.P.copy();
-        // measuring position only, so velocity gets "don't know" variance
-        yP.set(1, 1, 1e9);
+        Variance<N2> yP = m_v.Kxx.copy();
+        yP.dontknow(1);
         return make(yx, yP);
     }
 
@@ -40,9 +40,8 @@ public abstract class NoisyLimitedPlant1D implements NonlinearPlant<N2, N1, N2> 
     public RandomVector<N2> velocity(double v) {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(1, 0, v);
-        Matrix<N2, N2> yP = m_v.P.copy();
-        // measuring velocity only, so position gets "don't know" variance
-        yP.set(0, 0, 1e9);
+        Variance<N2> yP = m_v.Kxx.copy();
+        yP.dontknow(0);
         return make(yx, yP);
     }
 

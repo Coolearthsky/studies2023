@@ -1,13 +1,16 @@
 package org.team100.lib.fusion;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
@@ -17,16 +20,16 @@ import edu.wpi.first.math.numbers.N2;
 public class VarianceWeightedLinearPoolingTest extends PoolingTest {
     private static final double kDelta = 0.001;
 
-    private static final LinearPooling<N1> p1 = new VarianceWeightedLinearPooling<N1>();
-    private static final LinearPooling<N2> p2 = new VarianceWeightedLinearPooling<N2>();
+    private static final VarianceWeightedLinearPooling<N1> p1 = new VarianceWeightedLinearPooling<N1>();
+    private static final VarianceWeightedLinearPooling<N2> p2 = new VarianceWeightedLinearPooling<N2>();
 
     @Test
     public void testUnanimity1() {
         RandomVector<N1> aV = v1(0, 1);
         RandomVector<N1> bV = v1(0, 1);
         RandomVector<N1> cV = p1.fuse(aV, bV);
-        // fuse with yourself => no change
-        assert1(cV, 0, 1);
+        // see the same thing twice -> become more sure
+        assert1(cV, 0, 0.5);
     }
 
     @Test
@@ -34,8 +37,8 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> aV = v2(0, 0, 1, 0, 0, 1);
         RandomVector<N2> bV = v2(0, 0, 1, 0, 0, 1);
         RandomVector<N2> cV = p2.fuse(aV, bV);
-        // fuse with yourself => no change
-        assert2(cV, 0, 0, 1, 0, 0, 1);
+        // see the same thing twice -> become more sure
+        assert2(cV, 0, 0, 0.5, 0, 0, 0.5);
     }
 
     @Test
@@ -44,8 +47,8 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(1, 1);
         RandomVector<N1> cV = p1.fuse(aV, bV);
         // aggregate mean is right in the middle
-        // aggregate variance is a bit bigger since the means are different
-        assert1(cV, 0.5, 1.25);
+        // aggregate variance 0.5 from dispersion, 0.5 from variance
+        assert1(cV, 0.5, 1);
     }
 
     @Test
@@ -53,8 +56,8 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N1> aV = v1(0, 1);
         RandomVector<N1> bV = v1(0, 2);
         RandomVector<N1> cV = p1.fuse(aV, bV);
-        // this is like the log-linear case now since it weights by inverse variance
-        assert1(cV, 0.0, 1.333);
+        // same means, so we're more sure
+        assert1(cV, 0.0, 0.666);
     }
 
     @Test
@@ -64,7 +67,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p1.fuse(aV, bV);
         // the mean is like log-linear, weighted by inverse variance
         // the variance is bigger than log-linear due to the dispersion term
-        assert1(cV, 0.333, 1.555);
+        assert1(cV, 0.333, 1.111);
     }
 
     @Test
@@ -74,7 +77,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // the mean is like log-linear, weighted by inverse variance
         // the variance is bigger than log-linear due to the dispersion term
-        assert2(cV, 0.333, 0.333, 1.555, 0, 0, 1.555);
+        assert2(cV, 0.333, 0.333, 1.111, 0, 0, 1.111);
     }
 
     @Test
@@ -83,7 +86,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> bV = v2(1, 1, 2, 0, 0, 1);
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
-        assert2(cV, 0.333, 0.666, 1.555, 0, 0, 1.555);
+        assert2(cV, 0.333, 0.666, 1.111, 0, 0, 1.111);
     }
 
     @Test
@@ -92,7 +95,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> aV = v2(0, 0, 1, 0.5, 0.5, 1);
         RandomVector<N2> bV = v2(1, 1, 2, 0.5, 0.5, 2);
         RandomVector<N2> cV = p2.fuse(aV, bV);
-        assert2(cV, 0.375, 0.375, 1.523, 0.586, 0.586, 1.523);
+        assert2(cV, 0.375, 0.375, 1.078, 0.328, 0.328, 1.078);
     }
 
     @Test
@@ -103,7 +106,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
         // off-diagonals make this effect stronger
-        assert2(cV, 0.25, 0.75, 1.531, 0.562, 0.562, 1.531);
+        assert2(cV, 0.25, 0.75, 1.141, 0.203, 0.203, 1.141);
     }
 
     @Test
@@ -133,8 +136,9 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         Matrix<N2, N2> pa = m2(0.5, 0, 0, 0.5);
         Matrix<N2, N2> pb = m2(0.5, 0, 0, 0.5);
         RandomVector<N2> cV = p2.fuse(aV, pa, bV, pb);
-        // equal weight => mean is arithmetic, variance grows because of mean
-        assert2(cV, 0.5, 0.5, 1.25, 0, 0, 1.25);
+        // equal weight => mean in the middle,
+        // variance is 0.5 from dispersion, 0.5 from two samples
+        assert2(cV, 0.5, 0.5, 1, 0, 0, 1);
     }
 
     @Test
@@ -156,42 +160,154 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
 
         // initial xhat is zero
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
-        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
-        xP.set(0, 0, 0.01);
-        xP.set(1, 1, 0.01);
+        Variance<N2> xP = Variance.from2StdDev(0.1, 0.1);
+        // xP.set(0, 0, 0.01);
+        // xP.set(1, 1, 0.01);
         RandomVector<N2> xhat = new RandomVector<>(xx, xP);
 
         // measurement is 1,0
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, 1);
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.01);
-        yP.set(1, 1, 0.01);
+        Variance<N2> yP = Variance.from2StdDev(0.1, 0.1);
+        // yP.set(0, 0, 0.01);
+        // yP.set(1, 1, 0.01);
         RandomVector<N2> estimateFromMeasurement = new RandomVector<>(yx, yP);
 
         xhat = p2.fuse(xhat, estimateFromMeasurement);
         // since the old and new have the same variance the mean is in the middle
         assertArrayEquals(new double[] { 0.5, 0 }, xhat.x.getData(), kDelta);
         // the difference in means adds to the variance but only of the first component
-        assertArrayEquals(new double[] { 0.26, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.505, 0, 0, 0.005 }, xhat.Kxx.getData(), kDelta);
 
         xhat = p2.fuse(xhat, estimateFromMeasurement);
         // new measurement has lower variance so it is preferred
-        assertArrayEquals(new double[] { 0.982, 0 }, xhat.x.getData(), kDelta);
-        // mean dispersion keeps increasing P
-        assertArrayEquals(new double[] { 0.028, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.990, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion keeps increasing P but multiple samples keep decreasing it
+        assertArrayEquals(new double[] { 0.019, 0, 0, 0.003 }, xhat.Kxx.getData(), kDelta);
 
         xhat = p2.fuse(xhat, estimateFromMeasurement);
-        assertArrayEquals(new double[] { 0.995, 0 }, xhat.x.getData(), kDelta);
-        // mean dispersion is on the way down now
-        assertArrayEquals(new double[] { 0.015, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.997, 0 }, xhat.x.getData(), kDelta);
+        // mean dispersion is way down now
+        assertArrayEquals(new double[] { 0.007, 0, 0, 0.002 }, xhat.Kxx.getData(), kDelta);
 
         // go all the way to the end
         for (int i = 0; i < 100; ++i) {
             xhat = p2.fuse(xhat, estimateFromMeasurement);
         }
-        // now the estimate matches the measurement
+        // we keep seeing the same mean over and over so we're really sure now
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.000098, 0, 0, 0.000096 }, xhat.Kxx.getData(), 0.000001);
+    }
+
+    @Test
+    public void testDontKnow() {
+        // fuse an unknown with a known, you should just get the known back.
+        RandomVector<N2> aV = v2(0, 0, 1, 0, 0, 1e9);
+        RandomVector<N2> bV = v2(1, 1, 1e9, 0, 0, 1);
+      //  System.out.println("=========================");
+        RandomVector<N2> cV = p2.fuse(aV, bV);
+        assert2(cV, 0, 1, 1, 0, 0, 1);
+    }
+
+    @Test
+    public void testDontKnowWeights() {
+        RandomVector<N2> aV = v2(0, 0, 1, 0, 0, 1e9);
+        RandomVector<N2> bV = v2(1, 1, 1e9, 0, 0, 1);
+        Pair<Matrix<N2, N2>, Matrix<N2, N2>> weights = p2.weights(aV, bV);
+        Matrix<N2, N2> pa = weights.getFirst();
+        Matrix<N2, N2> pb = weights.getSecond();
+        // so in the first slot since b doesn't know, we should get a
+        // and in the second we should get b.
+        assertArrayEquals(new double[] { 1, 0, 0, 0 }, pa.getData(), kDelta);
+        assertArrayEquals(new double[] { 0, 0, 0, 1 }, pb.getData(), kDelta);
+        RandomVector<N2> cV = p2.fuse(aV, pa, bV, pb);
+        assert2(cV, 0, 1, 1, 0, 0, 1);
+    }
+
+    @Test
+    public void testWeights1a() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(1, 1e9);
+        Pair<Matrix<N1, N1>, Matrix<N1, N1>> weights = p1.weights(aV, bV);
+        Matrix<N1, N1> pa = weights.getFirst();
+        Matrix<N1, N1> pb = weights.getSecond();
+        assertArrayEquals(new double[] { 1 }, pa.getData(), 0.000001);
+        assertArrayEquals(new double[] { 0 }, pb.getData(), 0.000001);
+    }
+
+    @Test
+    public void testWeightPrimitive() {
+        // scalar multiplication is squared by the matrix isn't? what?
+
+        RandomVector<N1> a = v1(0, 1);
+        RandomVector<N1> b = v1(1, 1e9);
+
+        double aP = a.Kxx.getValue().get(0, 0);
+        double bP = b.Kxx.getValue().get(0, 0);
+
+        double aPI = 1.0 / aP;
+        double bPI = 1.0 / bP;
+        double PIsum = aPI + bPI;
+
+        double pIsumI = 1.0 / PIsum;
+        double pa = aPI * pIsumI;
+        double pb = bPI * pIsumI;
+        assertEquals(0.999, pa, 0.001);
+        assertEquals(9.99e-10, pb, 1e-12);
+    }
+
+    @Test
+    public void testWeights1b() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(1, 1);
+        Pair<Matrix<N1, N1>, Matrix<N1, N1>> weights = p1.weights(aV, bV);
+        Matrix<N1, N1> pa = weights.getFirst();
+        Matrix<N1, N1> pb = weights.getSecond();
+        assertArrayEquals(new double[] { 0.5 }, pa.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.5 }, pb.getData(), kDelta);
+    }
+
+    @Test
+    public void testVar1() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(0, 1);
+        RandomVector<N1> cV = p1.fuse(aV, bV);
+        assertArrayEquals(new double[] { 0 }, cV.x.getData());
+        // two samples with the same mean, the underlying variance
+        // is probably smaller than the sample variance
+        assertArrayEquals(new double[] { 0.5 }, cV.Kxx.getData());
+    }
+
+    @Test
+    public void testVar1WithDispersion() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(1, 1);
+        RandomVector<N1> cV = p1.fuse(aV, bV);
+        assertArrayEquals(new double[] { 0.5 }, cV.x.getData());
+        // 0.5 from variance
+        // each sample is 0.5 from the mean, squared is 0.25, sum is 0.5
+        // so the dispersion term is 0.5
+        // so total variance is 1
+        assertArrayEquals(new double[] { 1 }, cV.Kxx.getData(), 0.000001);
+    }
+
+    @Test
+    public void testVar10() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(0, 10);
+        RandomVector<N1> cV = p1.fuse(aV, bV);
+        assertArrayEquals(new double[] { 0 }, cV.x.getData());
+        // combine an estimate with "don't know" and you get the estimate back
+        assertArrayEquals(new double[] { 0.909 }, cV.Kxx.getData(), 0.001);
+    }
+
+    @Test
+    public void testVar1000() {
+        RandomVector<N1> aV = v1(0, 1);
+        RandomVector<N1> bV = v1(0, 1000);
+        RandomVector<N1> cV = p1.fuse(aV, bV);
+        assertArrayEquals(new double[] { 0 }, cV.x.getData());
+        // combine an estimate with "don't know" and you get the estimate back
+        assertArrayEquals(new double[] { 0.999 }, cV.Kxx.getData(), 0.001);
     }
 }

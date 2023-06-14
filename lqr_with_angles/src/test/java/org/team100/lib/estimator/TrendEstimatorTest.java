@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.MockNonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -47,17 +48,18 @@ public class TrendEstimatorTest {
         // y0 is 1,0 +/- 0.01
         Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
         yx0.set(0, 0, 1);
-        Matrix<N2, N2> yP0 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP0.set(0, 0, 0.01);
-        yP0.set(1, 1, 0.01);
+        // Matrix<N2, N2> yP0 = new Matrix<>(Nat.N2(), Nat.N2());
+        Variance<N2> yP0 = Variance.from2StdDev(0.1, 0.1);
+        // yP0.set(0, 0, 0.01);
+        // yP0.set(1, 1, 0.01);
         RandomVector<N2> y0 = new RandomVector<>(yx0, yP0);
 
         // y1 is 2,0 +/- 0.01
         Matrix<N2, N1> yx1 = new Matrix<>(Nat.N2(), Nat.N1());
         yx1.set(0, 0, 2);
-        Matrix<N2, N2> yP1 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP1.set(0, 0, 0.01);
-        yP1.set(1, 1, 0.01);
+        Variance<N2> yP1 = Variance.from2StdDev(0.1, 0.1);
+        // yP1.set(0, 0, 0.01);
+        // yP1.set(1, 1, 0.01);
         RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
 
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
@@ -68,7 +70,7 @@ public class TrendEstimatorTest {
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
         // for this weird system there are no don't-know values, just the additive
         // variance
-        assertArrayEquals(new double[] { 0.02, 0, 0, 0.02 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.02, 0, 0, 0.02 }, xhat.Kxx.getData(), kDelta);
     }
 
     public static class DoubleIntegrator extends MockNonlinearPlant<N2, N1, N2> {
@@ -84,9 +86,9 @@ public class TrendEstimatorTest {
             xdotx.set(0, 0, x.x.get(1, 0));
             xdotx.set(1, 0, u.get(0, 0));
             Matrix<N2, N2> xdotP = new Matrix<>(Nat.N2(), Nat.N2());
-            xdotP.set(0, 0, x.P.get(1, 1)); // variance from x1 becomes x0dot variance
+            xdotP.set(0, 0, x.Kxx.get(1, 1)); // variance from x1 becomes x0dot variance
             xdotP.set(1, 1, 0.1); // TODO a better estimate of response variance
-            return x.make(xdotx, xdotP);
+            return x.make(xdotx, new Variance<>(xdotP));
         }
 
         /**
@@ -100,8 +102,8 @@ public class TrendEstimatorTest {
             xx.set(1, 0, xdot.x.get(0, 0));
             Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
             xP.set(0, 0, 1e9); // "don't know" variance
-            xP.set(1, 1, xdot.P.get(0, 0));
-            return xdot.make(xx, xP);
+            xP.set(1, 1, xdot.Kxx.get(0, 0));
+            return xdot.make(xx, new Variance<>(xP));
         }
 
         /**
@@ -131,17 +133,17 @@ public class TrendEstimatorTest {
         // y0 is 1,0 +/- 0.01
         Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
         yx0.set(0, 0, 1);
-        Matrix<N2, N2> yP0 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP0.set(0, 0, 0.01);
-        yP0.set(1, 1, 0.01);
+        Variance<N2> yP0 = Variance.from2StdDev(0.1, 0.1);
+        // yP0.set(0, 0, 0.01);
+        // yP0.set(1, 1, 0.01);
         RandomVector<N2> y0 = new RandomVector<>(yx0, yP0);
 
         // y1 is 2,0 +/- 0.01
         Matrix<N2, N1> yx1 = new Matrix<>(Nat.N2(), Nat.N1());
         yx1.set(0, 0, 2);
-        Matrix<N2, N2> yP1 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP1.set(0, 0, 0.01);
-        yP1.set(1, 1, 0.01);
+        Variance<N2> yP1 = Variance.from2StdDev(0.1, 0.1);
+        // yP1.set(0, 0, 0.01);
+        // yP1.set(1, 1, 0.01);
         RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
 
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
@@ -151,7 +153,7 @@ public class TrendEstimatorTest {
         // but there should be an estimate of 1 for velocity
         assertArrayEquals(new double[] { 0, 1 }, xhat.x.getData(), kDelta);
         // and the variance of position should be large
-        assertArrayEquals(new double[] { 1e9, 0, 0, 0.02 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 1e9, 0, 0, 0.02 }, xhat.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -162,17 +164,17 @@ public class TrendEstimatorTest {
         // y0 is 1,0 +/- 0.01
         Matrix<N2, N1> yx0 = new Matrix<>(Nat.N2(), Nat.N1());
         yx0.set(0, 0, 1);
-        Matrix<N2, N2> yP0 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP0.set(0, 0, 0.01);
-        yP0.set(1, 1, 0.01);
+        Variance<N2> yP0 = Variance.from2StdDev(0.1, 0.1);
+        // yP0.set(0, 0, 0.01);
+        // yP0.set(1, 1, 0.01);
         RandomVector<N2> y0 = new RandomVector<>(yx0, yP0);
 
         // y1 is 2,0 +/- 0.01
         Matrix<N2, N1> yx1 = new Matrix<>(Nat.N2(), Nat.N1());
         yx1.set(0, 0, 2);
-        Matrix<N2, N2> yP1 = new Matrix<>(Nat.N2(), Nat.N2());
-        yP1.set(0, 0, 0.01);
-        yP1.set(1, 1, 0.01);
+        Variance<N2> yP1 = Variance.from2StdDev(0.1, 0.1);
+        // yP1.set(0, 0, 0.01);
+        // yP1.set(1, 1, 0.01);
         RandomVector<N2> y1 = new RandomVector<>(yx1, yP1);
 
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
@@ -187,6 +189,6 @@ public class TrendEstimatorTest {
         // very low and it's squared.
         // so this means the trend signal will never have much effect over very small
         // time steps.  Use as wide a window as possible.
-        assertArrayEquals(new double[] { 1e9, 0, 0, 50 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 1e9, 0, 0, 50 }, xhat.Kxx.getData(), kDelta);
     }
 }

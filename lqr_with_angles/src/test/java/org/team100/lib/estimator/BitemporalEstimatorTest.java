@@ -12,6 +12,7 @@ import org.team100.lib.fusion.LinearPooling;
 import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.NonlinearPlant;
@@ -40,9 +41,9 @@ public class BitemporalEstimatorTest {
 
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // no motion
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228,0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         stateBuffer.put(0l, 0.0,
                 new RandomVector<N2>(
                         VecBuilder.fill(0, 0),
@@ -78,9 +79,9 @@ public class BitemporalEstimatorTest {
 
         BitemporalBuffer<RandomVector<N2>> stateBuffer = new BitemporalBuffer<>(1000);
         // velocity = 1
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228,0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         stateBuffer.put(0l, 0.0,
                 new RandomVector<N2>(
                         VecBuilder.fill(0, 1),
@@ -125,9 +126,9 @@ public class BitemporalEstimatorTest {
         long recordTime = 0l;
         double validTime = 0;
         // TODO: realistic covariance
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228,0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         stateBuffer.put(0l, 0.0,
                 new RandomVector<N2>(
                         VecBuilder.fill(0, 1),
@@ -176,9 +177,9 @@ public class BitemporalEstimatorTest {
     }
 
     private RandomVector<N2> y2(double y0, double y1) {
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228, 0.316228);        
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         return new RandomVector<>(VecBuilder.fill(y0, y1), p);
     }
 
@@ -219,9 +220,9 @@ public class BitemporalEstimatorTest {
 
         // initial xhat is zero with Q covariance
         // TODO is this a reasonable first guess?
-        RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), m_contQ);
+        RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Variance<>(m_contQ));
         assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.P.getData(), 0.0001);
+        assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.Kxx.getData(), 0.0001);
 
         stateBuffer.put(recordTime, validTime, xhat);
         BitemporalEstimator<N2, N1, N2> bitemporalEstimator = new BitemporalEstimator<>(plant, stateBuffer, predictor,
@@ -232,7 +233,7 @@ public class BitemporalEstimatorTest {
         if (kPrint)
             System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                     validTime, xhat.x.get(0, 0),
-                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+                    xhat.x.get(1, 0), xhat.Kxx.get(0, 0), xhat.Kxx.get(0, 1), xhat.Kxx.get(1, 0), xhat.Kxx.get(1, 1));
 
         // measure position 1, velocity 0
         RandomVector<N2> y = y2(1, 0);
@@ -244,7 +245,7 @@ public class BitemporalEstimatorTest {
             if (kPrint)
                 System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                         validTime, xhat.x.get(0, 0),
-                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+                        xhat.x.get(1, 0), xhat.Kxx.get(0, 0), xhat.Kxx.get(0, 1), xhat.Kxx.get(1, 0), xhat.Kxx.get(1, 1));
         }
 
         // final correction
@@ -262,8 +263,8 @@ public class BitemporalEstimatorTest {
         // assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 },
         // xhat.P.getData(), 0.0001);
 
-        // now this just tracks the correction variance
-        assertArrayEquals(new double[] { 0.1, 0, 0, 0.1 }, xhat.P.getData(), 0.0001);
+        // by the end this is pretty dang sure
+        assertArrayEquals(new double[] { 0.001, 0, 0, 0.0001 }, xhat.Kxx.getData(), 0.0001);
     }
 
     @Test
@@ -298,9 +299,9 @@ public class BitemporalEstimatorTest {
 
         // initial xhat is zero with Q covariance
         // TODO is this a reasonable first guess?
-        RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), m_contQ);
+        RandomVector<N2> xhat = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Variance<>(m_contQ));
         assertArrayEquals(new double[] { 0, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.P.getData(), 0.0001);
+        assertArrayEquals(new double[] { 0.0001, 0, 0, 0.0001 }, xhat.Kxx.getData(), 0.0001);
         // DARE provides this:
         // assertArrayEquals(new double[] { 0.0043, 0.0009, 0.0009, 0.0004 },
         // xhat.P.getData(), 0.0001);
@@ -314,7 +315,7 @@ public class BitemporalEstimatorTest {
         if (kPrint)
             System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f\n",
                     validTime, xhat.x.get(0, 0),
-                    xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+                    xhat.x.get(1, 0), xhat.Kxx.get(0, 0), xhat.Kxx.get(0, 1), xhat.Kxx.get(1, 0), xhat.Kxx.get(1, 1));
 
         // no control input
         Matrix<N1, N1> u = VecBuilder.fill(0);
@@ -332,7 +333,7 @@ public class BitemporalEstimatorTest {
             if (kPrint)
                 System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f predict\n",
                         validTime, xhat.x.get(0, 0),
-                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+                        xhat.x.get(1, 0), xhat.Kxx.get(0, 0), xhat.Kxx.get(0, 1), xhat.Kxx.get(1, 0), xhat.Kxx.get(1, 1));
 
             // there is no "u" here because the measurement function "h" is required to be
             // u-invariant
@@ -340,7 +341,7 @@ public class BitemporalEstimatorTest {
             if (kPrint)
                 System.out.printf("%5.3f, %5.3f, %5.3f, %7.5f, %7.5f, %7.5f, %7.5f correct\n",
                         validTime, xhat.x.get(0, 0),
-                        xhat.x.get(1, 0), xhat.P.get(0, 0), xhat.P.get(0, 1), xhat.P.get(1, 0), xhat.P.get(1, 1));
+                        xhat.x.get(1, 0), xhat.Kxx.get(0, 0), xhat.Kxx.get(0, 1), xhat.Kxx.get(1, 0), xhat.Kxx.get(1, 1));
         }
 
         // final correction
@@ -357,8 +358,8 @@ public class BitemporalEstimatorTest {
         // P never changes which is WRONG WRONG WRONG
         // assertArrayEquals(new double[] { 0.00428, 0.00091, 0.00091, 0.00042 },
         // xhat.P.getData(), 0.0001);
-        // now this just tracks the correction variance
-        assertArrayEquals(new double[] { 0.1, 0, 0, 0.100042 }, xhat.P.getData(), 0.0001);
+        // by the end this is pretty dang sure
+        assertArrayEquals(new double[] { 0.001, 0, 0, 0.00001 }, xhat.Kxx.getData(), 0.0001);
     }
 
     @Test
@@ -381,7 +382,7 @@ public class BitemporalEstimatorTest {
         }
 
         // TODO: realistic covariance
-        stateBuffer.put(0l, 0.0, new RandomVector<N2>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2())));
+        stateBuffer.put(0l, 0.0, new RandomVector<N2>(VecBuilder.fill(0, 0), Variance.zero2()));
         {
             Entry<Double, Entry<Long, RandomVector<N2>>> floor = bitemporalEstimator.floor(0);
             RandomVector<N2> x = floor.getValue().getValue();

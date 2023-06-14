@@ -3,6 +3,7 @@ package org.team100.lib.system.examples;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -36,15 +37,15 @@ public class Pendulum1D extends Rotary1D {
         double pdot = v;
         double vdot = u - Math.cos(p);
         Matrix<N2, N1> xdotx = VecBuilder.fill(pdot, vdot);
-        Matrix<N2, N2> xdotP = xmat.P.copy();
+        Matrix<N2,N2> xdotP = xmat.Kxx.copy().getValue();
         xdotP.fill(0);
         // propagate variance of x through f (u has zero variance)
-        double pP = xmat.P.get(0, 0);
-        double vP = xmat.P.get(1, 1);
+        double pP = xmat.Kxx.get(0, 0);
+        double vP = xmat.Kxx.get(1, 1);
         xdotP.set(0, 0, vP);
         // https://en.wikipedia.org/wiki/Propagation_of_uncertainty
         xdotP.set(1, 1, Math.pow(Math.sin(p), 2) * pP);
-        return new RandomVector<>(xdotx, xdotP);
+        return new RandomVector<>(xdotx, new Variance<>(xdotP));
     }
 
     @Override
@@ -64,10 +65,10 @@ public class Pendulum1D extends Rotary1D {
         double v = pdot;
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
         xx.set(1, 0, v);
-        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
+        Matrix<N2,N2> xP = new Matrix<>(Nat.N2(),Nat.N2());
         xP.set(0, 0, 1e9); // position: "don't know" variance
-        xP.set(1, 1, xdot.P.get(0, 0)); // TODO: better P?
+        xP.set(1, 1, xdot.Kxx.get(0, 0)); // TODO: better P?
         // Full state, return angular.
-        return new AngularRandomVector<>(xx, xP);
+        return new AngularRandomVector<>(xx, new Variance<>(xP));
     }
 }

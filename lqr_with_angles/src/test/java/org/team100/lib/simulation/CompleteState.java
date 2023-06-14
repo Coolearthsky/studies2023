@@ -13,8 +13,9 @@ public class CompleteState {
     double actualVelocity;
     double actualAcceleration;
 
-    double observationTimeSec; // valid time this observation represents
+    double positionObservationTimeSec; // valid time this observation represents
     double observedPosition;
+    double velocityObservationTimeSec; // valid time this observation represents
     double observedVelocity;
     double observedAcceleration; // for these tests this is intended to match u.
 
@@ -22,12 +23,20 @@ public class CompleteState {
     double predictedPosition;
     double predictedVelocity;
 
+    double referencePosition;
+    double referenceVelocity;
+    double referenceAcceleration;
+
     double residualPosition;
     double residualVelocity;
 
-    double controlU;
+    double ffU;
+    double errorPosition;
+    double errorVelocity;
+    double fbU;
+    double totalU;
 
-    public CompleteState(
+    public void init(
             double initialPosition,
             double initialVelocity,
             double initialAcceleration) {
@@ -44,19 +53,29 @@ public class CompleteState {
         predictedPosition = initialPosition;
         predictedVelocity = initialVelocity;
 
+        referencePosition = 0;
+        referenceVelocity = 0;
+        referenceAcceleration = 0;
+
         residualPosition = 0;
         residualVelocity = 0;
 
-        controlU = initialAcceleration;
+        ffU = 0;
+        errorPosition = 0;
+        errorVelocity = 0;
+        fbU = 0;
+        totalU = initialAcceleration;
     }
+
 
     public String header() {
         return "     sysTime,   actualTime, " +
                 "   actualPos,    actualVel,    actualAcc, " +
                 " observedPos,  observedVel,  observedAcc, " +
                 "predictedPos, predictedVel, " +
+                "referencePos, referenceVel, referenceAcc, " +
                 " residualPos,  residualVel, " +
-                "    controlU";
+                "         ffU,     errorPos,     errorVel,          fbU,       totalU";
     }
 
     public String toString() {
@@ -64,8 +83,9 @@ public class CompleteState {
                 "%12.3f, %12.3f, %12.3f, " +
                 "%12.3f, %12.3f, %12.3f, " +
                 "%12.3f, %12.3f, " +
+                "%12.3f, %12.3f, %12.3f, " +
                 "%12.3f, %12.3f, " +
-                "%12.3f";
+                "%12.3f, %12.5f, %12.5f, %12.3f, %12.3f";
         return String.format(format,
                 systemTimeMicrosec,
                 actualTimeSec(),
@@ -77,9 +97,16 @@ public class CompleteState {
                 observedAcceleration,
                 predictedPosition,
                 predictedVelocity,
+                referencePosition,
+                referenceVelocity,
+                referenceAcceleration,
                 residualPosition,
                 residualVelocity,
-                controlU);
+                ffU,
+                errorPosition,
+                errorVelocity,
+                fbU,
+                totalU);
 
     }
 }

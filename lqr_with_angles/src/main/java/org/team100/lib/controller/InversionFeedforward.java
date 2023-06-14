@@ -1,6 +1,7 @@
 package org.team100.lib.controller;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -34,8 +35,8 @@ public class InversionFeedforward<States extends Num, Inputs extends Num, Output
      * @return feedforward as linearized and inverted control response
      */
     public Matrix<Inputs, N1> calculateWithRAndRDot(Matrix<States, N1> r, Matrix<States, N1> rDot) {
-        RandomVector<States> rv = new RandomVector<>(r, new Matrix<>(m_plant.states(), m_plant.states()));
-        RandomVector<States> rdotv = new RandomVector<>(rDot, new Matrix<>(m_plant.states(), m_plant.states()));
+        RandomVector<States> rv = new RandomVector<>(r, Variance.zero(m_plant.states()));
+        RandomVector<States> rdotv = new RandomVector<>(rDot, Variance.zero(m_plant.states()));
         return m_plant.finvWrtU(rv, rdotv);
     }
 }

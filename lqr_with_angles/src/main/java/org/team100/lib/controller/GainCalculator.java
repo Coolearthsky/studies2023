@@ -2,6 +2,7 @@ package org.team100.lib.controller;
 
 import org.team100.lib.math.Jacobian;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Drake;
@@ -37,7 +38,7 @@ public class GainCalculator<States extends Num, Inputs extends Num, Outputs exte
         Matrix<States, States> m_Q = StateSpaceUtil.makeCostMatrix(qelms);
         Matrix<Inputs, Inputs> m_R = StateSpaceUtil.makeCostMatrix(relms);
         RandomVector<States> x = new RandomVector<>(new Matrix<>(plant.states(), Nat.N1()),
-                new Matrix<>(plant.states(), plant.states()));
+                Variance.zero(plant.states()));
         Matrix<States, States> A = Jacobian.numericalJacobianX(plant.states(), plant.states(), plant::f,
                 x, kUZero);
         Matrix<States, Inputs> B = Jacobian.numericalJacobianU(plant.states(), plant.inputs(), plant::f,

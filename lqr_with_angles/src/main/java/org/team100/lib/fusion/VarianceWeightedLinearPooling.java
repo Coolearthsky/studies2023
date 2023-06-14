@@ -4,6 +4,7 @@ import org.team100.lib.math.RandomVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
+import edu.wpi.first.math.Pair;
 
 /**
  * Variance weighted linear pooling is also called "mixing" -- it represents the
@@ -42,8 +43,18 @@ public class VarianceWeightedLinearPooling<States extends Num> extends LinearPoo
         if (a.getClass() != b.getClass()) {
             throw new IllegalArgumentException("a and b must be same type\n" + a.getClass() + " " + b.getClass());
         }
-        Matrix<States, States> aP = a.P;
-        Matrix<States, States> bP = b.P;
+        Pair<Matrix<States,States>,Matrix<States,States>> weights = weights(a,b);
+        Matrix<States, States> pa = weights.getFirst();
+        Matrix<States, States> pb = weights.getSecond();
+      // System.out.println("pa " + pa);
+      //  System.out.println("pb " + pb);
+        return fuse(a, pa, b, pb);
+    }
+
+    /** TODO make a weight type */
+    Pair<Matrix<States, States>, Matrix<States, States>> weights(RandomVector<States> a, RandomVector<States> b) {
+        Matrix<States, States> aP = a.Kxx.getValue();
+        Matrix<States, States> bP = b.Kxx.getValue();
         if (aP.det() < kThreshold) {
             throw new IllegalArgumentException("aP is singular.\n" + aP.toString());
         }
@@ -59,7 +70,7 @@ public class VarianceWeightedLinearPooling<States extends Num> extends LinearPoo
         Matrix<States, States> pIsumI = PIsum.inv();
         Matrix<States, States> pa = aPI.times(pIsumI);
         Matrix<States, States> pb = bPI.times(pIsumI);
-        return fuse(a, pa, b, pb);
+        return Pair.of(pa,pb);
     }
 
 }

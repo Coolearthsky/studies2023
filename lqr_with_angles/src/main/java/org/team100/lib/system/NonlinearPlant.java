@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -12,14 +13,15 @@ import edu.wpi.first.math.numbers.N1;
  * Represents a plant with nonlinear dynamics.
  * 
  * xdot = f(x,u) + w
- * y = h(x,u)
+ * y = h(x,u) + v
  * 
  * where
  * 
  * x: system state
  * u: control input
- * y: measurement output
  * w: noise process
+ * y: measurement output
+ * v: measurement noise
  */
 public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs extends Num> {
     /** State evolution */
@@ -35,7 +37,10 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
      */
     RandomVector<States> finvWrtX(RandomVector<States> xdot, Matrix<Inputs, N1> u);
 
-    /** Measurement from state. Use wide variances for unknowns. */
+    /**
+     * Measurement from state. Use wide variances for unknowns.
+     * TODO: maybe remove u, since it really is never needed.
+     */
     RandomVector<Outputs> h(RandomVector<States> x, Matrix<Inputs, N1> u);
 
     /**
@@ -52,7 +57,7 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
     /** Make a state of the correct type. */
-    RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P);
+    RandomVector<States> make(Matrix<States, N1> x, Variance<States> Kxx);
 
     Nat<States> states();
 

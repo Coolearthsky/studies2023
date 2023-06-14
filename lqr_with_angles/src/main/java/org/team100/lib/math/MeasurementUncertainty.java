@@ -1,7 +1,5 @@
 package org.team100.lib.math;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N2;
 
@@ -15,16 +13,13 @@ import edu.wpi.first.math.numbers.N2;
  * https://en.wikipedia.org/wiki/Measurement_uncertainty
  */
 public class MeasurementUncertainty<States extends Num> {
-    public final Matrix<States, States> P;
+    public final Variance<States> Kxx;
 
-    public MeasurementUncertainty(Matrix<States, States> P) {
-        this.P = P;
+    public MeasurementUncertainty(Variance<States> Kxx) {
+        this.Kxx = Kxx;
     }
 
-    public static MeasurementUncertainty<N2> for2(double w1, double w2) {
-        Matrix<N2,N2> w = new Matrix<>(Nat.N2(),Nat.N2());
-        w.set(0,0,w1);
-        w.set(1,1,w2);
-        return new MeasurementUncertainty<>(w);
+    public static MeasurementUncertainty<N2> for2(double sigma1, double sigma2) {
+        return new MeasurementUncertainty<>(Variance.from2StdDev(sigma1, sigma2));
     }
 }

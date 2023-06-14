@@ -1,9 +1,17 @@
 # LQR with Angles
 
-Demonstrates LQR control with angle wrapping.
+This has turned into a rewrite of controls.
 
-Normal KalmanFilter can't do it, but ExtendedKalmanFilter can.
+Note the build.gradle changes to make roadrunner profiles work.
 
-There's also a version of the LQR class that fixes wrapping.
-
-You need to use both of them, as illustrated in EKFTest.java.
+```
+repositories {
+    maven {
+        url = 'https://maven.brott.dev/'
+    }
+}
+dependencies {
+    ...
+    implementation 'com.acmerobotics.roadrunner:core:0.5.6'
+}
+```

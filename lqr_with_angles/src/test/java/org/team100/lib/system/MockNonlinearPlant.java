@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -69,7 +70,7 @@ public class MockNonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     }
 
     @Override
-    public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
+    public RandomVector<States> make(Matrix<States, N1> x, Variance<States> P) {
         throw new UnsupportedOperationException("Unimplemented method 'make'");
     }
 
