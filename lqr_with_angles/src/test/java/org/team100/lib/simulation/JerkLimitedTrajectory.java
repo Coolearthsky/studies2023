@@ -58,6 +58,7 @@ public class JerkLimitedTrajectory extends Scenario {
         return s.getA();
     }
 
+    // turn off because it makes a lot of output
     @Test
     public void test() {
         Loop loop = new Loop(this);

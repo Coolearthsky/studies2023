@@ -10,7 +10,6 @@ import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.NonlinearPlant;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 

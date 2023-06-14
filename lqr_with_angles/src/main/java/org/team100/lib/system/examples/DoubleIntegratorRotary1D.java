@@ -3,12 +3,12 @@ package org.team100.lib.system.examples;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
@@ -21,7 +21,7 @@ import edu.wpi.first.math.numbers.N2;
  */
 public class DoubleIntegratorRotary1D extends Rotary1D {
     public DoubleIntegratorRotary1D(WhiteNoiseVector<N2> w, MeasurementUncertainty<N2> v) {
-        super(w,v );
+        super(w, v);
     }
 
     /**
@@ -38,18 +38,18 @@ public class DoubleIntegratorRotary1D extends Rotary1D {
         double u = umat.get(0, 0);
         double pdot = v;
         double vdot = u;
-        Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
-        Matrix<N2,N2> xdotP = xmat.P.copy();
+        Matrix<N2, N1> xdotx = VecBuilder.fill(pdot, vdot);
+        Matrix<N2, N2> xdotP = xmat.Kxx.copy().getValue();
         xdotP.fill(0);
         // propagate variance of x through f (u has zero variance)
-        xdotP.set(0,0,xmat.P.get(1,1));
+        xdotP.set(0, 0, xmat.Kxx.get(1, 1));
         // note that xdot needs no wrapping, don't return an AngularRandomVector here.
-        return new RandomVector<>(xdotx, xdotP);
+        return new RandomVector<>(xdotx, new Variance<>(xdotP));
     }
 
     @Override
     public Matrix<N1, N1> finvWrtU(RandomVector<N2> x, RandomVector<N2> xdot) {
-        double a = xdot.x.get(1,0);
+        double a = xdot.x.get(1, 0);
         return VecBuilder.fill(a);
     }
 
@@ -59,9 +59,9 @@ public class DoubleIntegratorRotary1D extends Rotary1D {
         xx.set(1, 0, xdot.x.get(0, 0));
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
         xP.set(0, 0, 1e9); // "don't know" variance
-        xP.set(1, 1, xdot.P.get(0, 0));
+        xP.set(1, 1, xdot.Kxx.get(0, 0));
         // This is the full state, so it *does* need to be Angular.
-        return new AngularRandomVector<>(xx, xP);
+        return new AngularRandomVector<>(xx, new Variance<>(xP));
     }
 
 }

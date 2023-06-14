@@ -1,6 +1,7 @@
 package org.team100.lib.controller;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -32,7 +33,7 @@ public class FeedbackControl<States extends Num, Inputs extends Num, Outputs ext
      *         correction, you need to remember it.
      */
     public Matrix<Inputs, N1> calculate(RandomVector<States> x, Matrix<States, N1> r) {
-        RandomVector<States> rv = x.make(r, new Matrix<>(m_plant.states(), m_plant.states()));
+        RandomVector<States> rv = x.make(r, Variance.zero(m_plant.states()));
        //System.out.println("K: " + m_K);
         Matrix<States, N1> residual = rv.minus(x).x;
         //System.out.println("residual: " + residual);

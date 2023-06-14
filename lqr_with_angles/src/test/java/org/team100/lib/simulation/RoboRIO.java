@@ -13,6 +13,7 @@ import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
@@ -58,7 +59,7 @@ public class RoboRIO {
         initP.set(0, 0, 1e9);
         initP.set(1, 1, 1e9);
         Vector<N2> initx = VecBuilder.fill(0, 0);
-        m_stateBuffer.put(0l, 0.0, new AngularRandomVector<N2>(initx, initP));
+        m_stateBuffer.put(0l, 0.0, new AngularRandomVector<N2>(initx, new Variance<>(initP)));
 
         predictor = new ExtrapolatingEstimator<>(system);
         pointEstimator = new PointEstimator<>(system);

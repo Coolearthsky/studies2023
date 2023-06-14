@@ -3,6 +3,7 @@ package org.team100.lib.system.examples;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -36,17 +37,17 @@ public class FrictionRotary1D extends Rotary1D {
         double pdot = v;
         double vdot = u - v;
         Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
-        Matrix<N2,N2> xdotP = xmat.P.copy();
+        Matrix<N2,N2> xdotP = xmat.Kxx.copy().getValue();
         xdotP.fill(0);
         // propagate variance of x through f (u has zero variance)
-        double vP = xmat.P.get(1,1);
+        double vP = xmat.Kxx.get(1,1);
         // guessing what to do with the off-diagonals
         xdotP.set(0,0,vP);
         xdotP.set(0,1,vP*0.9);
         xdotP.set(1,0,vP*0.9);
         xdotP.set(1,1,vP);
         // note that xdot needs no wrapping, don't return an AngularRandomVector here.
-        return new RandomVector<>(xdotx, xdotP);
+        return new RandomVector<>(xdotx, new Variance<>(xdotP));
     }
 
     @Override
@@ -67,8 +68,8 @@ public class FrictionRotary1D extends Rotary1D {
         xx.set(1, 0, v);
         Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
         xP.set(0, 0, 1e9); // position: "don't know" variance
-        xP.set(1, 1, xdot.P.get(0, 0)); // TODO: better P?
+        xP.set(1, 1, xdot.Kxx.get(0, 0)); // TODO: better P?
         // Full state, return Angular.
-        return new AngularRandomVector<>(xx, xP);
+        return new AngularRandomVector<>(xx, new Variance<>(xP));
     }
 }

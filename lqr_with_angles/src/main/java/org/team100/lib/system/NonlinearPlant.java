@@ -1,6 +1,7 @@
 package org.team100.lib.system;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -56,7 +57,7 @@ public interface NonlinearPlant<States extends Num, Inputs extends Num, Outputs 
     Matrix<Inputs, N1> limit(Matrix<Inputs, N1> u);
 
     /** Make a state of the correct type. */
-    RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P);
+    RandomVector<States> make(Matrix<States, N1> x, Variance<States> Kxx);
 
     Nat<States> states();
 

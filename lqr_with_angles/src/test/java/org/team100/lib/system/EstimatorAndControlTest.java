@@ -13,6 +13,7 @@ import org.team100.lib.fusion.VarianceWeightedLinearPooling;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
@@ -73,9 +74,9 @@ public class EstimatorAndControlTest {
         // positive setpoint, delta +0.02, push positive
 
         // initially, state estimate: at zero, motionless
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228, 0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(0, 0), p);
         assertEquals(0, xhat.x.get(0, 0));
         assertEquals(0, xhat.x.get(1, 0));
@@ -85,46 +86,46 @@ public class EstimatorAndControlTest {
         Matrix<N1, N1> u = controlAndCheck(xhat, setpoint, 11.455);
 
         xhat = updateAndCheck(xhat, u, 0.002, 0.002, 0.229);
-        u = controlAndCheck(xhat, setpoint, 0.137);
+        u = controlAndCheck(xhat, setpoint, 0.151);
 
         xhat = updateAndCheck(xhat, u, 0.006, 0.006, 0.232);
-        u = controlAndCheck(xhat, setpoint, -2.390);
+        u = controlAndCheck(xhat, setpoint, -2.44);
 
         xhat = updateAndCheck(xhat, u, 0.01, 0.01, 0.184);
-        u = controlAndCheck(xhat, setpoint, -2.529);
+        u = controlAndCheck(xhat, setpoint, -2.557);
 
         xhat = updateAndCheck(xhat, u, 0.013, 0.013, 0.133);
-        u = controlAndCheck(xhat, setpoint, -2.001);
+        u = controlAndCheck(xhat, setpoint, -2.015);
 
-        xhat = updateAndCheck(xhat, u, 0.015, 0.015, 0.093);
-        u = controlAndCheck(xhat, setpoint, -1.398);
+        xhat = updateAndCheck(xhat, u, 0.015, 0.015, 0.092);
+        u = controlAndCheck(xhat, setpoint, -1.419);
 
-        xhat = updateAndCheck(xhat, u, 0.017, 0.017, 0.065);
-        u = controlAndCheck(xhat, setpoint, -1.129);
+        xhat = updateAndCheck(xhat, u, 0.017, 0.017, 0.063);
+        u = controlAndCheck(xhat, setpoint, -1.065);
 
         xhat = updateAndCheck(xhat, u, 0.018, 0.018, 0.043);
-        u = controlAndCheck(xhat, setpoint, -0.753);
+        u = controlAndCheck(xhat, setpoint, -0.726);
 
         xhat = updateAndCheck(xhat, u, 0.019, 0.019, 0.028);
-        u = controlAndCheck(xhat, setpoint, -0.584);
+        u = controlAndCheck(xhat, setpoint, -0.532);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.017);
-        u = controlAndCheck(xhat, setpoint, -0.549);
+        u = controlAndCheck(xhat, setpoint, -0.442);
 
-        xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.006);
-        u = controlAndCheck(xhat, setpoint, -0.213);
+        xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.008);
+        u = controlAndCheck(xhat, setpoint, -0.243);
+
+        xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.003);
+        u = controlAndCheck(xhat, setpoint, -0.109);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.001);
-        u = controlAndCheck(xhat, setpoint, -0.046);
+        u = controlAndCheck(xhat, setpoint, -0.042);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.0001);
-        u = controlAndCheck(xhat, setpoint, -0.002);
-
-        xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0.0001);
-        u = controlAndCheck(xhat, setpoint, 0.001);
+        u = controlAndCheck(xhat, setpoint, -0.013);
 
         xhat = updateAndCheck(xhat, u, 0.02, 0.02, 0);
-        u = controlAndCheck(xhat, setpoint, 0.0004);
+        u = controlAndCheck(xhat, setpoint, -0.003);
     }
 
     @Test
@@ -134,9 +135,9 @@ public class EstimatorAndControlTest {
         // initial is pi - 0.03
         // so delta is +0.02, should push positive
 
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228, 0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(Math.PI - 0.03, 0), p);
 
         // initially, state estimate: at zero, motionless
@@ -157,46 +158,46 @@ public class EstimatorAndControlTest {
         u = controlAndCheck(xhat, setpoint, 11.455);
 
         xhat = updateAndCheck(xhat, u, 3.114, 3.114, 0.229);
-        u = controlAndCheck(xhat, setpoint, -0.058);
+        u = controlAndCheck(xhat, setpoint, -0.050);
 
         xhat = updateAndCheck(xhat, u, 3.118, 3.118, 0.228);
-        u = controlAndCheck(xhat, setpoint, -2.454);
+        u = controlAndCheck(xhat, setpoint, -2.509);
 
         xhat = updateAndCheck(xhat, u, 3.122, 3.122, 0.178);
-        u = controlAndCheck(xhat, setpoint, -2.517);
+        u = controlAndCheck(xhat, setpoint, -2.538);
 
         xhat = updateAndCheck(xhat, u, 3.125, 3.125, 0.128);
         u = controlAndCheck(xhat, setpoint, -1.982);
 
-        xhat = updateAndCheck(xhat, u, 3.128, 3.128, 0.089);
-        u = controlAndCheck(xhat, setpoint, -1.684);
+        xhat = updateAndCheck(xhat, u, 3.128, 3.128, 0.088);
+        u = controlAndCheck(xhat, setpoint, -1.563);
 
         xhat = updateAndCheck(xhat, u, 3.130, 3.130, 0.056);
-        u = controlAndCheck(xhat, setpoint, -1.289);
+        u = controlAndCheck(xhat, setpoint, -1.169);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.030);
-        u = controlAndCheck(xhat, setpoint, -0.813);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.033);
+        u = controlAndCheck(xhat, setpoint, -0.780);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.014);
-        u = controlAndCheck(xhat, setpoint, -0.283);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.017);
+        u = controlAndCheck(xhat, setpoint, -0.390);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, -0.051);
-
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, 0.011);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.009);
+        u = controlAndCheck(xhat, setpoint, -0.164);
 
         xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, 0.017);
+        u = controlAndCheck(xhat, setpoint, -0.059);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, 0.012);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.005);
+        u = controlAndCheck(xhat, setpoint, -0.017);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, 0.008);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.004);
+        u = controlAndCheck(xhat, setpoint, -0.003);
 
-        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.007);
-        u = controlAndCheck(xhat, setpoint, 0.004);
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.004);
+        u = controlAndCheck(xhat, setpoint, 0.0002);
+
+        xhat = updateAndCheck(xhat, u, 3.131, 3.131, 0.004);
+        u = controlAndCheck(xhat, setpoint, 0.0007);
     }
 
     @Test
@@ -207,9 +208,9 @@ public class EstimatorAndControlTest {
         // so delta is -0.02, should push negative across the boundary
 
         // starting point is the only difference
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228, 0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
 
         // initially, state estimate: at zero, motionless
@@ -232,50 +233,50 @@ public class EstimatorAndControlTest {
         u = controlAndCheck(xhat, setpoint, -11.455);
 
         xhat = updateAndCheck(xhat, u, -3.133, -3.133, -0.229);
-        u = controlAndCheck(xhat, setpoint, -0.312);
+        u = controlAndCheck(xhat, setpoint, -0.251);
 
         xhat = updateAndCheck(xhat, u, -3.138, -3.138, -0.235);
-        u = controlAndCheck(xhat, setpoint, 2.638);
+        u = controlAndCheck(xhat, setpoint, 2.613);
 
         xhat = updateAndCheck(xhat, u, 3.141, 3.141, -0.182);
-        u = controlAndCheck(xhat, setpoint, 2.700);
+        u = controlAndCheck(xhat, setpoint, 2.678);
 
         xhat = updateAndCheck(xhat, u, 3.138, 3.138, -0.128);
-        u = controlAndCheck(xhat, setpoint, 2.058);
+        u = controlAndCheck(xhat, setpoint, 2.061);
 
         xhat = updateAndCheck(xhat, u, 3.135, 3.135, -0.087);
-        u = controlAndCheck(xhat, setpoint, 1.705);
+        u = controlAndCheck(xhat, setpoint, 1.598);
 
-        xhat = updateAndCheck(xhat, u, 3.134, 3.134, -0.053);
-        u = controlAndCheck(xhat, setpoint, 0.991);
+        xhat = updateAndCheck(xhat, u, 3.134, 3.134, -0.055);
+        u = controlAndCheck(xhat, setpoint, 1.016);
 
-        xhat = updateAndCheck(xhat, u, 3.133, 3.133, -0.033);
-        u = controlAndCheck(xhat, setpoint, 0.646);
+        xhat = updateAndCheck(xhat, u, 3.133, 3.133, -0.035);
+        u = controlAndCheck(xhat, setpoint, 0.661);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.021);
-        u = controlAndCheck(xhat, setpoint, 0.553);
+        u = controlAndCheck(xhat, setpoint, 0.491);
 
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.01);
-        u = controlAndCheck(xhat, setpoint, 0.204);
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.012);
+        u = controlAndCheck(xhat, setpoint, 0.259);
+
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.007);
+        u = controlAndCheck(xhat, setpoint, 0.113);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, 0.036);
-
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, -0.007);
+        u = controlAndCheck(xhat, setpoint, 0.042);
 
         xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.004);
-        u = controlAndCheck(xhat, setpoint, -0.009);
+        u = controlAndCheck(xhat, setpoint, 0.013);
 
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, -0.006);
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.003);
+        u = controlAndCheck(xhat, setpoint, 0.003);
 
-        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.005);
-        u = controlAndCheck(xhat, setpoint, -0.003);
+        xhat = updateAndCheck(xhat, u, 3.132, 3.132, -0.003);
+        u = controlAndCheck(xhat, setpoint, 0.0001);
 
         // after all that, what's the accumulated variance?
-        // looks good in position, does not look good in velocity
-        // kinda makes sense because we never corrected velocity.
-        assertArrayEquals(new double[] { 0.02, 0, 0, 3276.788 }, xhat.P.getData(), kDelta);
+        // position variance is very tiny since we've given it the same measurement over and over.
+        // velocity variance is just the prior since we never corrected velocity
+        assertArrayEquals(new double[] { 0.000028, 0, 0, 0.1 }, xhat.Kxx.getData(), 0.000001);
     }
 }

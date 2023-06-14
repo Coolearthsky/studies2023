@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.system.MockNonlinearPlant;
 import org.team100.lib.system.NonlinearPlant;
@@ -25,40 +26,42 @@ public class ExtrapolatingEstimatorTest {
     static RandomVector<N1> v1(double x, double P) {
         Matrix<N1, N1> xV = VecBuilder.fill(x);
         Matrix<N1, N1> PV = VecBuilder.fill(P);
-        return new RandomVector<>(xV, PV);
+        return new RandomVector<>(xV, new Variance<>(PV));
     }
 
     static void assert1(RandomVector<N1> v, double x, double P) {
         assertArrayEquals(new double[] { x }, v.x.getData(), kDelta);
-        assertArrayEquals(new double[] { P }, v.P.getData(), kDelta);
+        assertArrayEquals(new double[] { P }, v.Kxx.getData(), kDelta);
     }
 
     static public class f1ZeroPlant extends MockNonlinearPlant<N1, N1, N1> {
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
-            return new RandomVector<>(VecBuilder.fill(0), VecBuilder.fill(1));
+            return new RandomVector<>(VecBuilder.fill(0),
+            Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1)));
         }
     }
 
     /** xdot = 0 */
     public RandomVector<N1> f1Zero(RandomVector<N1> x, Matrix<N1, N1> u) {
-        return new RandomVector<>(VecBuilder.fill(0), VecBuilder.fill(1));
+        return new RandomVector<>(VecBuilder.fill(0),
+        Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1)));
     }
 
     static public class f1XPlant extends MockNonlinearPlant<N1, N1, N1> {
 
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
-            Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-            p.set(0, 0, 1);
+            Variance<N1> p =  Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
+            // p.set(0, 0, 1);
             return new RandomVector<>(x.x, p);
         }
     }
 
     /** xdot = x */
     public RandomVector<N1> f1X(RandomVector<N1> x, Matrix<N1, N1> u) {
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
+        // p.set(0, 0, 1);
         return new RandomVector<>(x.x, p);
         // return x;
     }
@@ -117,8 +120,8 @@ public class ExtrapolatingEstimatorTest {
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
             Matrix<N1, N1> xx = new Matrix<>(Nat.N1(), Nat.N1());
-            Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-            p.set(0, 0, 1);
+            Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
+            // p.set(0, 0, 1);
             return new RandomVector<>(xx, p);
         }
     }
@@ -126,14 +129,13 @@ public class ExtrapolatingEstimatorTest {
     static public class f1PlantWithNoise extends f1Plant  {
         @Override
         public WhiteNoiseVector<N1> w() {
-            return new WhiteNoiseVector<>(VecBuilder.fill(1));
+            return new WhiteNoiseVector<>(new Variance<>(VecBuilder.fill(1)));
         }
     }
 
     public RandomVector<N1> f1(RandomVector<N1> x, Matrix<N1, N1> u) {
         Matrix<N1, N1> xx = new Matrix<>(Nat.N1(), Nat.N1());
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
         return new RandomVector<>(xx, p);
     }
 
@@ -141,16 +143,14 @@ public class ExtrapolatingEstimatorTest {
 
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
-            Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-            p.set(0, 0, 1);
+            Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
             return new RandomVector<>(x.x, p);
         }
 
     }
 
     public RandomVector<N1> f1x(RandomVector<N1> x, Matrix<N1, N1> u) {
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
         return new RandomVector<>(x.x, p);
     }
 
@@ -159,9 +159,9 @@ public class ExtrapolatingEstimatorTest {
         @Override
         public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
             Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
-            Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-            p.set(0, 0, 1);
-            p.set(1, 1, 1);
+            Variance<N2> p = Variance.from2StdDev(1, 1);
+            // p.set(0, 0, 1);
+            // p.set(1, 1, 1);
             return new RandomVector<>(xx, p);
         }
 
@@ -174,15 +174,15 @@ public class ExtrapolatingEstimatorTest {
             pp.set(0, 1, 0);
             pp.set(1, 0, 0);
             pp.set(1, 1, 0.5);
-            return new WhiteNoiseVector<>(pp);
+            return new WhiteNoiseVector<>(new Variance<>(pp));
         }
     }
 
     public RandomVector<N2> f2(RandomVector<N2> x, Matrix<N1, N1> u) {
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 1);
-        p.set(1, 1, 1);
+        Variance<N2> p = Variance.from2StdDev(1, 1);
+        // p.set(0, 0, 1);
+        // p.set(1, 1, 1);
         return new RandomVector<>(xx, p);
     }
 
@@ -190,8 +190,8 @@ public class ExtrapolatingEstimatorTest {
     public void testRandomVectorIntegration1() {
         Matrix<N1, N1> x = new Matrix<>(Nat.N1(), Nat.N1());
         x.set(0, 0, 1);
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1));
+        // p.set(0, 0, 1);
         RandomVector<N1> v1 = new RandomVector<>(x, p);
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
@@ -201,15 +201,15 @@ public class ExtrapolatingEstimatorTest {
         // same as input
         assertArrayEquals(new double[] { 1 }, i1.x.getData(), kDelta);
         // more variance over time
-        assertArrayEquals(new double[] { 1.278 }, i1.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 1.278 }, i1.Kxx.getData(), kDelta);
     }
 
     @Test
     public void testRandomVectorIntegration1WithNoise() {
         Matrix<N1, N1> x = new Matrix<>(Nat.N1(), Nat.N1());
         x.set(0, 0, 1);
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(), VecBuilder.fill(1));
+        // p.set(0, 0, 1);
         RandomVector<N1> v1 = new RandomVector<>(x, p);
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
@@ -220,15 +220,16 @@ public class ExtrapolatingEstimatorTest {
         // same as input
         assertArrayEquals(new double[] { 1 }, i1.x.getData(), kDelta);
         // noise adds "t" worth of extra variance compared to the above case
-        assertArrayEquals(new double[] { 2.278 }, i1.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 2.278 }, i1.Kxx.getData(), kDelta);
     }
 
     @Test
     public void testRandomVectorIntegration1x() {
         Matrix<N1, N1> x = new Matrix<>(Nat.N1(), Nat.N1());
         x.set(0, 0, 1);
-        Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
-        p.set(0, 0, 1);
+
+        Variance<N1> p = Variance.fromStdDev(Nat.N1(), VecBuilder.fill(1));
+        // p.set(0, 0, 1);
         RandomVector<N1> v1 = new RandomVector<>(x, p);
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
@@ -239,7 +240,7 @@ public class ExtrapolatingEstimatorTest {
         // pretty close to e, which is the right answer.
         assertArrayEquals(new double[] { 2.708 }, i1.x.getData(), kDelta);
         // more variance over time
-        assertArrayEquals(new double[] { 1.278 }, i1.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 1.278 }, i1.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -252,14 +253,14 @@ public class ExtrapolatingEstimatorTest {
         p.set(0, 1, 0);
         p.set(1, 0, 0);
         p.set(1, 1, 1);
-        RandomVector<N2> v2 = new RandomVector<>(x, p);
+        RandomVector<N2> v2 = new RandomVector<>(x, new Variance<>(p));
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         // big time step here to see the effect
         NonlinearPlant<N2, N1, N2> plant = new f2Plant();
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(plant);
         RandomVector<N2> i2 = predictor.predict(v2, u, 1);
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 1.278, 0, 0, 1.278 }, i2.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 1.278, 0, 0, 1.278 }, i2.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -272,7 +273,7 @@ public class ExtrapolatingEstimatorTest {
         p.set(0, 1, 0);
         p.set(1, 0, 0);
         p.set(1, 1, 1);
-        RandomVector<N2> v2 = new RandomVector<>(x, p);
+        RandomVector<N2> v2 = new RandomVector<>(x, new Variance<>(p));
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
 
         // Matrix<N2, N2> pp = new Matrix<>(Nat.N2(), Nat.N2());
@@ -288,7 +289,7 @@ public class ExtrapolatingEstimatorTest {
         RandomVector<N2> i2 = predictor.predictWithNoise(v2, u, 1);
         assertArrayEquals(new double[] { 1, 1 }, i2.x.getData(), kDelta);
         // noise variance varies by dimension; 0th is larger, 1st is smaller
-        assertArrayEquals(new double[] { 3.278, 0, 0, 1.778 }, i2.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 3.278, 0, 0, 1.778 }, i2.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -304,9 +305,9 @@ public class ExtrapolatingEstimatorTest {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v);
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228,0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
 
         RandomVector<N2> xhat = new AngularRandomVector<>(VecBuilder.fill(-1.0 * Math.PI + 0.01, 0), p);
         assertArrayEquals(new double[] { -3.132, 0 }, xhat.x.getData(), kDelta);
@@ -334,9 +335,9 @@ public class ExtrapolatingEstimatorTest {
         DoubleIntegratorRotary1D system = new DoubleIntegratorRotary1D(w,v);
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
 
-        Matrix<N2, N2> p = new Matrix<>(Nat.N2(), Nat.N2());
-        p.set(0, 0, 0.1);
-        p.set(1, 1, 0.1);
+        Variance<N2> p = Variance.from2StdDev(0.316228, 0.316228);
+        // p.set(0, 0, 0.1);
+        // p.set(1, 1, 0.1);
         Vector<N2> x = VecBuilder.fill(-1.0 * Math.PI + 0.01, -10);
         RandomVector<N2> xhat = new AngularRandomVector<>(x, p);
         assertArrayEquals(new double[] { -3.132, -10 }, xhat.x.getData(), kDelta);
@@ -365,15 +366,15 @@ public class ExtrapolatingEstimatorTest {
             public WhiteNoiseVector<N1> w() {
                 Matrix<N1, N1> p = new Matrix<>(Nat.N1(), Nat.N1());
                 p.set(0, 0, 2);
-                return new WhiteNoiseVector<>(p);
+                return new WhiteNoiseVector<>(new Variance<>(p));
             }
         };
 
         ExtrapolatingEstimator<N1, N1, N1> predictor = new ExtrapolatingEstimator<>(system);
-        RandomVector<N1> x = new RandomVector<>(VecBuilder.fill(0), VecBuilder.fill(0));
+        RandomVector<N1> x = new RandomVector<>(VecBuilder.fill(0), Variance.zero(Nat.N1()));
         x = predictor.addNoise(x, 0.02);
         assertArrayEquals(new double[] { 0 }, x.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.04 }, x.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.04 }, x.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -388,15 +389,15 @@ public class ExtrapolatingEstimatorTest {
                 p.set(0, 1, 0);
                 p.set(1, 0, 0);
                 p.set(1, 1, 0.5);
-                return new WhiteNoiseVector<>(p);
+                return new WhiteNoiseVector<>(new Variance<>(p));
             }
         };
 
         ExtrapolatingEstimator<N2, N1, N2> predictor = new ExtrapolatingEstimator<>(system);
-        RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+        RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
         x = predictor.addNoise(x, 0.02);
         assertArrayEquals(new double[] { 0, 0 }, x.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.04, 0, 0, 0.01 }, x.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.04, 0, 0, 0.01 }, x.Kxx.getData(), kDelta);
     }
 
 }

@@ -2,6 +2,7 @@ package org.team100.lib.fusion;
 
 import org.ejml.dense.row.MatrixFeatures_DDRM;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -52,7 +53,14 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
     /**
      * Weights should add to one.
      * 
+     * Return mean and covariance
+     *
+     * c = pa a + pb b
+     * C = pa a paT + pb b pbT + dispersion
+     * 
+     * @param a
      * @param pa a weight
+     * @param b
      * @param pb b weight
      */
     RandomVector<States> fuse(
@@ -68,26 +76,46 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
             throw new IllegalArgumentException("weights do not sum to one.\npa:\n "
                     + pa.toString() + "\npb:\n " + pb.toString());
         }
-        if (!MatrixFeatures_DDRM.isSymmetric(a.P.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("aP is not symmetric.\n" + a.P.toString());
+        if (!MatrixFeatures_DDRM.isSymmetric(a.Kxx.getValue().getStorage().getDDRM())) {
+            throw new IllegalArgumentException("aP is not symmetric.\n" + a.Kxx.toString());
         }
-        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(a.P.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("aP is not positive semidefinite.\n" + a.P.toString());
+        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(a.Kxx.getValue().getStorage().getDDRM())) {
+            throw new IllegalArgumentException("aP is not positive semidefinite.\n" + a.Kxx.toString());
         }
-        if (!MatrixFeatures_DDRM.isSymmetric(b.P.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("bP is not symmetric.\n" + b.P.toString());
+        if (!MatrixFeatures_DDRM.isSymmetric(b.Kxx.getValue().getStorage().getDDRM())) {
+            throw new IllegalArgumentException("bP is not symmetric.\n" + b.Kxx.toString());
         }
-        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(b.P.getStorage().getDDRM())) {
-            throw new IllegalArgumentException("bP is not positive semidefinite.\n" + b.P.toString());
+        if (!MatrixFeatures_DDRM.isPositiveSemidefinite(b.Kxx.getValue().getStorage().getDDRM())) {
+            throw new IllegalArgumentException("bP is not positive semidefinite.\n" + b.Kxx.toString());
         }
 
-        Matrix<States, States> dispersionTerm = dispersionCovariance(a, pa, b, pb);
-        RandomVector<States> cc = a.combine(pb, b);
-        return a.make(cc.x, cc.P.plus(dispersionTerm));
+//        Matrix<States, N1> cx = pa.times(a.x).plus(pb.times(b.x));
+// this handles wrapping
+        Matrix<States, N1> cx = a.combine(pb,b).x;
+
+        Matrix<States, States> cK = pa.times(a.Kxx.getValue()).times(pa.transpose()).plus(
+                pb.times(b.Kxx.getValue()).times(pb.transpose()));
+
+        // xplus(weight.times(other.xminus(this.x)));
+
+        Variance<States> dispersionTerm = dispersionCovariance(a, pa, b, pb);
+        // System.out.println("a " + a);
+        // System.out.println("b " + b);
+        // System.out.println("pb " + pb);
+
+        // RandomVector<States> cc = a.combine(pb, b);
+        // System.out.println("cc " + cc);
+        return a.make(cx, new Variance<>(cK).plus(dispersionTerm));
     }
 
-    /** Covariance of the mixture due to dispersion in the means. */
-    private Matrix<States, States> dispersionCovariance(
+    /**
+     * Covariance of the mixture due to dispersion in the means.
+     * 
+     * D = 2 * pa pb (a - b) ^2
+     * 
+     * note the factor of 2 because of the weights.
+     */
+    Variance<States> dispersionCovariance(
             RandomVector<States> a,
             Matrix<States, States> pa,
             RandomVector<States> b,
@@ -100,8 +128,8 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         }
         Matrix<States, States> d2 = ddiag.times(ddiag);
         Matrix<States, States> papb = pa.times(pb);
-        Matrix<States, States> dispersionTerm = papb.times(d2);
-        return dispersionTerm;
+        Matrix<States, States> dispersionTerm = papb.times(d2).times(2.0);
+        return new Variance<>(dispersionTerm);
     }
 
     /**
@@ -109,8 +137,8 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
      * matrices.
      */
     RandomVector<States> fuse(RandomVector<States> a, double pa, RandomVector<States> b, double pb) {
-        Matrix<States, States> pamat = a.P.copy();
-        Matrix<States, States> pbmat = b.P.copy();
+        Matrix<States, States> pamat = a.Kxx.copy().getValue();
+        Matrix<States, States> pbmat = b.Kxx.copy().getValue();
         pamat.fill(0);
         pbmat.fill(0);
         for (int i = 0; i < pamat.getNumCols(); ++i) {

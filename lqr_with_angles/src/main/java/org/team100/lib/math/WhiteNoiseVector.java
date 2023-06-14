@@ -1,7 +1,5 @@
 package org.team100.lib.math;
 
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N2;
 
@@ -24,16 +22,14 @@ import edu.wpi.first.math.numbers.N2;
  * variance than integrating a belief.
  */
 public class WhiteNoiseVector<States extends Num> {
-    public final Matrix<States, States> P;
+    public final Variance<States> P;
 
-    public WhiteNoiseVector(Matrix<States, States> P) {
+    public WhiteNoiseVector(Variance<States> P) {
         this.P = P;
     }
 
     public static WhiteNoiseVector<N2> noise2(double w1, double w2) {
-        Matrix<N2,N2> w = new Matrix<>(Nat.N2(),Nat.N2());
-        w.set(0,0,w1);
-        w.set(1,1,w2);
-        return new WhiteNoiseVector<>(w);
+        Variance<N2> kxx = Variance.from2StdDev(w1, w2);
+        return new WhiteNoiseVector<>(kxx);
     }
 }

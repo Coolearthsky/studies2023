@@ -2,6 +2,7 @@ package org.team100.lib.system.examples;
 
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -14,7 +15,7 @@ public abstract class Cartesian1D extends NoisyLimitedPlant1D {
     }
 
     @Override
-    public RandomVector<N2> make(Matrix<N2, N1> x, Matrix<N2, N2> P) {
-        return new RandomVector<>(x,P);
+    public RandomVector<N2> make(Matrix<N2, N1> x, Variance<N2> Kxx) {
+        return new RandomVector<>(x,Kxx);
     }
 }

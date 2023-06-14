@@ -2,6 +2,7 @@ package org.team100.lib.system.examples;
 
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 
 import edu.wpi.first.math.Matrix;
@@ -27,11 +28,11 @@ public class DoubleIntegratorCartesian1D extends Cartesian1D {
         double pdot = v;
         double vdot = u;
         Matrix<N2,N1> xdotx = VecBuilder.fill(pdot, vdot);
-        Matrix<N2,N2> xdotP = xmat.P.copy();
+        Matrix<N2,N2> xdotP = xmat.Kxx.copy().getValue();
         xdotP.fill(0);
         // propagate variance of x through f (u has zero variance)
-        xdotP.set(0,0,xmat.P.get(1,1));
-        return new RandomVector<>(xdotx, xdotP);
+        xdotP.set(0,0,xmat.Kxx.get(1,1));
+        return new RandomVector<>(xdotx, new Variance<>(xdotP));
     }
 
     @Override
@@ -44,10 +45,10 @@ public class DoubleIntegratorCartesian1D extends Cartesian1D {
     public RandomVector<N2> finvWrtX(RandomVector<N2> xdot, Matrix<N1, N1> u) {
         Matrix<N2, N1> xx = new Matrix<>(Nat.N2(), Nat.N1());
         xx.set(1, 0, xdot.x.get(0, 0));
-        Matrix<N2, N2> xP = new Matrix<>(Nat.N2(), Nat.N2());
-        xP.set(0, 0, 1e9); // "don't know" variance
-        xP.set(1, 1, xdot.P.get(0, 0));
-        return new RandomVector<>(xx, xP); 
+        Matrix<N2,N2> xP = new Matrix<>(Nat.N2(),Nat.N2());
+        xP.set(0,0,1e9);
+        xP.set(1, 1, xdot.Kxx.get(0, 0));
+        return new RandomVector<>(xx, new Variance<>(xP)); 
     }
 
 
