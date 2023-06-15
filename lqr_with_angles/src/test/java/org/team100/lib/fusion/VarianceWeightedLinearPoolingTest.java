@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.Random;
+
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
 import org.team100.lib.math.Variance;
@@ -47,8 +49,8 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(1, 1);
         RandomVector<N1> cV = p1.fuse(aV, bV);
         // aggregate mean is right in the middle
-        // aggregate variance 0.5 from dispersion, 0.5 from variance
-        assert1(cV, 0.5, 1);
+        // aggregate variance 0.5 from dispersion, 0.25 from variance
+        assert1(cV, 0.5, 0.75);
     }
 
     @Test
@@ -67,7 +69,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p1.fuse(aV, bV);
         // the mean is like log-linear, weighted by inverse variance
         // the variance is bigger than log-linear due to the dispersion term
-        assert1(cV, 0.333, 1.111);
+        assert1(cV, 0.333, 0.888);
     }
 
     @Test
@@ -77,7 +79,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // the mean is like log-linear, weighted by inverse variance
         // the variance is bigger than log-linear due to the dispersion term
-        assert2(cV, 0.333, 0.333, 1.111, 0, 0, 1.111);
+        assert2(cV, 0.333, 0.333, 0.888, 0, 0, 0.888);
     }
 
     @Test
@@ -86,7 +88,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> bV = v2(1, 1, 2, 0, 0, 1);
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
-        assert2(cV, 0.333, 0.666, 1.111, 0, 0, 1.111);
+        assert2(cV, 0.333, 0.666, 0.888, 0, 0, 0.888);
     }
 
     @Test
@@ -95,7 +97,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> aV = v2(0, 0, 1, 0.5, 0.5, 1);
         RandomVector<N2> bV = v2(1, 1, 2, 0.5, 0.5, 2);
         RandomVector<N2> cV = p2.fuse(aV, bV);
-        assert2(cV, 0.375, 0.375, 1.078, 0.328, 0.328, 1.078);
+        assert2(cV, 0.375, 0.375, 0.867, 0.305, 0.305, 0.867);
     }
 
     @Test
@@ -106,7 +108,7 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         RandomVector<N2> cV = p2.fuse(aV, bV);
         // mean leans towards the tighter variance
         // off-diagonals make this effect stronger
-        assert2(cV, 0.25, 0.75, 1.141, 0.203, 0.203, 1.141);
+        assert2(cV, 0.25, 0.75, 0.922, 0.203, 0.203, 0.922);
     }
 
     @Test
@@ -137,8 +139,8 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         Matrix<N2, N2> pb = m2(0.5, 0, 0, 0.5);
         RandomVector<N2> cV = p2.fuse(aV, pa, bV, pb);
         // equal weight => mean in the middle,
-        // variance is 0.5 from dispersion, 0.5 from two samples
-        assert2(cV, 0.5, 0.5, 1, 0, 0, 1);
+        // variance is 0.5 from dispersion, 0.25 from two samples
+        assert2(cV, 0.5, 0.5, 0.75, 0, 0, 0.75);
     }
 
     @Test
@@ -177,16 +179,16 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         // since the old and new have the same variance the mean is in the middle
         assertArrayEquals(new double[] { 0.5, 0 }, xhat.x.getData(), kDelta);
         // the difference in means adds to the variance but only of the first component
-        assertArrayEquals(new double[] { 0.505, 0, 0, 0.005 }, xhat.Kxx.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.255, 0, 0, 0.005 }, xhat.Kxx.getData(), kDelta);
 
         xhat = p2.fuse(xhat, estimateFromMeasurement);
         // new measurement has lower variance so it is preferred
-        assertArrayEquals(new double[] { 0.990, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.981, 0 }, xhat.x.getData(), kDelta);
         // mean dispersion keeps increasing P but multiple samples keep decreasing it
         assertArrayEquals(new double[] { 0.019, 0, 0, 0.003 }, xhat.Kxx.getData(), kDelta);
 
         xhat = p2.fuse(xhat, estimateFromMeasurement);
-        assertArrayEquals(new double[] { 0.997, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.993, 0 }, xhat.x.getData(), kDelta);
         // mean dispersion is way down now
         assertArrayEquals(new double[] { 0.007, 0, 0, 0.002 }, xhat.Kxx.getData(), kDelta);
 
@@ -286,9 +288,9 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         assertArrayEquals(new double[] { 0.5 }, cV.x.getData());
         // 0.5 from variance
         // each sample is 0.5 from the mean, squared is 0.25, sum is 0.5
-        // so the dispersion term is 0.5
-        // so total variance is 1
-        assertArrayEquals(new double[] { 1 }, cV.Kxx.getData(), 0.000001);
+        // so the dispersion term is 0.25
+        // so total variance is 0.75
+        assertArrayEquals(new double[] { 0.75 }, cV.Kxx.getData(), 0.000001);
     }
 
     @Test
@@ -309,5 +311,20 @@ public class VarianceWeightedLinearPoolingTest extends PoolingTest {
         assertArrayEquals(new double[] { 0 }, cV.x.getData());
         // combine an estimate with "don't know" and you get the estimate back
         assertArrayEquals(new double[] { 0.999 }, cV.Kxx.getData(), 0.001);
+    }
+
+    //@Test
+    public void testRandom() {
+        // make a bunch of random samples with the variance of the measurement.
+        // the mean should converge to 0
+        // the variance should converge to 1
+        Random r = new Random(0);
+        RandomVector<N1> aV = v1(r.nextGaussian(), 10);
+        for (int i = 0; i < 10000; ++i) {
+            aV = p1.fuse(aV, v1(r.nextGaussian(), 10));
+            System.out.printf("%12.5f, %12.5f\n",
+            aV.x.get(0,0),
+            aV.Kxx.getValue().get(0,0));
+        }
     }
 }

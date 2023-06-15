@@ -106,6 +106,8 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         // RandomVector<States> cc = a.combine(pb, b);
         // System.out.println("cc " + cc);
         return a.make(cx, new Variance<>(cK).plus(dispersionTerm));
+       // return a.make(cx, new Variance<>(cK));
+
     }
 
     /**
@@ -128,7 +130,7 @@ public abstract class LinearPooling<States extends Num> implements Pooling<State
         }
         Matrix<States, States> d2 = ddiag.times(ddiag);
         Matrix<States, States> papb = pa.times(pb);
-        Matrix<States, States> dispersionTerm = papb.times(d2).times(2.0);
+        Matrix<States, States> dispersionTerm = papb.times(d2);//.times(2.0);
         return new Variance<>(dispersionTerm);
     }
 

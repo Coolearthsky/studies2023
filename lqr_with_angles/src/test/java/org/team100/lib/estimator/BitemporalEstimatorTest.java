@@ -254,7 +254,7 @@ public class BitemporalEstimatorTest {
         // assertArrayEquals(new double[]{0.296, 0.06},xhat.x.getData(),kDelta);
         // these are the new ones, a little higher because of the higher constant gain.
         // assertArrayEquals(new double[] { 0.344, 0.072 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.999, 0 }, xhat.x.getData(), kDelta);
 
         // the real EKF
         // assertArrayEquals(new double[] { 0.00008, 0.00014, 0.00014, 0.00368 },
@@ -350,7 +350,7 @@ public class BitemporalEstimatorTest {
         // assertArrayEquals(new double[]{1.052,1.435},xhat.x.getData(),kDelta);
         // prediction makes this more similar to EKF than the correction-only one above
         // assertArrayEquals(new double[] { 0.377, 0.071 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.999, 0 }, xhat.x.getData(), kDelta);
 
         // the real EKF
         // assertArrayEquals(new double[] { 0.00008, 0.00014, 0.00014, 0.00368 },

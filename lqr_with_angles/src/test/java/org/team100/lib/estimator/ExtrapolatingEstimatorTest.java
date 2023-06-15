@@ -48,7 +48,7 @@ public class ExtrapolatingEstimatorTest {
         Variance.fromStdDev(Nat.N1(),VecBuilder.fill(1)));
     }
 
-    static public class f1XPlant extends MockNonlinearPlant<N1, N1, N1> {
+    static public class f1xxPlant extends MockNonlinearPlant<N1, N1, N1> {
 
         @Override
         public RandomVector<N1> f(RandomVector<N1> x, Matrix<N1, N1> u) {
@@ -92,7 +92,7 @@ public class ExtrapolatingEstimatorTest {
 
     @Test
     public void testX() {
-        NonlinearPlant<N1, N1, N1> plant = new f1XPlant();
+        NonlinearPlant<N1, N1, N1> plant = new f1xxPlant();
 
         ExtrapolatingEstimator<N1, N1, N1> p = new ExtrapolatingEstimator<>(plant);
         Matrix<N1, N1> u = VecBuilder.fill(0);
