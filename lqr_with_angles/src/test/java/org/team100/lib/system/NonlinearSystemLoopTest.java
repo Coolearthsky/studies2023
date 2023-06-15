@@ -200,7 +200,7 @@ public class NonlinearSystemLoopTest {
             xhat = loop.correct(xhat, system.position(-3.137));
             xhat = loop.correct(xhat, system.velocity(-0.229));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
-            assertEquals(2.121, totalU.get(0, 0), kDelta);
+            assertEquals(2.123, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             // crossed the boundary
             assertArrayEquals(new double[] { 3.141, -0.187 }, xhat.x.getData(), kDelta);
@@ -209,7 +209,7 @@ public class NonlinearSystemLoopTest {
             xhat = loop.correct(xhat, system.position(-3.141));
             xhat = loop.correct(xhat, system.velocity(-0.191));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
-            assertEquals(2.580, totalU.get(0, 0), kDelta);
+            assertEquals(2.578, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.138, -0.136 }, xhat.x.getData(), kDelta);
         }
@@ -217,7 +217,7 @@ public class NonlinearSystemLoopTest {
             xhat = loop.correct(xhat, system.position(3.138));
             xhat = loop.correct(xhat, system.velocity(-0.139));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
-            assertEquals(2.224, totalU.get(0, 0), kDelta);
+            assertEquals(2.222, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.136, -0.093 }, xhat.x.getData(), kDelta);
         }
@@ -225,7 +225,7 @@ public class NonlinearSystemLoopTest {
             xhat = loop.correct(xhat, system.position(3.136));
             xhat = loop.correct(xhat, system.velocity(-0.095));
             Matrix<N1, N1> totalU = loop.calculateTotalU(xhat, setpoint, rDot, kDt);
-            assertEquals(1.591, totalU.get(0, 0), kDelta);
+            assertEquals(1.590, totalU.get(0, 0), kDelta);
             xhat = loop.predictState(xhat, totalU, kDt);
             assertArrayEquals(new double[] { 3.134, -0.061 }, xhat.x.getData(), kDelta);
         }

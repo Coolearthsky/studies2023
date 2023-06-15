@@ -24,8 +24,8 @@ public class DemocraticLinearPoolingTest extends PoolingTest {
         RandomVector<N1> bV = v1(1, 1);
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean is right in the middle
-        // aggregate variance is 0.5 as above plus 0.5 from dispersion
-        assert1(cV, 0.5, 1.0);
+        // aggregate variance is 0.5 as above plus 0.25 from dispersion
+        assert1(cV, 0.5, 0.75);
     }
 
     @Test
@@ -45,7 +45,7 @@ public class DemocraticLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean is right in the middle
         // aggregate variance is a bit bigger, both mean and variance affect it
-        assert1(cV, 0.5, 1.25);
+        assert1(cV, 0.5, 1);
     }
 
     @Test
@@ -55,7 +55,7 @@ public class DemocraticLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p.fuse(aV, bV);
         // aggregate mean in the middle
         // aggregate variance is ... ok i guess?
-        assert1(cV, 0.5, 0.75);
+        assert1(cV, 0.5, 0.5);
     }
 
     @Test
@@ -67,7 +67,7 @@ public class DemocraticLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p.fuse(aV, bV);
         // so the mean should be around zero
         // and the variance is a bit bigger since the inputs are pi/2 apart
-        assert1(cV, 0.005, 1.749);
+        assert1(cV, 0.005, 1.125);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class DemocraticLinearPoolingTest extends PoolingTest {
         RandomVector<N1> cV = p.fuse(aV, bV);
         // so the mean should be around pi
         // and the variance is a bit bigger since the inputs are pi/2 apart
-        assert1(cV, Math.PI - 0.005, 1.749);
+        assert1(cV, Math.PI - 0.005, 1.125);
     }
 
 

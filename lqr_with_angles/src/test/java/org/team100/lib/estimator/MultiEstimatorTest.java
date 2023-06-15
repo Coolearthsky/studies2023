@@ -140,7 +140,7 @@ public class MultiEstimatorTest {
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.141, -0.479 }, xhat.x.getData(), kDelta);
         // variance is quite small
-        assertArrayEquals(new double[] { 0.00005, 0, 0, 0.00503 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.00005, 0, 0, 0.00487 }, xhat.Kxx.getData(), 0.00001);
 
         xhat = extrapolator.predict(xhat, u, kDt);
 
@@ -157,7 +157,7 @@ public class MultiEstimatorTest {
         xhat = pooling.fuse(x, xhat);
         // notice crossing the boundary
         assertArrayEquals(new double[] { 3.130, -0.718 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.000034, 0, 0, 0.00348 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.000034, 0, 0, 0.00333 }, xhat.Kxx.getData(), 0.00001);
 
         xhat = extrapolator.predict(xhat, u, kDt);
 
@@ -172,7 +172,7 @@ public class MultiEstimatorTest {
 
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { 3.113, -0.958 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.000034, 0, 0, 0.00269 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.000034, 0, 0, 0.00255 }, xhat.Kxx.getData(), 0.00001);
 
     }
 
@@ -211,15 +211,15 @@ public class MultiEstimatorTest {
         // measurement is tighter than prior
         xhat = pooling.fuse(x, xhat);
         assertArrayEquals(new double[] { -3.132, -0.218 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.1, 0, 0, 0.018611 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.1, 0, 0, 0.01385 }, xhat.Kxx.getData(), 0.00001);
 
         x = pointEstimator.stateForMeasurementWithZeroU(system.velocity(-0.480));
         assertArrayEquals(new double[] { 0, -0.48 }, x.x.getData(), kDelta);
         assertArrayEquals(new double[] { 1e9, 0, 0, 0.01 }, x.Kxx.getData(), 0.00001);
 
         xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { -3.132, -0.388 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.1, 0, 0, 0.037674 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { -3.132, -0.370 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.1, 0, 0, 0.022498 }, xhat.Kxx.getData(), 0.00001);
 
         x = pointEstimator.stateForMeasurementWithZeroU(system.velocity(-0.720));
         assertArrayEquals(new double[] { 0, -0.72}, x.x.getData(), kDelta);
@@ -227,8 +227,8 @@ public class MultiEstimatorTest {
 
         // so the uncorrected position is left untouched
         xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { -3.132, -0.65 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.1, 0, 0, 0.044335 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { -3.132, -0.612 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.1, 0, 0, 0.032984 }, xhat.Kxx.getData(), 0.00001);
 
     }
 
@@ -258,7 +258,7 @@ public class MultiEstimatorTest {
         xhat = pooling.fuse(x, xhat);
         // fused position respects the precise measurement over the loose prior
         assertArrayEquals(new double[] { 2.983, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.00016, 0, 0, 0.1 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.00013, 0, 0, 0.1 }, xhat.Kxx.getData(), 0.00001);
 
         x = pointEstimator.stateForMeasurementWithZeroU(system.position(-3.5));
         assertArrayEquals(new double[] { 2.783, 0 }, x.x.getData(), kDelta);
@@ -267,10 +267,10 @@ public class MultiEstimatorTest {
         // now the two updates have about the same variance so the mean is near the
         // middle
         xhat = pooling.fuse(x, xhat);
-        assertArrayEquals(new double[] { 2.861, 0 }, xhat.x.getData(), kDelta);
+        assertArrayEquals(new double[] { 2.871, 0 }, xhat.x.getData(), kDelta);
         // and the variance grows quite a bit because of the dispersion in means
         // (and the variance in the "don't know" value stays the same the whole time)
-        assertArrayEquals(new double[] { 0.01912, 0, 0, 0.1 }, xhat.Kxx.getData(), 0.00001);
+        assertArrayEquals(new double[] { 0.00992, 0, 0, 0.1 }, xhat.Kxx.getData(), 0.00001);
 
     }
 
