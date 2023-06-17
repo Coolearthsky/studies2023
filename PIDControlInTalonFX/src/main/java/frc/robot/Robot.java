@@ -35,11 +35,11 @@ public class Robot extends TimedRobot {
     m_motor.configAllowableClosedloopError(0, 0, 30);
     //F is feedforward, none used for this test
     m_motor.config_kF(0, 0);
-    //The P value you have for position control changes, but 0.1 was good for me
-    //The P value for velocity seems to affect how fast the motor will spin, so if the P value is larger, the motor will go faster by the multiplier of how much higher the P value is 
-    m_motor.config_kP(0, 0.25);
-    m_motor.config_kI(0, 0);
-    m_motor.config_kD(0, 20);
+    //The P value you have for position control changes, but 0.25 was good for me. I also found having a D value helped.
+    //The P value for velocity seems to affect how fast the motor will spin, so if the P value is smaller, the motor will go slow multiplier of how much lower the P value is. My P value I used was 0.0001. However, this allows for much more control
+    m_motor.config_kP(0, 0.25); // V 0.0001
+    m_motor.config_kI(0, 0); // V 0
+    m_motor.config_kD(0, 20); // V 0
     // int absolutePosition = 0;
     // m_motor.setSelectedSensorPosition(absolutePosition, 0, 30);
   }
