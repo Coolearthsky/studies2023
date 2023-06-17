@@ -15,8 +15,7 @@ import edu.wpi.first.math.numbers.N2;
 
 public class JacobianTest {
     private static final double kDelta = 0.001;
-    private static final RandomVector<N2> xZero = new RandomVector<>(VecBuilder.fill(0, 0),
-            new Matrix<>(Nat.N2(), Nat.N2()));
+    private static final RandomVector<N2> xZero = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
 
     public RandomVector<N2> f(RandomVector<N2> x, Matrix<N1, N1> u) {
         return x;
@@ -28,7 +27,7 @@ public class JacobianTest {
 
     @Test
     public void testJacobianF() {
-        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), Variance.zero2());
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Matrix<N2, N2> A = Jacobian.numericalJacobianX(Nat.N2(), Nat.N2(), this::f, x, u);
         assertArrayEquals(new double[] { 1, 0, 0, 1 }, A.getData(), kDelta);
@@ -37,7 +36,7 @@ public class JacobianTest {
     @Test
     public void testJacobianH() {
         // TODO: make an H version
-        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), Variance.zero2());
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Matrix<N2, N2> A = Jacobian.numericalJacobianX(Nat.N2(), Nat.N2(), this::h, x, u);
         assertArrayEquals(new double[] { 1, 0, 0, 1 }, A.getData(), kDelta);
@@ -45,7 +44,7 @@ public class JacobianTest {
 
     @Test
     public void testJacobianU() {
-        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), new Matrix<>(Nat.N2(), Nat.N2()));
+        RandomVector<N2> x = new RandomVector<>(new Matrix<>(Nat.N2(), Nat.N1()), Variance.zero2());
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1());
         Matrix<N2, N1> B = Jacobian.numericalJacobianU(Nat.N2(), Nat.N1(), this::f, x, u);
         assertArrayEquals(new double[] { 0, 0 }, B.getData(), kDelta);
@@ -63,7 +62,7 @@ public class JacobianTest {
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         {
             // at zero
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
@@ -72,7 +71,7 @@ public class JacobianTest {
         }
         {
             // different position, same A
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
@@ -81,7 +80,7 @@ public class JacobianTest {
         }
         {
             // different u, same A
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(10000);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
@@ -102,7 +101,7 @@ public class JacobianTest {
         NonlinearPlant<N2, N1, N2> plant = new DoubleIntegratorRotary1D(w,v);
         {
             // at zero
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
@@ -111,7 +110,7 @@ public class JacobianTest {
         }
         {
             // different position, same B
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
@@ -120,7 +119,7 @@ public class JacobianTest {
         }
         {
             // different u, same B
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(10000);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
@@ -141,7 +140,7 @@ public class JacobianTest {
         NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w,v);
         {
             // at zero degrees (max gravity) the gravity force doesn't change much with position
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0, 0 }, A.getData(), kDelta);
@@ -150,7 +149,7 @@ public class JacobianTest {
         }
         {
             // at 30 degrees the gravity force changes a little with position
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 6, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 6, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0.5, 0 }, A.getData(), kDelta);
@@ -159,7 +158,7 @@ public class JacobianTest {
         }
         {
             // at 60 degrees the gravity force changes a lot with position
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 3, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 3, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 0.866, 0 }, A.getData(), kDelta);
@@ -168,7 +167,7 @@ public class JacobianTest {
         }
         {
             // at 90 degrees the gravity force is about proportional with position
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 2, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(Math.PI / 2, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N2> A = Jacobian.numericalJacobianX(rows, states, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1, 1, 0 }, A.getData(), kDelta);
@@ -190,7 +189,7 @@ public class JacobianTest {
         NonlinearPlant<N2, N1, N2> plant = new Pendulum1D(w,v);
         {
             // at zero
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(0, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);
@@ -200,7 +199,7 @@ public class JacobianTest {
         }
         {
             // different position, same B
-            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), new Matrix<>(Nat.N2(), Nat.N2()));
+            RandomVector<N2> x = new RandomVector<>(VecBuilder.fill(1, 0), Variance.zero2());
             Matrix<N1, N1> u = VecBuilder.fill(0);
             Matrix<N2, N1> B = Jacobian.numericalJacobianU(rows, inputs, plant::f, x, u);
             assertArrayEquals(new double[] { 0, 1 }, B.getData(), kDelta);

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import org.junit.jupiter.api.Test;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.MockNonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -49,16 +50,16 @@ public class PointEstimatorTest {
         Matrix<N2, N1> yx = new Matrix<>(Nat.N2(), Nat.N1());
         yx.set(0, 0, 1);
         // full measurement has low variance for every row
-        Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
-        yP.set(0, 0, 0.01);
-        yP.set(1, 1, 0.01);
+        Variance<N2> yP = Variance.from2StdDev(0.1, 0.1);
+        // yP.set(0, 0, 0.01);
+        // yP.set(1, 1, 0.01);
         RandomVector<N2> y = new RandomVector<>(yx, yP);
 
         RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 0.01 }, xhat.Kxx.getData(), kDelta);
     }
 
     @Test
@@ -73,13 +74,16 @@ public class PointEstimatorTest {
         Matrix<N2, N2> yP = new Matrix<>(Nat.N2(), Nat.N2());
         yP.set(0, 0, 0.01);
         yP.set(1, 1, 1e9); // enormous variance; TODO: how big shouild this be?
-        RandomVector<N2> y = new RandomVector<>(yx, yP);
+        RandomVector<N2> y = new RandomVector<>(yx, new Variance<>(yP));
 
         RandomVector<N2> xhat = pointEstimator.stateForMeasurementWithZeroU(y);
         // since the state is just the measurement,
         // you get the specified mean and variance of the measurement.
         assertArrayEquals(new double[] { 1, 0 }, xhat.x.getData(), kDelta);
-        assertArrayEquals(new double[] { 0.01, 0, 0, 1e9 }, xhat.P.getData(), kDelta);
+        assertArrayEquals(new double[] { 0.01, 0, 0, 1e9 }, xhat.Kxx.getData(), kDelta);
     }
+
+
+    
 
 }

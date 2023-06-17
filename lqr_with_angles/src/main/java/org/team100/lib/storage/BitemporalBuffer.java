@@ -76,6 +76,22 @@ public class BitemporalBuffer<Value> {
         }
     }
 
+    /**
+     * Find the most-recent value earlier than the specified valid time.
+     */
+    public Entry<Double, Entry<Long, Value>> floor(double validTimeSec) {
+        if (validTimeSec < 0)
+            throw new IllegalArgumentException("Negative time is not allowed: " + validTimeSec);
+        Entry<Double, Entry<Long, Value>> floor = validFloorEntry(validTimeSec);
+        if (floor == null)
+            throw new IllegalStateException("No floor key (not initialized?): " + validTimeSec);
+        return floor;
+    }
+
+    public Value floorValue(double validTimeSec) {
+        return floor(validTimeSec).getValue().getValue();
+    }
+
     public NavigableMap<Long, Entry<Double, Value>> recordTailMap(long tt) {
         return Collections.unmodifiableNavigableMap(record.tailMap(tt, true));
     }

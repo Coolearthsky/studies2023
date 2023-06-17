@@ -1,6 +1,7 @@
 package org.team100.lib.estimator;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.system.NonlinearPlant;
 
 import edu.wpi.first.math.Matrix;
@@ -50,9 +51,9 @@ public class ExtrapolatingEstimator<States extends Num, Inputs extends Num, Outp
 
     /** Noise integration produces variance of t */
     RandomVector<States> addNoise(RandomVector<States> x, double dtSeconds) {
-        Matrix<States, States> noiseVariance = m_plant.w().P.copy();
+        Variance<States> noiseVariance = m_plant.w().P.copy();
         noiseVariance = noiseVariance.times(dtSeconds);
-        return x.make(x.x, x.P.plus(noiseVariance));
+        return x.make(x.x, x.Kxx.plus(noiseVariance));
     }
 
 }

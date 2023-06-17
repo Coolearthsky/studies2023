@@ -8,12 +8,12 @@ import edu.wpi.first.math.numbers.N1;
 /** Example of handling non-euclidean metrics; this has an angle in row zero. */
 public class AngularRandomVector<States extends Num> extends RandomVector<States> {
 
-    public AngularRandomVector(Matrix<States, N1> x, Matrix<States, States> P) {
+    public AngularRandomVector(Matrix<States, N1> x, Variance<States> P) {
         super(x, P);
         x.set(0, 0, MathUtil.angleModulus(x.get(0, 0)));
     }
 
-    public AngularRandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
+    public AngularRandomVector<States> make(Matrix<States, N1> x, Variance<States> P) {
         return new AngularRandomVector<>(x, P);
     }
 
@@ -46,6 +46,6 @@ public class AngularRandomVector<States extends Num> extends RandomVector<States
     }
     @Override
     public String toString() {
-        return "AngularRandomVector [x=" + x + ", P=" + P + "]";
+        return "AngularRandomVector [x=" + x + ", P=" + Kxx + "]";
     }
 }

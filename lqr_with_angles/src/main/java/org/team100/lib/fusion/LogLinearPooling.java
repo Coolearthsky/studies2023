@@ -1,6 +1,7 @@
 package org.team100.lib.fusion;
 
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -39,18 +40,18 @@ public abstract class LogLinearPooling<States extends Num> implements Pooling<St
     RandomVector<States> fuse(RandomVector<States> a, double pa, RandomVector<States> b, double pb) {
         Matrix<States, N1> ax = a.x;
         Matrix<States, N1> bx = b.x;
-        Matrix<States, States> aP = a.P;
-        Matrix<States, States> bP = b.P;
+        Variance<States> aP = a.Kxx;
+        Variance<States> bP = b.Kxx;
 
-        Matrix<States, States> paaPI = aP.inv().times(pa);
-        Matrix<States, States> pbbPI = bP.inv().times(pb);
+        Matrix<States, States> paaPI = aP.getValue().inv().times(pa);
+        Matrix<States, States> pbbPI = bP.getValue().inv().times(pb);
         Matrix<States, States> cP = paaPI.plus(pbbPI).inv();
 
-        Matrix<States, N1> cax = aP.inv().times(ax).times(pa);
-        Matrix<States, N1> cbx = bP.inv().times(bx).times(pb);
+        Matrix<States, N1> cax = aP.getValue().inv().times(ax).times(pa);
+        Matrix<States, N1> cbx = bP.getValue().inv().times(bx).times(pb);
         
         Matrix<States, N1> cx = cP.times(cax.plus(cbx));
 
-        return a.make(cx, cP);
+        return a.make(cx, new Variance<>(cP));
     }
 }

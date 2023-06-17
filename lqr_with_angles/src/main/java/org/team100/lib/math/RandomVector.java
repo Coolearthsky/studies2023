@@ -8,32 +8,42 @@ import edu.wpi.first.math.numbers.N1;
  * A vector-valued gaussian random variable, which represents a belief about a
  * hidden state.
  * 
+ * https://en.wikipedia.org/wiki/Multivariate_random_variable
+ * 
  * TODO: make distinct classes for state vs measurement
  */
 public class RandomVector<States extends Num> {
+    /**
+     * Expected value
+     * https://en.wikipedia.org/wiki/Expected_value
+     */
     public final Matrix<States, N1> x;
-    public final Matrix<States, States> P;
+    /**
+     * Variance
+     * https://en.wikipedia.org/wiki/Covariance_matrix
+     */
+    public final Variance<States> Kxx;
 
-    public RandomVector(Matrix<States, N1> x, Matrix<States, States> P) {
+    public RandomVector(Matrix<States, N1> x, Variance<States> Kxx) {
         this.x = x;
-        this.P = P;
+        this.Kxx = Kxx;
     }
 
     /** Instantiation that preserves type, i.e. it can be overridden. */
-    public RandomVector<States> make(Matrix<States, N1> x, Matrix<States, States> P) {
-        return new RandomVector<>(x, P);
+    public RandomVector<States> make(Matrix<States, N1> x, Variance<States> Kxx) {
+        return new RandomVector<>(x, Kxx);
     }
 
     public RandomVector<States> copy() {
-        return make(x.copy(), P.copy());
+        return make(x.copy(), Kxx.copy());
     }
 
     /**
      * Mean and covariance are simply added, which corresponds to assuming the
-     * variables are independent.  This is Euclidean.
+     * variables are independent. This is Euclidean.
      */
     public RandomVector<States> plus(RandomVector<States> b) {
-        return make(x.plus(b.x), P.plus(b.P));
+        return make(x.plus(b.x), Kxx.plus(b.Kxx));
     }
 
     /**
@@ -41,7 +51,7 @@ public class RandomVector<States extends Num> {
      * variables are independent. This is Euclidean.
      */
     public RandomVector<States> minus(RandomVector<States> b) {
-        return make(x.minus(b.x), P.plus(b.P));
+        return make(x.minus(b.x), Kxx.plus(b.Kxx));
     }
 
     /** Euclidean version */
@@ -66,8 +76,25 @@ public class RandomVector<States extends Num> {
      */
     public RandomVector<States> combine(Matrix<States, States> weight, RandomVector<States> other) {
         Matrix<States, N1> xx = xplus(weight.times(other.xminus(this.x)));
-        Matrix<States, States> PP = this.P.plus(weight.times(other.P.minus(this.P)));
-        return make(xx, PP);
+        // so this is [1 0 0 1e9]
+        // other is [1e9 0 0 1]
+        // so the diff should be [1e9 0 0 -1e9]
+        Variance<States> diff = other.Kxx.minus(this.Kxx);
+      // System.out.println("diff " + diff);
+        // thisvalue should be [1 0 0 1e9]
+        Matrix<States, States> thisValue = this.Kxx.getValue();
+      // System.out.println("thisValue " + thisValue);
+      //  System.out.println("weight " + weight);
+        // weight of other is [1e-9 0 0 1]
+        // multiplying 1e9 times 1e-9 gives 1 not zero. sigh.
+        // this is the problem
+
+        Matrix<States, States> PP = thisValue.plus(
+            weight.times(
+                diff.getValue()));
+
+       // System.out.println("PP " + PP);
+        return make(xx, new Variance<>(PP));
     }
 
     /**
@@ -75,12 +102,12 @@ public class RandomVector<States extends Num> {
      * to the covariance.
      */
     public RandomVector<States> times(double d) {
-        return make(x.times(d), P.times(d * d));
+        return make(x.times(d), Kxx.times(d * d));
     }
 
     @Override
     public String toString() {
-        return "RandomVector [x=" + x + ", P=" + P + "]";
+        return "RandomVector [x=" + x + ", P=" + Kxx + "]";
     }
 
 }
