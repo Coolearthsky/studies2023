@@ -60,6 +60,10 @@ public abstract class NoisyLimitedPlant1D implements NonlinearPlant<N2, N1, N2> 
         return m_w;
     }
 
+    public MeasurementUncertainty<N2> v() {
+        return m_v;
+    }
+
     @Override
     public Matrix<N1, N1> limit(Matrix<N1, N1> u) {
         return StateSpaceUtil.desaturateInputVector(u, 12.0);
