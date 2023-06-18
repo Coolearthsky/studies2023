@@ -30,7 +30,8 @@ public class PositionSensor {
     double messageValue;
     long messageTimestampUs;
 
-    public PositionSensor(DoubleIntegratorRotary1D system, BitemporalBuffer<RandomVector<N2>> measurements) {
+    public PositionSensor(DoubleIntegratorRotary1D system,
+     BitemporalBuffer<RandomVector<N2>> measurements) {
         this.system = system;
         m_measurements = measurements;
         m_random = new Random();
