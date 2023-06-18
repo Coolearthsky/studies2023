@@ -21,7 +21,7 @@ public  class Sinusoidal extends Scenario {
         return "SINUSOIDAL";
     }
 
-   // @Test
+    //@Test
     public void test() {
         Loop loop = new Loop(this);
         loop.run();
