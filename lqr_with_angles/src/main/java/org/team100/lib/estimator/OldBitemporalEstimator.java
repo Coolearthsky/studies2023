@@ -19,13 +19,13 @@ import edu.wpi.first.math.numbers.N1;
  * 
  * TODO: differentiate between predictions and corrections?
  */
-public class BitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
+public class OldBitemporalEstimator<States extends Num, Inputs extends Num, Outputs extends Num> {
     private final BitemporalBuffer<RandomVector<States>> m_stateBuffer;
     private final ExtrapolatingEstimator<States, Inputs, Outputs> m_predictor;
     private final PointEstimator<States, Inputs, Outputs> m_pointEstimator;
     private final LinearPooling<States> m_pooling;
 
-    public BitemporalEstimator(
+    public OldBitemporalEstimator(
             NonlinearPlant<States, Inputs, Outputs> plant,
             BitemporalBuffer<RandomVector<States>> stateBuffer,
             ExtrapolatingEstimator<States, Inputs, Outputs> predictor,

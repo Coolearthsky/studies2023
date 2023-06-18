@@ -1,19 +1,32 @@
 package org.team100.lib.simulation;
 
+import org.team100.lib.controller.GainCalculator;
+import org.team100.lib.estimator.NewBitemporalEstimatorController;
+import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
 import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
 import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Vector;
+import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 public class Loop {
     // sparkmax is 500us between measurements, maybe try that.
     private static final long kUsecPerSimLoop = 2000; // 2 ms per simulation loop
+    private static final long kUsecPerRioLoop = 20000; // 20 ms per rio loop
+    private static final double kSecPerUsec = 1e-6;
+    private static final double kSecPerRioLoop = kUsecPerRioLoop * kSecPerUsec;
 
     private final CompleteState state;
+    private final NewBitemporalEstimatorController<N2, N1, N2> estimator;
     private final DoubleIntegratorRotary1D system;
     // measurements are bitemporal so we can notice late-arriving ones
     private final BitemporalBuffer<RandomVector<N2>> m_measurements;
@@ -30,13 +43,41 @@ public class Loop {
         WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
         MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01, 0.1);
         system = new DoubleIntegratorRotary1D(w, v);
+
+        Vector<N2> stateTolerance = VecBuilder.fill(0.01, 0.01);
+        Vector<N1> controlTolerance = VecBuilder.fill(12.0);
+        GainCalculator<N2, N1, N2> gc = new GainCalculator<>(system, stateTolerance, controlTolerance,
+                kSecPerRioLoop);
+
+        Matrix<N1,N1> initialControl = new Matrix<>(Nat.N1(),Nat.N1());
+
+        estimator = new NewBitemporalEstimatorController<>(
+                system,
+                makeInitialState(scenario),
+                initialControl,
+                scenario.reference(),
+                m_measurements,
+                gc.getK());
+
         positionSensor = new PositionSensor(system, m_measurements);
         velocitySensor = new VelocitySensor(system, m_measurements);
-        roborio = new RoboRIO(scenario, system, m_measurements);
+        roborio = new RoboRIO(system, estimator);
+    }
+
+    private AngularRandomVector<N2> makeInitialState(Scenario scenario) {
+        // high variance
+        Matrix<N2, N2> initP = new Matrix<>(Nat.N2(), Nat.N2());
+        initP.set(0, 0, 1e9);
+        initP.set(1, 1, 1e9);
+        Matrix<N2,N1> initx = scenario.reference().getR(0);
+        return new AngularRandomVector<N2>(initx, new Variance<>(initP));
     }
 
     public void run() {
-        state.init(m_scenario.position(0), m_scenario.velocity(0), m_scenario.acceleration(0));
+        Matrix<N2,N1> initr = m_scenario.reference().getR(0);
+        Matrix<N2,N1> initrdot = m_scenario.reference().getRDot(0);
+
+        state.init(initr.get(0,0), initr.get(1,0), initrdot.get(1,0));
         System.out.println("\n\n" + m_scenario.label());
         System.out.println(state.header());
         for (long step = 0; step < 2000; ++step) {
@@ -55,9 +96,11 @@ public class Loop {
      * Update the actual state of the physical system.
      */
     void updateActual() {
-        state.actualPosition = m_scenario.position(state.actualTimeSec());
-        state.actualVelocity = m_scenario.velocity(state.actualTimeSec());
-        state.actualAcceleration = m_scenario.acceleration(state.actualTimeSec());
+        Matrix<N2,N1> r = m_scenario.reference().getR(state.actualTimeSec());
+        Matrix<N2,N1> rdot = m_scenario.reference().getRDot(state.actualTimeSec());
+        state.actualPosition = r.get(0,0);
+        state.actualVelocity = r.get(1,0);
+        state.actualAcceleration = rdot.get(1,0);
     }
 
     /**
