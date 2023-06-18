@@ -39,7 +39,7 @@ public class ExtrapolatingEstimator<States extends Num, Inputs extends Num, Outp
             RandomVector<States> x,
             Matrix<Inputs, N1> u,
             double dtS) {
-        final var h = dtS;
+        final double h = dtS;
 
         RandomVector<States> k1 = m_plant.f(x, u);
         RandomVector<States> k2 = m_plant.f(x.plus(k1.times(h * 0.5)), u);

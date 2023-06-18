@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  *
  */
 public class BitemporalBuffer<Value> {
+    private static final boolean debug = false;
     private final int capacity;
     private final NavigableMap<Long, Entry<Double, Value>> record;
     private final NavigableMap<Double, Entry<Long, Value>> valid;
@@ -64,6 +65,8 @@ public class BitemporalBuffer<Value> {
         while (valid.containsKey(validTime)) {
             validTime = Math.nextUp(validTime); // add smallest possible double
         }
+        if (debug)
+            System.out.println("put measurement " + validTime + " " + value);
         record.put(recordTime, new AbstractMap.SimpleImmutableEntry<>(validTime, value));
         valid.put(validTime, new AbstractMap.SimpleImmutableEntry<>(recordTime, value));
         if (++size > capacity) {
@@ -90,6 +93,22 @@ public class BitemporalBuffer<Value> {
 
     public Value floorValue(double validTimeSec) {
         return floor(validTimeSec).getValue().getValue();
+    }
+
+    /**
+     * To consume out-of-sequence measurements, we just need to know the valid time
+     * of the earliest unseen record.
+     */
+    public double earliestValidTimeForRecordsAfter(long recordTime) {
+        // find the earliest measurement
+        NavigableMap<Long, Entry<Double, Value>> unseen = recordTailMap(recordTime);
+        double earliestMeasurementSec = Double.MAX_VALUE;
+        for (Entry<Double, Value> u : unseen.values()) {
+            double measurementTimeSec = u.getKey();
+            if (measurementTimeSec < earliestMeasurementSec)
+                earliestMeasurementSec = measurementTimeSec;
+        }
+        return earliestMeasurementSec;
     }
 
     public NavigableMap<Long, Entry<Double, Value>> recordTailMap(long tt) {

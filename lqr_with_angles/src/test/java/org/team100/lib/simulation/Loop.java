@@ -1,14 +1,22 @@
 package org.team100.lib.simulation;
 
+import org.team100.lib.math.MeasurementUncertainty;
+import org.team100.lib.math.RandomVector;
+import org.team100.lib.math.WhiteNoiseVector;
+import org.team100.lib.storage.BitemporalBuffer;
+import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
+
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.numbers.N2;
 
 public class Loop {
     // sparkmax is 500us between measurements, maybe try that.
     private static final long kUsecPerSimLoop = 2000; // 2 ms per simulation loop
-    private static final long kUsecPerRioLoop = 20000; // 20 ms per rio loop
-    private static final double kSecPerUsec = 1e-6;
 
     private final CompleteState state;
+    private final DoubleIntegratorRotary1D system;
+    // measurements are bitemporal so we can notice late-arriving ones
+    private final BitemporalBuffer<RandomVector<N2>> m_measurements;
     private final PositionSensor positionSensor;
     private final VelocitySensor velocitySensor;
     private final RoboRIO roborio;
@@ -18,9 +26,13 @@ public class Loop {
     public Loop(Scenario scenario) {
         m_scenario = scenario;
         state = new CompleteState();
-        positionSensor = new PositionSensor();  
-        velocitySensor = new VelocitySensor();
-        roborio = new RoboRIO(scenario);
+        m_measurements = new BitemporalBuffer<>(1000);
+        WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
+        MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01, 0.1);
+        system = new DoubleIntegratorRotary1D(w, v);
+        positionSensor = new PositionSensor(system, m_measurements);
+        velocitySensor = new VelocitySensor(system, m_measurements);
+        roborio = new RoboRIO(scenario, system, m_measurements);
     }
 
     public void run() {

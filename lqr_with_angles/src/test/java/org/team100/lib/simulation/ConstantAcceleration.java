@@ -1,5 +1,7 @@
 package org.team100.lib.simulation;
 
+import org.junit.jupiter.api.Test;
+
 import edu.wpi.first.math.MathUtil;
 
 public class ConstantAcceleration extends Scenario {
@@ -21,7 +23,7 @@ public class ConstantAcceleration extends Scenario {
         return "CONSTANT ACCELERATION";
     }
 
-    // @Test
+    //@Test
     public void test() {
         Loop loop = new Loop(this);
         loop.run();

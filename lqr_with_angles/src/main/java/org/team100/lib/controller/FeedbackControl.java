@@ -12,6 +12,7 @@ import edu.wpi.first.math.numbers.N1;
  * Full state controller using constant gain.
  */
 public class FeedbackControl<States extends Num, Inputs extends Num, Outputs extends Num> {
+    private static final boolean debug = false;
     private final NonlinearPlant<States, Inputs, Outputs> m_plant;
     private final Matrix<Inputs, States> m_K;
 
@@ -33,10 +34,12 @@ public class FeedbackControl<States extends Num, Inputs extends Num, Outputs ext
      *         correction, you need to remember it.
      */
     public Matrix<Inputs, N1> calculate(RandomVector<States> x, Matrix<States, N1> r) {
+        if (debug) System.out.println("x: " + x.x.get(0,0));
+        if (debug) System.out.println("r: " + r.get(0,0));
         RandomVector<States> rv = x.make(r, Variance.zero(m_plant.states()));
-       //System.out.println("K: " + m_K);
+        if (debug) System.out.println("K: " + m_K);
         Matrix<States, N1> residual = rv.minus(x).x;
-        //System.out.println("residual: " + residual);
+        if (debug) System.out.println("residual: " + residual);
         return m_K.times(residual);
     }
 }

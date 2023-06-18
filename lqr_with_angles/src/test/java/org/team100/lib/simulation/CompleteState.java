@@ -19,6 +19,8 @@ public class CompleteState {
     double observedVelocity;
     double observedAcceleration; // for these tests this is intended to match u.
 
+    int replayCount;
+
     double predictionTimeSec; // time in the future this prediction is intended for
     double predictedPosition;
     double predictedVelocity;
@@ -71,7 +73,7 @@ public class CompleteState {
     public String header() {
         return "     sysTime,   actualTime, " +
                 "   actualPos,    actualVel,    actualAcc, " +
-                " observedPos,  observedVel,  observedAcc, " +
+                " observedPos,  observedVel,  observedAcc, replayCount, " +
                 "predictedPos, predictedVel, " +
                 "referencePos, referenceVel, referenceAcc, " +
                 " residualPos,  residualVel, " +
@@ -81,7 +83,7 @@ public class CompleteState {
     public String toString() {
         String format = "%12d, %12.3f, " +
                 "%12.3f, %12.3f, %12.3f, " +
-                "%12.3f, %12.3f, %12.3f, " +
+                "%12.3f, %12.3f, %12.3f, %12d, " +
                 "%12.3f, %12.3f, " +
                 "%12.3f, %12.3f, %12.3f, " +
                 "%12.3f, %12.3f, " +
@@ -95,6 +97,7 @@ public class CompleteState {
                 observedPosition,
                 observedVelocity,
                 observedAcceleration,
+                replayCount,
                 predictedPosition,
                 predictedVelocity,
                 referencePosition,
