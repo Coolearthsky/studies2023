@@ -4,10 +4,8 @@ import org.team100.lib.controller.GainCalculator;
 import org.team100.lib.estimator.NewBitemporalEstimatorController;
 import org.team100.lib.math.AngularRandomVector;
 import org.team100.lib.math.MeasurementUncertainty;
-import org.team100.lib.math.RandomVector;
 import org.team100.lib.math.Variance;
 import org.team100.lib.math.WhiteNoiseVector;
-import org.team100.lib.storage.BitemporalBuffer;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
 import edu.wpi.first.math.MathUtil;
@@ -28,8 +26,6 @@ public class Loop {
     private final CompleteState state;
     private final NewBitemporalEstimatorController<N2, N1, N2> estimator;
     private final DoubleIntegratorRotary1D system;
-    // measurements are bitemporal so we can notice late-arriving ones
-    private final BitemporalBuffer<RandomVector<N2>> m_measurements;
     private final PositionSensor positionSensor;
     private final VelocitySensor velocitySensor;
     private final RoboRIO roborio;
@@ -39,7 +35,6 @@ public class Loop {
     public Loop(Scenario scenario) {
         m_scenario = scenario;
         state = new CompleteState();
-        m_measurements = new BitemporalBuffer<>(1000);
         WhiteNoiseVector<N2> w = WhiteNoiseVector.noise2(0.015, 0.17);
         MeasurementUncertainty<N2> v = MeasurementUncertainty.for2(0.01, 0.1);
         system = new DoubleIntegratorRotary1D(w, v);
@@ -56,11 +51,10 @@ public class Loop {
                 makeInitialState(scenario),
                 initialControl,
                 scenario.reference(),
-                m_measurements,
                 gc.getK());
 
-        positionSensor = new PositionSensor(system, m_measurements);
-        velocitySensor = new VelocitySensor(system, m_measurements);
+        positionSensor = new PositionSensor(system, estimator);
+        velocitySensor = new VelocitySensor(system, estimator);
         roborio = new RoboRIO(system, estimator);
     }
 

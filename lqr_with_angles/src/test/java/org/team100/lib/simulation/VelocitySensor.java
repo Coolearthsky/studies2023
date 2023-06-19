@@ -2,13 +2,15 @@ package org.team100.lib.simulation;
 
 import java.util.Random;
 
-import org.team100.lib.math.RandomVector;
-import org.team100.lib.storage.BitemporalBuffer;
+import org.team100.lib.estimator.NewBitemporalEstimatorController;
 import org.team100.lib.system.examples.DoubleIntegratorRotary1D;
 
+import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
 /**
+ * For test simulation only. Adds gaussian noise.
+ *
  * this is modeled after the sparkmax.
  * observes position continuously
  * records a measurement every 500us and remembers the past N, say, 10?
@@ -23,7 +25,7 @@ public class VelocitySensor {
     private static final long messagePeriodUs = 20000;
 
     private final DoubleIntegratorRotary1D system;
-    private final BitemporalBuffer<RandomVector<N2>> m_measurements;
+    private final NewBitemporalEstimatorController<N2, N1, N2> estimator;
     private final Random m_random;
     private final double stdev;
 
@@ -32,9 +34,11 @@ public class VelocitySensor {
     double messageValue;
     long messageTimestampUs;
 
-    public VelocitySensor(DoubleIntegratorRotary1D system, BitemporalBuffer<RandomVector<N2>> measurements) {
+    public VelocitySensor(
+            DoubleIntegratorRotary1D system,
+            NewBitemporalEstimatorController<N2, N1, N2> estimator) {
         this.system = system;
-        m_measurements = measurements;
+        this.estimator = estimator;
         m_random = new Random();
         stdev = Math.sqrt(system.v().Kxx.get(1, 1));
     }
@@ -47,7 +51,7 @@ public class VelocitySensor {
             // take a new measurement
             measurementValue = state.actualVelocity;
             // add measurement noise
-            measurementValue += m_random.nextGaussian(0.0, stdev/100);
+            measurementValue += m_random.nextGaussian(0.0, stdev / 100);
             measurementTimestampUs = timeUs;
         }
 
@@ -58,7 +62,7 @@ public class VelocitySensor {
             // let the rio see the one that we sent
             state.observedVelocity = messageValue;
             state.velocityObservationTimeSec = currentTime;
-            m_measurements.put(timeUs, currentTime, system.velocity(messageValue));
+            estimator.acceptMeasurement(timeUs, currentTime, system.velocity(messageValue));
         }
     }
 

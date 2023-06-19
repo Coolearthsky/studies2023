@@ -22,20 +22,32 @@ import edu.wpi.first.math.numbers.N1;
 /**
  * Orchestrator for estimation and control.
  * 
- * The sequence to use is:
+ * There are two facets: acceptimg measurements and determining control.
+ * 
+ * measurements can be accepted at any time in any threads:
+ * 
+ * acceptMeasurement(systemTime, validTime, measurement)
+ *
+ * for control, use this sequence:
  * 
  * // apply any new measurements, rewriting state history
  * replay(systemTimeMicrosec);
+ * 
  * // integrate to the present instant
  * RandomVector<States> current = predictNow(actualTimeSec);
+ * 
  * // use midpoint feedforward as the future control
  * Matrix<Inputs, N1> uff = calculateFeedforward(actualTimeSec + kDt / 2);
+ *
  * // integrate to the end of the next period
  * RandomVector<States> predicted = predictFutureUsingFF(current, uff, kDt);
+ *
  * // calculate extra control required
  * Matrix<Inputs, N1> ufb = calculateFeedback(actualTimeSec + kDt, predicted);
+ *
  * // this is the control to apply
  * Matrix<Inputs, N1> u = ufb.plus(uff);
+ *
  * // record if you actually use it
  * record(actualTimeSec, u);
  *
@@ -62,17 +74,23 @@ public class NewBitemporalEstimatorController<States extends Num, Inputs extends
     // the last recordTime we've seen from the buffer
     private long recordTime;
 
+    /**
+     * @param system plant dynamics
+     * @param initialState used by the predictor
+     * @param initialControl used by the predictor
+     * @param reference produces trajectory
+     * @param K feedback gain
+     */
     public NewBitemporalEstimatorController(
             NonlinearPlant<States, Inputs, Outputs> system,
             RandomVector<States> initialState,
             Matrix<Inputs, N1> initialControl,
             Reference<States> reference,
-            BitemporalBuffer<RandomVector<Outputs>> measurements,
             Matrix<Inputs, States> K) {
         this.initialState = initialState;
         this.initialControl = initialControl;
         m_reference = reference;
-        m_measurements = measurements;
+        m_measurements = new BitemporalBuffer<>(1000);
         m_estimates = new EditableHistory<>(1000);
         m_control_history = new History<>(1000);
         predictor = new ExtrapolatingEstimator<>(system);
@@ -81,6 +99,14 @@ public class NewBitemporalEstimatorController<States extends Num, Inputs extends
         pooling = new VarianceWeightedLinearPooling<>();
         feedforward = new InversionFeedforward<>(system);
         feedback = new FeedbackControl<>(system, K);
+    }
+
+    /**
+     * Accept a measurement about some time in the past. These are collected later
+     * by replay.  Threadsafe.
+     */
+    public void acceptMeasurement(long recordTimeUs, double validTimeSec, RandomVector<Outputs> measurement) {
+        m_measurements.put(recordTimeUs, validTimeSec, measurement);
     }
 
     /** Update the state history with any measurements that are pending. */
