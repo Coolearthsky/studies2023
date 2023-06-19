@@ -48,6 +48,8 @@ public class BitemporalBuffer<Value> {
     }
 
     /**
+     * Store a measurement. Threadsafe.
+     * 
      * @param recordTime represents the system time the value was written, expected
      *                   to be FPGATime.
      * @param validTime  represents the real-world time the value describes, in
