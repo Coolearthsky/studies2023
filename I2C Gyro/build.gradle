@@ -18,6 +18,7 @@ deploy {
             // You can use getTeamOrDefault(team) instead of getTeamNumber if you
             // want to store a team number in this file.
             team = project.frc.getTeamNumber()
+            System.out.println("team 100");
             debug = project.frc.getDebugOrDefault(false)
 
             artifacts {
