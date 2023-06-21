@@ -29,8 +29,8 @@ public class Robot extends TimedRobot implements Sendable {
     while (ahrs_i2c.isCalibrating() || ahrs_usb.isCalibrating()){
       System.out.println("Waiting for calibration to finish");
     }
-    //ahrs_i2c.zeroYaw();
-    //ahrs_usb.zeroYaw();
+    ahrs_i2c.zeroYaw();
+    ahrs_usb.zeroYaw();
     gyroZOffset_I2C = -ahrs_i2c.getRawGyroZ();
     gyroZOffset_USB = -ahrs_usb.getRawGyroZ();
   }
