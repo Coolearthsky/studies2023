@@ -1,9 +1,10 @@
-package frc.robot;
+package org.team100.frc2023.commands;
 
 import org.team100.frc2023.control.ManualControl;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj2.command.CommandBase;
+import frc.robot.Drivetrain;
 
 public class DriveManually extends CommandBase {
     private static final boolean fieldRelative = true;
@@ -25,24 +26,24 @@ public class DriveManually extends CommandBase {
     public void execute() {
         // Get the x speed. We are inverting this because Xbox controllers return
         // negative values when we push forward.
-        // final var xSpeed = -m_xspeedLimiter.calculate(getXSpeedInput1_1()) *
+        // final var xSpeed = m_xspeedLimiter.calculate(getXSpeedInput1_1()) *
         // Drivetrain.kMaxSpeed;
-        final var xSpeed = -getXSpeedInput1_1() * Drivetrain.kMaxSpeed;
+        final var xSpeed = getXSpeedInput1_1() * Drivetrain.kMaxSpeed;
 
         // Get the y speed or sideways/strafe speed. We are inverting this because
         // we want a positive value when we pull to the left. Xbox controllers
         // return positive values when you pull to the right by default.
-        // final var ySpeed = -m_yspeedLimiter.calculate(getYSpeedInput1_1()) *
+        // final var ySpeed = m_yspeedLimiter.calculate(getYSpeedInput1_1()) *
         // Drivetrain.kMaxSpeed;
-        final var ySpeed = -getYSpeedInput1_1() * Drivetrain.kMaxSpeed;
+        final var ySpeed = getYSpeedInput1_1() * Drivetrain.kMaxSpeed;
 
         // Get the rate of angular rotation. We are inverting this because we want a
         // positive value when we pull to the left (remember, CCW is positive in
         // mathematics). Xbox controllers return positive values when you pull to
         // the right by default.
-        // final var rot = -m_rotLimiter.calculate(getRotSpeedInput1_1()) *
+        // final var rot = m_rotLimiter.calculate(getRotSpeedInput1_1()) *
         // Drivetrain.kMaxAngularSpeed;
-        final var rot = -getRotSpeedInput1_1() * Drivetrain.kMaxAngularSpeed;
+        final var rot = getRotSpeedInput1_1() * Drivetrain.kMaxAngularSpeed;
 
         m_swerve.drive(xSpeed, ySpeed, rot, fieldRelative);
     }

@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.team100.frc2023.commands.DriveManually;
+import org.team100.frc2023.commands.DriveWithHeading;
+import org.team100.frc2023.commands.ResetRotation;
 import org.team100.frc2023.control.LogitechExtreme3dControl;
 import org.team100.frc2023.control.ManualControl;
 
@@ -29,7 +32,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 public class Robot extends TimedRobot {
     private final ManualControl m_manualControl;
     private final Drivetrain m_swerve;
-    private final DriveManually driveManually;
+    private final Command m_driveCommand;
 
     Command autoc;
     ProfiledPIDController m_rotationController;
@@ -58,12 +61,21 @@ public class Robot extends TimedRobot {
 
     public Robot() {
         m_swerve = new Drivetrain();
-       // m_manualControl = new XboxControl();
+        // m_manualControl = new XboxControl();
         m_manualControl = new LogitechExtreme3dControl();
-        driveManually = new DriveManually(m_swerve, m_manualControl);
+        m_manualControl.resetRotation0(new ResetRotation(m_swerve, new Rotation2d(0)));
+        // m_driveCommand = new DriveManually(m_swerve, m_manualControl);
+        m_driveCommand = new DriveWithHeading(
+                m_swerve,
+                m_manualControl::xSpeed,
+                m_manualControl::ySpeed,
+                m_manualControl::desiredRotation,
+                m_manualControl::rotSpeed,
+                "",
+                m_swerve.m_gyro);
         Command waypointCommand = toWaypoint2();
         m_manualControl.topButton().whileTrue(waypointCommand);
-        m_swerve.setDefaultCommand(driveManually);
+        m_swerve.setDefaultCommand(m_driveCommand);
     }
 
     @Override
