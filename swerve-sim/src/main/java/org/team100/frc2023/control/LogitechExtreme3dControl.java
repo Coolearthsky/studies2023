@@ -33,6 +33,16 @@ public class LogitechExtreme3dControl implements ManualControl {
     }
 
     @Override
+    public Trigger trigger() {
+        return m_controller.trigger();
+    }
+
+    @Override
+    public Trigger thumb() {
+        return m_controller.top();
+    }
+
+    @Override
     public Rotation2d desiredRotation() {
         double desiredAngleDegrees = m_controller.getHID().getPOV();
 

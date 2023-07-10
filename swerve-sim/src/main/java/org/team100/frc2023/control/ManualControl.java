@@ -10,6 +10,8 @@ public interface ManualControl {
     double ySpeed();
     double xSpeed();
     Trigger topButton();
+    Trigger trigger();
+    Trigger thumb();
     void resetRotation0(ResetRotation command);
     Rotation2d desiredRotation();
 }

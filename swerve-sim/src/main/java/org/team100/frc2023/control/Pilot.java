@@ -40,6 +40,20 @@ public class Pilot implements ManualControl {
     }
 
     @Override
+    public Trigger trigger() {
+        EventLoop loop = CommandScheduler.getInstance().getDefaultButtonLoop();
+        BooleanEvent event = new BooleanEvent(loop, () -> m_controller.getHID().getRawButton(1));
+        return event.castTo(Trigger::new);
+    }
+
+    @Override
+    public Trigger thumb() {
+        EventLoop loop = CommandScheduler.getInstance().getDefaultButtonLoop();
+        BooleanEvent event = new BooleanEvent(loop, () -> m_controller.getHID().getRawButton(2));
+        return event.castTo(Trigger::new);
+    }
+
+    @Override
     public Rotation2d desiredRotation() {
         // the control goes from -1 to 1 in one turn
         double rotControl = m_controller.getHID().getRawAxis(5);

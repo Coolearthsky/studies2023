@@ -33,6 +33,16 @@ public class XboxControl implements ManualControl {
     }
 
     @Override
+    public Trigger trigger() {
+        return m_controller.rightBumper();
+    }
+
+    @Override
+    public Trigger thumb() {
+        return m_controller.leftBumper();
+    }
+
+    @Override
     public Rotation2d desiredRotation() {
         double desiredAngleDegrees = m_controller.getHID().getPOV();
 
