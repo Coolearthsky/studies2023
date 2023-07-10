@@ -83,7 +83,7 @@ public class Drivetrain extends SubsystemBase {
     DoublePublisher actualThetaSpeedPubRad_s = inst.getTable("actual").getDoubleTopic("thetaspeed rad_s").publish();
 
     DoubleArrayPublisher robotPosePub;
-    DoubleArrayPublisher waypointPub;
+   // DoubleArrayPublisher waypointPub;
     StringPublisher fieldTypePub;
 
     List<CallbackStore> cbs = new ArrayList<CallbackStore>();
@@ -104,7 +104,7 @@ public class Drivetrain extends SubsystemBase {
         inst.startClient4("blarg");
         NetworkTable fieldTable = inst.getTable("field");
         robotPosePub = fieldTable.getDoubleArrayTopic("robotPose").publish();
-        waypointPub = fieldTable.getDoubleArrayTopic("waypoint").publish();
+       // waypointPub = fieldTable.getDoubleArrayTopic("waypoint").publish();
         fieldTypePub = fieldTable.getStringTopic(".type").publish();
         fieldTypePub.set("Field2d");
     }
@@ -229,11 +229,11 @@ public class Drivetrain extends SubsystemBase {
                 newEstimate.getRotation().getDegrees()
         });
         // for testing
-        waypointPub.set(new double[] {
-                newEstimate.getX() + 1,
-                newEstimate.getY(),
-                newEstimate.getRotation().getDegrees()
-        });
+        // waypointPub.set(new double[] {
+        //         newEstimate.getX() + 1,
+        //         newEstimate.getY(),
+        //         newEstimate.getRotation().getDegrees()
+        // });
 
         // Also apply vision measurements. We use 0.3 seconds in the past as an example
         // -- on a real robot, this must be calculated based either on latency or
