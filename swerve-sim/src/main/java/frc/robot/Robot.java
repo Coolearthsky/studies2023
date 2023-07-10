@@ -6,11 +6,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.team100.frc2023.commands.DriveManually;
 import org.team100.frc2023.commands.DriveWithHeading;
 import org.team100.frc2023.commands.ResetRotation;
-import org.team100.frc2023.control.LogitechExtreme3dControl;
 import org.team100.frc2023.control.ManualControl;
+import org.team100.frc2023.control.Pilot;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
@@ -62,7 +61,8 @@ public class Robot extends TimedRobot {
     public Robot() {
         m_swerve = new Drivetrain();
         // m_manualControl = new XboxControl();
-        m_manualControl = new LogitechExtreme3dControl();
+        // m_manualControl = new LogitechExtreme3dControl();
+        m_manualControl = new Pilot();
         m_manualControl.resetRotation0(new ResetRotation(m_swerve, new Rotation2d(0)));
         // m_driveCommand = new DriveManually(m_swerve, m_manualControl);
         m_driveCommand = new DriveWithHeading(
