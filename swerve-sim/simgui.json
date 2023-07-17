@@ -2,6 +2,7 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Drive with Heading:": "Command",
       "/field": "Field2d"
     },
     "windows": {

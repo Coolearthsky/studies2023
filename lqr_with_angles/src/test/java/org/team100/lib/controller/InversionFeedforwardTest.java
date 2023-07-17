@@ -14,7 +14,7 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 
-public class ImmutableControlAffinePlantInversionFeedforwardTest {
+public class InversionFeedforwardTest {
     private static final double kDelta = 0.0001;
     private static final double kDt = 0.02;
 
