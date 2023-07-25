@@ -25,7 +25,7 @@ public enum Piano {
     D2(-9, true),
     E2(-8, true),
     F2(-7, true),
-    G2(-6, true).
+    G2(-6, true),
     A2(-6, true),
     B2(-5, true),
     C3(-4,true),
