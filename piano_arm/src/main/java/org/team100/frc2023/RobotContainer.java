@@ -26,7 +26,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureButtonBindings();
-        // m_arm.setDefaultCommand(m_manualMover);
+        m_arm.setDefaultCommand(new MoveAllAxes(() -> Arm.initial, m_arm));
     }
 
     private void configureButtonBindings() {
@@ -80,31 +80,33 @@ public class RobotContainer {
         }
 
         // when a human plays the piano, they move their wrist pivot forward and up
-        //  to reach the black notes but the action is in the fingers.
+        // to reach the black notes but the action is in the fingers.
         // the wrist is used to control dynamics, the forearm never moves
         // except for large movements, when it provides more clearance.
         // the resting position is *on* the keyboard, not above it, though for the
         // robot some clearance would give more room for inaccuracy.
-        // 
+        //
         List<MoveSequence.Event> events = new ArrayList<>();
         double keyWidthM = 0.0232;
         int key = 0;
         double y = 0.15;
         double z = 0.04;
         int inc = 1;
-        double wristDown = Math.PI/8;
+        double wristDown = Math.PI / 8;
         double stepLengthS = 0.5;
 
         for (int i = 0; i < 100; ++i) {
-            if (key > 10) inc = -1;
-            else if (key < -10) inc = 1;
+            if (key > 10)
+                inc = -1;
+            else if (key < -10)
+                inc = 1;
             double tSec = i * stepLengthS;
             key += inc;
             double x = key * keyWidthM;
             LynxArmAngles angle = k.inverse(new Translation3d(x, y, z), 0, 0.5, 0.9);
-            events.add(new MoveSequence.Event( tSec,  angle));
-            events.add(new MoveSequence.Event( tSec + 0.25 * stepLengthS,  angle.down(wristDown)));
-            events.add(new MoveSequence.Event( tSec + 0.75* stepLengthS,  angle));
+            events.add(new MoveSequence.Event(tSec, angle));
+            events.add(new MoveSequence.Event(tSec + 0.25 * stepLengthS, angle.down(wristDown)));
+            events.add(new MoveSequence.Event(tSec + 0.75 * stepLengthS, angle));
         }
 
         // move in a line along the keyboard playing notes.
@@ -118,14 +120,17 @@ public class RobotContainer {
         // double zdown = 0;
         // int inc = 1;
         // for (int i = 0; i < 100; ++i) {
-        //     if (key > 10) inc = -1;
-        //     else if (key < -10) inc = 1;
-        //     double tSec = i * 1.0;
-        //     key += inc;
-        //     double x = key * keyWidthM;
-        //     events.add(new MoveSequence.Event( tSec,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
-        //     events.add(new MoveSequence.Event( tSec + 0.25,  k.inverse(new Translation3d(x, y, zdown), 0, 0.5, 0.9)));
-        //     events.add(new MoveSequence.Event( tSec + 0.75,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+        // if (key > 10) inc = -1;
+        // else if (key < -10) inc = 1;
+        // double tSec = i * 1.0;
+        // key += inc;
+        // double x = key * keyWidthM;
+        // events.add(new MoveSequence.Event( tSec, k.inverse(new Translation3d(x, y,
+        // zup), 0, 0.5, 0.9)));
+        // events.add(new MoveSequence.Event( tSec + 0.25, k.inverse(new
+        // Translation3d(x, y, zdown), 0, 0.5, 0.9)));
+        // events.add(new MoveSequence.Event( tSec + 0.75, k.inverse(new
+        // Translation3d(x, y, zup), 0, 0.5, 0.9)));
         // }
 
         new JoystickButton(m_controller,

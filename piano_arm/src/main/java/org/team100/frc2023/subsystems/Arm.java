@@ -11,7 +11,8 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
  * This is "live" all the time; it's never not going towards a goal.
  */
 public class Arm extends Subsystem {
-    private final static LynxArmAngles initial = new LynxArmAngles.Factory().from0_1(0.25, 0.61, 0.795, 0.73, 0.5, 0.9);
+    public final static LynxArmAngles initial = new LynxArmAngles.Factory().fromRad(
+        0, -Math.PI/4, Math.PI/2, Math.PI/4, 0.5, 0.9);
     // public enum Axis {
     // Swing, Boom, Stick, Wrist, Twist, Grip
     // }
