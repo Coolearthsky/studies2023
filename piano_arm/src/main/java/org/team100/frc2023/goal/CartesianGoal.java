@@ -27,7 +27,7 @@ public class CartesianGoal implements Sendable, Supplier<LynxArmAngles> {
 
   @Override
   public LynxArmAngles get() {
-    return m_kinematics.inverse(new Translation3d(m_x, m_y, m_z));
+    return m_kinematics.inverse(new Translation3d(m_x, m_y, m_z), 0);
   }
 
   @Override
