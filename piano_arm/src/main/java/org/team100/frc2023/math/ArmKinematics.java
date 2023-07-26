@@ -7,7 +7,6 @@ public class ArmKinematics {
     public static final double kStickLength = 20;
     public static final double kWristLength = 5;
 
-    // TODO: replace this with wpilib version when it's released
     public static class Translation3d {
         public final double m_x;
         public final double m_y;
