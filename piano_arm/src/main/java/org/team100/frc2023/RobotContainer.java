@@ -54,13 +54,13 @@ public class RobotContainer {
         // grip: 1 is shut, 0 is open, it's misindexed a little, should grip harder
         // up
         new JoystickButton(m_controller, XboxController.Button.kA.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles(0.5, 0.8, 0.9, 0.6, 0.5, 0.9), m_arm));
+                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.5, 0.8, 0.9, 0.6, 0.5, 0.9), m_arm));
         // down
         new JoystickButton(m_controller, XboxController.Button.kB.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles(0.5, 0.8, 0.9, 0.5, 0.5, 0.9), m_arm));
+                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.5, 0.8, 0.9, 0.5, 0.5, 0.9), m_arm));
         // up
         new JoystickButton(m_controller, XboxController.Button.kX.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9), m_arm));
+                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.25, 0.61, 0.795, 0.73, 0.5, 0.9), m_arm));
         // down
         // new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
         // new MoveAllAxes(() -> new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9),
@@ -79,26 +79,54 @@ public class RobotContainer {
             circle.add(event);
         }
 
-        // move in a line along the keyboard playing notes.
-        // this uses the whole arm for finger action which is not what i want
-        // but it does work.
+        // when a human plays the piano, they move their wrist pivot forward and up
+        //  to reach the black notes but the action is in the fingers.
+        // the wrist is used to control dynamics, the forearm never moves
+        // except for large movements, when it provides more clearance.
+        // the resting position is *on* the keyboard, not above it, though for the
+        // robot some clearance would give more room for inaccuracy.
+        // 
         List<MoveSequence.Event> events = new ArrayList<>();
         double keyWidthM = 0.0232;
         int key = 0;
         double y = 0.15;
-        double zup = 0.075;
-        double zdown = 0;
+        double z = 0.04;
         int inc = 1;
+        double wristDown = Math.PI/8;
+        double stepLengthS = 0.5;
+
         for (int i = 0; i < 100; ++i) {
             if (key > 10) inc = -1;
             else if (key < -10) inc = 1;
-            double tSec = i * 1.0;
+            double tSec = i * stepLengthS;
             key += inc;
             double x = key * keyWidthM;
-            events.add(new MoveSequence.Event( tSec,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
-            events.add(new MoveSequence.Event( tSec + 0.25,  k.inverse(new Translation3d(x, y, zdown), 0, 0.5, 0.9)));
-            events.add(new MoveSequence.Event( tSec + 0.75,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+            LynxArmAngles angle = k.inverse(new Translation3d(x, y, z), 0, 0.5, 0.9);
+            events.add(new MoveSequence.Event( tSec,  angle));
+            events.add(new MoveSequence.Event( tSec + 0.25 * stepLengthS,  angle.down(wristDown)));
+            events.add(new MoveSequence.Event( tSec + 0.75* stepLengthS,  angle));
         }
+
+        // move in a line along the keyboard playing notes.
+        // this uses the whole arm for finger action which is not what i want
+        // but it does work.
+        // List<MoveSequence.Event> events = new ArrayList<>();
+        // double keyWidthM = 0.0232;
+        // int key = 0;
+        // double y = 0.15;
+        // double zup = 0.075;
+        // double zdown = 0;
+        // int inc = 1;
+        // for (int i = 0; i < 100; ++i) {
+        //     if (key > 10) inc = -1;
+        //     else if (key < -10) inc = 1;
+        //     double tSec = i * 1.0;
+        //     key += inc;
+        //     double x = key * keyWidthM;
+        //     events.add(new MoveSequence.Event( tSec,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+        //     events.add(new MoveSequence.Event( tSec + 0.25,  k.inverse(new Translation3d(x, y, zdown), 0, 0.5, 0.9)));
+        //     events.add(new MoveSequence.Event( tSec + 0.75,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+        // }
 
         new JoystickButton(m_controller,
                 XboxController.Button.kY.value).whileTrue(new MoveSequence(m_arm, events));

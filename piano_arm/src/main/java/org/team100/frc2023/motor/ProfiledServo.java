@@ -6,8 +6,8 @@ import edu.wpi.first.wpilibj.Servo;
 
 /** Move a servo with velocity/acceleration constraints. */
 public class ProfiledServo  {
-    private static final double kPositionTolerance = 0.1;
-    private static final double kVelocityTolerance = 0.1;
+    private static final double kPositionTolerance = 0.01;
+    private static final double kVelocityTolerance = 0.01;
 
     private final TrapezoidProfile.Constraints m_maxConstraints;
     private final Servo m_servo;
@@ -41,9 +41,13 @@ public class ProfiledServo  {
         //SmartDashboard.putData(name, this);
     }
 
-    public ProfiledServo(String name, int channel, double initialGoal) {
+    private ProfiledServo(String name, int channel, double initialGoal) {
         // this(name, channel, 0.0, 1.0, 0.5, 0.5);
-        this(name, channel, initialGoal, 0.0, 1.0, 10.0, 10.0);
+        this(name, channel, initialGoal, 0.0, 1.0, 100.0, 100.0);
+    }
+
+    public ProfiledServo(String name, int channel, double initialGoal, double speed, double accel) {
+        this(name, channel, initialGoal, 0, 1, speed, accel);
     }
 
     /*

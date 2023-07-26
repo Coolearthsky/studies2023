@@ -14,7 +14,7 @@ public class LynxArmKinematicsTest {
     @Test
     void testf1() {
         LynxArmKinematics k = new LynxArmKinematics(1, 1, 1);
-        LynxArmAngles a = LynxArmAngles.fromRad(0, 0, 0, 0, 0, 0);
+        LynxArmAngles a = new LynxArmAngles.Factory().fromRad(0, 0, 0, 0, 0, 0);
         Translation3d t = k.forward(a);
         assertEquals(0, t.getX(), kDelta);
         assertEquals(0, t.getY(), kDelta);
@@ -24,7 +24,7 @@ public class LynxArmKinematicsTest {
     @Test
     void testf1_5() {
         LynxArmKinematics k = new LynxArmKinematics(0.5, 0.5, 0.5);
-        LynxArmAngles a = LynxArmAngles.fromRad(0, 0, 0, 0, 0, 0);
+        LynxArmAngles a = new LynxArmAngles.Factory().fromRad(0, 0, 0, 0, 0, 0);
         Translation3d t = k.forward(a);
         assertEquals(0, t.getX(), kDelta);
         assertEquals(0, t.getY(), kDelta);
@@ -61,7 +61,7 @@ public class LynxArmKinematicsTest {
     @Test
     void testf2() {
         LynxArmKinematics k = new LynxArmKinematics(1, 1, 1);
-        LynxArmAngles a = LynxArmAngles.fromRad(0, 0, Math.PI / 2, 0, 0, 0);
+        LynxArmAngles a = new LynxArmAngles.Factory().fromRad(0, 0, Math.PI / 2, 0, 0, 0);
         Translation3d t = k.forward(a);
         assertEquals(0, t.getX(), kDelta);
         assertEquals(2, t.getY(), kDelta);
@@ -85,7 +85,7 @@ public class LynxArmKinematicsTest {
     @Test
     void testf3() {
         LynxArmKinematics k = new LynxArmKinematics(1, 1, 1);
-        LynxArmAngles a = LynxArmAngles.fromRad(0, Math.PI / 6, 2 * Math.PI / 3, -Math.PI / 3, 0, 0);
+        LynxArmAngles a = new LynxArmAngles.Factory().fromRad(0, Math.PI / 6, 2 * Math.PI / 3, -Math.PI / 3, 0, 0);
         assertEquals(0.5, k.boomOut(a), kDelta);
         assertEquals(0.5, k.stickOut(a), kDelta);
         assertEquals(1.0, k.wristOut(a), kDelta);
@@ -112,7 +112,7 @@ public class LynxArmKinematicsTest {
     @Test
     void testf4() {
         LynxArmKinematics k = new LynxArmKinematics(1, 1, 1);
-        LynxArmAngles a = LynxArmAngles.fromRad(Math.PI / 6, Math.PI / 6, 2 * Math.PI / 3, -Math.PI / 3, 0, 0);
+        LynxArmAngles a = new LynxArmAngles.Factory().fromRad(Math.PI / 6, Math.PI / 6, 2 * Math.PI / 3, -Math.PI / 3, 0, 0);
         Translation3d t = k.forward(a);
         assertEquals(-1, t.getX(), kDelta);
         assertEquals(Math.sqrt(3), t.getY(), kDelta);

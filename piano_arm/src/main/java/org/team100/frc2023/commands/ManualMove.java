@@ -21,7 +21,7 @@ public class ManualMove extends Command {
     private final XboxController m_controller;
     private final Arm m_arm;
 
-    private LynxArmAngles m_goals = new LynxArmAngles(0, 0, 0, 0, 0, 0);
+    private LynxArmAngles m_goals = new LynxArmAngles.Factory().from0_1(0, 0, 0, 0, 0, 0);
 
     public ManualMove(XboxController controller, Arm arm) {
         m_controller = controller;
@@ -33,7 +33,7 @@ public class ManualMove extends Command {
     @Override
     public void execute() {
         // suggested key bindings in comments; see simgui-ds.json
-        m_goals = new LynxArmAngles(
+        m_goals = new LynxArmAngles.Factory().from0_1(
                 fix(m_arm.swing, m_controller::getLeftX), // sim: AD
                 fix(m_arm.boom, m_controller::getLeftY), // sim: WS
                 fix(m_arm.stick, m_controller::getRightY), // sim: IK

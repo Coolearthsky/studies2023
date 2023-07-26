@@ -12,9 +12,9 @@ import org.team100.frc2023.math.TwoDofKinematics.ArmAngles;
  * the twist is always level, the grip is always closed.
  */
 public class LynxArmKinematics {
-    public final double m_boomLength;// = 20; // l1
-    public final double m_stickLength;// = 20; // l2
-    public final double m_wristLength;// = 5; // l3
+    public final double m_boomLength;
+    public final double m_stickLength;
+    public final double m_wristLength;
 
     private final TwoDofKinematics twodof;
 
@@ -88,7 +88,7 @@ public class LynxArmKinematics {
             throw new IllegalArgumentException("up" + up + " out " + out);
         }
         double wristAngleRelative = Math.PI / 2 - wristAngleAbsoluteRad - a.th1 - a.th2;
-        return LynxArmAngles.fromRad(swing, a.th1, a.th2, wristAngleRelative, twist, grip);
+        return new LynxArmAngles.Factory().fromRad(swing, a.th1, a.th2, wristAngleRelative, twist, grip);
     }
 
     /**
