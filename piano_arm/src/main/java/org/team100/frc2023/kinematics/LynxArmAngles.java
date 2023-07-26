@@ -10,13 +10,19 @@ public class LynxArmAngles {
     public final double twist;
     public final double grip;
 
-    public LynxArmAngles(double swing, double boom, double stick, double wrist, double twist, double grip) {
-        this.swing = swing;
-        this.boom = boom;
-        this.stick = stick;
-        this.wrist = wrist;
-        this.twist = twist;
-        this.grip = grip;
+    public LynxArmAngles(
+            double swing0_1,
+            double boom0_1,
+            double stick0_1,
+            double wrist0_1,
+            double twist0_1,
+            double grip0_1) {
+        this.swing = swing0_1;
+        this.boom = boom0_1;
+        this.stick = stick0_1;
+        this.wrist = wrist0_1;
+        this.twist = twist0_1;
+        this.grip = grip0_1;
     }
 
     /**
@@ -50,21 +56,27 @@ public class LynxArmAngles {
     };
 
     /**
-     * @param twist passthrough not rad
-     * @param grip  passthrough not rad
+     * @param swingRad
+     * @param boomRad
+     * @param stickRad
+     * @param wristRad
+     * @param twist0_1 passthrough not rad
+     * @param grip0_1  passthrough not rad
      */
     public static LynxArmAngles fromRad(
             double swingRad,
             double boomRad,
             double stickRad,
             double wristRad,
-            double twist,
-            double grip) {
+            double twist0_1,
+            double grip0_1) {
         return new LynxArmAngles(
                 0.5 - swingRad / Math.PI,
                 0.5 - boomRad / 4,
                 stickRad / Math.PI,
-                0.55 - wristRad / Math.PI, twist, grip);
+                0.55 - wristRad / Math.PI,
+                twist0_1,
+                grip0_1);
     }
 
 }

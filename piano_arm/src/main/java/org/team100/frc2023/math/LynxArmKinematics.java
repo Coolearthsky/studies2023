@@ -33,28 +33,28 @@ public class LynxArmKinematics {
     public Translation3d forward(LynxArmAngles joints) {
         // first find the 2d solution, in the 2dof axes (x up, y fwd)
         // this is what 2dof calls "x"
-        double up = m_boomLength * Math.cos(joints.boom)
-                + m_stickLength * Math.cos(joints.stick + joints.boom)
-                + m_wristLength * Math.cos(joints.wrist + joints.stick + joints.boom);
+        double up = m_boomLength * Math.cos(joints.boomRad())
+                + m_stickLength * Math.cos(joints.stickRad() + joints.boomRad())
+                + m_wristLength * Math.cos(joints.wristRad() + joints.stickRad() + joints.boomRad());
         // this is what 2dof calls "y"
         double out = boomOut(joints) + stickOut(joints) + wristOut(joints);
         // then rotate it by the swing.
         return new Translation3d(
-                -1 * out * Math.sin(joints.swing),
-                out * Math.cos(joints.swing),
+                -1 * out * Math.sin(joints.swingRad()),
+                out * Math.cos(joints.swingRad()),
                 up);
     }
 
     double boomOut(LynxArmAngles joints) {
-        return m_boomLength * Math.sin(joints.boom);
+        return m_boomLength * Math.sin(joints.boomRad());
     }
 
     double stickOut(LynxArmAngles joints) {
-        return m_stickLength * Math.sin(joints.stick + joints.boom);
+        return m_stickLength * Math.sin(joints.stickRad() + joints.boomRad());
     }
 
     double wristOut(LynxArmAngles joints) {
-        return m_wristLength * Math.sin(joints.wrist + joints.stick + joints.boom);
+        return m_wristLength * Math.sin(joints.wristRad() + joints.stickRad() + joints.boomRad());
     }
 
     /**
@@ -66,27 +66,37 @@ public class LynxArmKinematics {
      *                              swing and boom axes.
      * @param wristAngleAbsoluteRad relative to horizontal, positive up, which is
      *                              the reverse of the armangles direction.
+     * @param twist                 passthrough [0,1]
+     * @param grip                  passthrough [0,1]
      */
-    public LynxArmAngles inverse(Translation3d position, double wristAngleAbsoluteRad) {
+    public LynxArmAngles inverse(
+            Translation3d position,
+            double wristAngleAbsoluteRad,
+            double twist,
+            double grip) {
 
         double swing = -1.0 * safeAtan(position.getX(), position.getY());
 
         double up = position.getZ();
         double out = Math.hypot(position.getX(), position.getY());
 
-        out = out - Math.cos(wristAngleAbsoluteRad);
-        up = up - Math.sin(wristAngleAbsoluteRad);
+        out = out - m_wristLength * Math.cos(wristAngleAbsoluteRad);
+        up = up - m_wristLength * Math.sin(wristAngleAbsoluteRad);
 
         ArmAngles a = twodof.inverse(new Translation2d(up, out));
-
+        if (a == null) {
+            throw new IllegalArgumentException("up" + up + " out " + out);
+        }
         double wristAngleRelative = Math.PI / 2 - wristAngleAbsoluteRad - a.th1 - a.th2;
-        return new LynxArmAngles(swing, a.th1, a.th2, wristAngleRelative, 0, 0);
+        return LynxArmAngles.fromRad(swing, a.th1, a.th2, wristAngleRelative, twist, grip);
     }
 
-    /** If both x and y are zero, return zero. 
+    /**
+     * If both x and y are zero, return zero.
+     * 
      * @param x along the keyboard, right positive
      * @param y towards the keyboard
-    */
+     */
     private double safeAtan(double x, double y) {
         if (Math.abs(x) < 1e-3 && Math.abs(y) < 1e-3) {
             return 0;

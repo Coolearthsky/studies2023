@@ -1,12 +1,15 @@
 package org.team100.frc2023;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.team100.frc2023.commands.MoveAllAxes;
 import org.team100.frc2023.commands.MoveSequence;
 import org.team100.frc2023.kinematics.LynxArmAngles;
+import org.team100.frc2023.math.LynxArmKinematics;
 import org.team100.frc2023.subsystems.Arm;
 
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
@@ -63,35 +66,96 @@ public class RobotContainer {
         // new MoveAllAxes(() -> new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9),
         // m_arm));
 
-        new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
-                new MoveSequence(m_arm,
-                        List.of(
-                                // note 1
-                                new MoveSequence.Event(0.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(0.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(0.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(0.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(1.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(1.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(1.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(1.75, new LynxArmAngles(0.25, 0.61, 0.725, 0.73, 0.5, 0.9)),// stick up
-                                // note 2
-                                new MoveSequence.Event(2.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new MoveSequence.Event(2.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new MoveSequence.Event(2.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new MoveSequence.Event(2.75, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new MoveSequence.Event(3.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new MoveSequence.Event(3.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new MoveSequence.Event(3.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new MoveSequence.Event(3.75, new LynxArmAngles(0.50, 0.80, 0.725, 0.60, 0.5, 0.9)),// stick up
-                                // note 1 again
-                                new MoveSequence.Event(4.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(4.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(4.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(4.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(5.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new MoveSequence.Event(5.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new MoveSequence.Event(5.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)))));
+        // move in a circle in the xz plane
+        LynxArmKinematics k = new LynxArmKinematics(0.148, 0.185, 0.1);
+        List<MoveSequence.Event> circle = new ArrayList<>();
+        for (double tSec = 0; tSec < 30; tSec += 0.1) {
+            double x = 0.1 * Math.cos(tSec);
+            double y = 0.2;
+            double z = 0.2 + 0.1 * Math.sin(tSec);
+            MoveSequence.Event event = new MoveSequence.Event(
+                    tSec,
+                    k.inverse(new Translation3d(x, y, z), 0, 0.5, 0.9));
+            circle.add(event);
+        }
+
+        // move in a line along the keyboard playing notes.
+        // this uses the whole arm for finger action which is not what i want
+        // but it does work.
+        List<MoveSequence.Event> events = new ArrayList<>();
+        double keyWidthM = 0.0232;
+        int key = 0;
+        double y = 0.15;
+        double zup = 0.075;
+        double zdown = 0;
+        int inc = 1;
+        for (int i = 0; i < 100; ++i) {
+            if (key > 10) inc = -1;
+            else if (key < -10) inc = 1;
+            double tSec = i * 1.0;
+            key += inc;
+            double x = key * keyWidthM;
+            events.add(new MoveSequence.Event( tSec,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+            events.add(new MoveSequence.Event( tSec + 0.25,  k.inverse(new Translation3d(x, y, zdown), 0, 0.5, 0.9)));
+            events.add(new MoveSequence.Event( tSec + 0.75,  k.inverse(new Translation3d(x, y, zup), 0, 0.5, 0.9)));
+        }
+
+        new JoystickButton(m_controller,
+                XboxController.Button.kY.value).whileTrue(new MoveSequence(m_arm, events));
+
+        // play a couple of notes
+        // new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
+        // new MoveSequence(m_arm,
+        // List.of(
+        // // note 1
+        // new MoveSequence.Event(0.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(0.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(0.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(0.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(1.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(1.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(1.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(1.75, new LynxArmAngles(0.25, 0.61, 0.725, 0.73, 0.5,
+        // 0.9)),// stick up
+        // // note 2
+        // new MoveSequence.Event(2.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(2.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(2.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(2.75, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(3.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(3.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(3.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(3.75, new LynxArmAngles(0.50, 0.80, 0.725, 0.60, 0.5,
+        // 0.9)),// stick up
+        // // note 1 again
+        // new MoveSequence.Event(4.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(4.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(4.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(4.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(5.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(5.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5,
+        // 0.9)),
+        // new MoveSequence.Event(5.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5,
+        // 0.9)))));
 
         // Plays a sequence of preset moves.
         // new JoystickButton(m_controller,
