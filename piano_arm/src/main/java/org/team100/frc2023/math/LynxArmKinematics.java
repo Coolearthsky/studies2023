@@ -26,15 +26,22 @@ public class LynxArmKinematics {
     /**
      * @returns relative to the arm origin, which is the intersection of the
      *          swing and boom axes.
+     *          Facing the keys, +x is right, +y is forward, +z is up.
      */
     public Translation3d forward(LynxArmAngles joints) {
         // first find the 2d solution, in the 2dof axes (x up, y fwd)
-        double x = m_boomLength * Math.cos(joints.boom) + m_stickLength * Math.cos(joints.stick + joints.boom);
-        double y = m_boomLength * Math.sin(joints.boom) + m_stickLength * Math.sin(joints.stick + joints.boom);
-        
-
+        double up = m_boomLength * Math.cos(joints.boom)
+                + m_stickLength * Math.cos(joints.stick + joints.boom)
+                + m_wristLength * Math.cos(joints.wrist + joints.stick + joints.boom);
+        double out = m_boomLength * Math.sin(joints.boom)
+                + m_stickLength * Math.sin(joints.stick + joints.boom)
+                + m_wristLength * Math.sin(joints.wrist + joints.stick + joints.boom);
         // then rotate it by the swing.
-        return null;
+
+        return new Translation3d(
+                out * Math.sin(joints.swing),
+                out * Math.cos(joints.swing),
+                up);
     }
 
     /**
