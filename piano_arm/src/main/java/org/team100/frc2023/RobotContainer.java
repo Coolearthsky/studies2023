@@ -26,7 +26,7 @@ public class RobotContainer {
 
     public RobotContainer() {
         configureButtonBindings();
-        m_arm.setDefaultCommand(new MoveAllAxes(() -> Arm.initial, m_arm));
+        // m_arm.setDefaultCommand(new MoveAllAxes(() -> Arm.initial, m_arm));
     }
 
     private void configureButtonBindings() {
@@ -45,26 +45,29 @@ public class RobotContainer {
         // new MoveAllAxes(() -> new LynxArmAngles(0.6, 0.6, 0.25, 0.6, 0.6, 0.6),
         // m_arm));
 
-        // onboard
-        // swing: 0.5 is mid, 0.25 is 45 left.
-        // boom: 0.5 is mid, 0.75 is 60 back (?), 0.25 is 60 fwd
-        // stick: higher is straighter, basically 0 is straight and 1 is bent
-        // wrist: 0.55 is in line with the stick, roughly, 0.3 is 45 down
-        // twist: 0.5 is horizontal, leave it there.
-        // grip: 1 is shut, 0 is open, it's misindexed a little, should grip harder
-        // up
+        // calibrating servos.
+        // don't use +/- pi/2 for calibration, it's in the saturation region.
+        LynxArmAngles.Config config = new LynxArmAngles.Config();
+        config.wristCenter = 0.55;
+        config.wristScale = 3.3;
+        config.stickScale = Math.PI;
+        LynxArmAngles.Factory factory = new LynxArmAngles.Factory(config);
+
+        //
         new JoystickButton(m_controller, XboxController.Button.kA.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.5, 0.8, 0.9, 0.6, 0.5, 0.9), m_arm));
-        // down
+                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, 0, 0.5, 0.9), m_arm));
+        //
         new JoystickButton(m_controller, XboxController.Button.kB.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.5, 0.8, 0.9, 0.5, 0.5, 0.9), m_arm));
-        // up
+                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, Math.PI / 3, 0.5, 0.9), m_arm));
+        //
         new JoystickButton(m_controller, XboxController.Button.kX.value).whileTrue(
-                new MoveAllAxes(() -> new LynxArmAngles.Factory().from0_1(0.25, 0.61, 0.795, 0.73, 0.5, 0.9), m_arm));
-        // down
-        // new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
-        // new MoveAllAxes(() -> new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9),
-        // m_arm));
+                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, -Math.PI / 3, 0.5, 0.9), m_arm));
+
+        new JoystickButton(m_controller, XboxController.Button.kLeftBumper.value).whileTrue(
+                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, Math.PI / 6, 0.5, 0.9), m_arm));
+
+        new JoystickButton(m_controller, XboxController.Button.kRightBumper.value).whileTrue(
+                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, -Math.PI / 6, 0.5, 0.9), m_arm));
 
         // move in a circle in the xz plane
         LynxArmKinematics k = new LynxArmKinematics(0.148, 0.185, 0.1);

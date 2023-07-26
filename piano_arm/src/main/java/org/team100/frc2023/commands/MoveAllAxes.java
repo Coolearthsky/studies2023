@@ -15,6 +15,9 @@ public class MoveAllAxes extends Command {
     private final Supplier<LynxArmAngles> m_input;
     private final Arm m_arm;
 
+    /**
+     * @param hold means never complete, i.e. hold while button is held.
+     */
     public MoveAllAxes(Supplier<LynxArmAngles> input, Arm output) {
         m_input = input;
         m_arm = output;

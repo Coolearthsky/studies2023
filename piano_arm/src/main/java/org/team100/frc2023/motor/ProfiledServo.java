@@ -41,15 +41,6 @@ public class ProfiledServo  {
         //SmartDashboard.putData(name, this);
     }
 
-    private ProfiledServo(String name, int channel, double initialGoal) {
-        // this(name, channel, 0.0, 1.0, 0.5, 0.5);
-        this(name, channel, initialGoal, 0.0, 1.0, 100.0, 100.0);
-    }
-
-    public ProfiledServo(String name, int channel, double initialGoal, double speed, double accel) {
-        this(name, channel, initialGoal, 0, 1, speed, accel);
-    }
-
     /*
      * Sets the goal, with [0,1] scaled velocity/acceleration, to coordinate with
      * other axes. Goal velocity is always zero.

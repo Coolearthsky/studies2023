@@ -5,8 +5,12 @@ public class LynxArmAngles {
     public static class Config {
         public double swingCenter = 0.5;
         public double boomCenter = 0.5;
+        public double stickScale = Math.PI;
+        /** Zero rad is this in servo level */
         // double wristCenter = 0.55;
         public double wristCenter = 0.6;
+        /** from 0 to 1 is what angle */
+        public double wristScale = Math.PI;
     }
 
     public static class Factory {
@@ -71,11 +75,11 @@ public class LynxArmAngles {
         }
 
         private double fromStickRad(double stickRad) {
-            return stickRad / Math.PI;
+            return stickRad / m_config.stickScale;
         }
 
         private double fromWristRad(double wristRad) {
-            return m_config.wristCenter - wristRad / Math.PI;
+            return m_config.wristCenter - wristRad / m_config.wristScale;
         }
 
     }
@@ -131,7 +135,7 @@ public class LynxArmAngles {
      * Zero is fully extended, positive is forward.
      */
     public double stickRad() {
-        return stick * Math.PI;
+        return stick * m_config.stickScale;
     };
 
     /**
@@ -139,7 +143,7 @@ public class LynxArmAngles {
      * Zero is fully extended, positive is forward.
      */
     public double wristRad() {
-        return (m_config.wristCenter - wrist) * Math.PI;
+        return (m_config.wristCenter - wrist) * m_config.wristScale;
     };
 
     /** Used to provide wrist action without moving the rest of the arm. */

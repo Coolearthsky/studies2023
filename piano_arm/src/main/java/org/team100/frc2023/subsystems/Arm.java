@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
  */
 public class Arm extends Subsystem {
     public final static LynxArmAngles initial = new LynxArmAngles.Factory().fromRad(
-        0, -Math.PI/4, Math.PI/2, Math.PI/4, 0.5, 0.9);
+            0, -Math.PI / 4, Math.PI / 2, Math.PI / 4, 0.5, 0.9);
     // public enum Axis {
     // Swing, Boom, Stick, Wrist, Twist, Grip
     // }
@@ -26,12 +26,12 @@ public class Arm extends Subsystem {
     // public final ProfiledServo grip = new ProfiledServo("Grip", 15);
 
     // on-board PWM output
-    public final ProfiledServo swing = new ProfiledServo("Swing", 0, initial.swing, 5, 5);
-    public final ProfiledServo boom = new ProfiledServo("Boom", 1, initial.boom,5, 5);
-    public final ProfiledServo stick = new ProfiledServo("Stick", 2, initial.stick, 5, 5);
-    public final ProfiledServo wrist = new ProfiledServo("Wrist", 3, initial.wrist, 100, 100);
-    public final ProfiledServo twist = new ProfiledServo("Twist", 4, initial.twist, 1, 1);
-    public final ProfiledServo grip = new ProfiledServo("Grip", 5, initial.grip, 1, 1);
+    public final ProfiledServo swing = new ProfiledServo("Swing", 0, initial.swing, 0, 1, 5, 5);
+    public final ProfiledServo boom = new ProfiledServo("Boom", 1, initial.boom, 0, 1, 5, 5);
+    public final ProfiledServo stick = new ProfiledServo("Stick", 2, initial.stick, 0, 1, 5, 5);
+    public final ProfiledServo wrist = new ProfiledServo("Wrist", 3, initial.wrist, 0, 1, 100, 100);
+    public final ProfiledServo twist = new ProfiledServo("Twist", 4, initial.twist, 0, 1, 1, 1);
+    public final ProfiledServo grip = new ProfiledServo("Grip", 5, initial.grip, 0, 1, 1, 1);
 
     public Arm() {
         setRawGoals(initial);
