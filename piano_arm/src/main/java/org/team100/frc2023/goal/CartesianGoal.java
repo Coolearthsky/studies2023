@@ -4,8 +4,9 @@ package org.team100.frc2023.goal;
 import java.util.function.Supplier;
 
 import org.team100.frc2023.kinematics.LynxArmAngles;
-import org.team100.frc2023.math.ArmKinematics;
+import org.team100.frc2023.math.LynxArmKinematics;
 
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -13,12 +14,12 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** Accepts cartesian input, supplies joint positions. */
 public class CartesianGoal implements Sendable, Supplier<LynxArmAngles> {
-  private final ArmKinematics m_kinematics;
+  private final LynxArmKinematics m_kinematics;
   private double m_x;
   private double m_y;
   private double m_z;
 
-  public CartesianGoal(ArmKinematics kinematics) {
+  public CartesianGoal(LynxArmKinematics kinematics) {
     m_kinematics = kinematics;
     SmartDashboard.putData("cartesian goal_reader", this);
 
@@ -26,7 +27,7 @@ public class CartesianGoal implements Sendable, Supplier<LynxArmAngles> {
 
   @Override
   public LynxArmAngles get() {
-    return m_kinematics.inverse(new ArmKinematics.Translation3d(m_x, m_y, m_z));
+    return m_kinematics.inverse(new Translation3d(m_x, m_y, m_z));
   }
 
   @Override
