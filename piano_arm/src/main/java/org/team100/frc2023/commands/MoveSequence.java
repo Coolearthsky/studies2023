@@ -9,7 +9,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 
 /** Move according to a schedule. */
-public class Sequencer extends Command {
+public class MoveSequence extends Command {
     public static class Event {
         public final double timeSec;
         public final LynxArmAngles angles;
@@ -25,7 +25,7 @@ public class Sequencer extends Command {
     private final List<Event> m_events;
     private int m_nextEvent;
 
-    public Sequencer(Arm arm, List<Event> events) {
+    public MoveSequence(Arm arm, List<Event> events) {
         m_arm = arm;
         m_timer = new Timer();
         m_events = events;

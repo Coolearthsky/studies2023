@@ -3,7 +3,7 @@ package org.team100.frc2023;
 import java.util.List;
 
 import org.team100.frc2023.commands.MoveAllAxes;
-import org.team100.frc2023.commands.Sequencer;
+import org.team100.frc2023.commands.MoveSequence;
 import org.team100.frc2023.kinematics.LynxArmAngles;
 import org.team100.frc2023.subsystems.Arm;
 
@@ -64,34 +64,34 @@ public class RobotContainer {
         // m_arm));
 
         new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
-                new Sequencer(m_arm,
+                new MoveSequence(m_arm,
                         List.of(
                                 // note 1
-                                new Sequencer.Event(0.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(0.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(0.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(0.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(1.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(1.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(1.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(1.75, new LynxArmAngles(0.25, 0.61, 0.725, 0.73, 0.5, 0.9)),// stick up
+                                new MoveSequence.Event(0.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(0.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(0.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(0.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(1.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(1.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(1.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(1.75, new LynxArmAngles(0.25, 0.61, 0.725, 0.73, 0.5, 0.9)),// stick up
                                 // note 2
-                                new Sequencer.Event(2.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new Sequencer.Event(2.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new Sequencer.Event(2.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new Sequencer.Event(2.75, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new Sequencer.Event(3.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new Sequencer.Event(3.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
-                                new Sequencer.Event(3.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
-                                new Sequencer.Event(3.75, new LynxArmAngles(0.50, 0.80, 0.725, 0.60, 0.5, 0.9)),// stick up
+                                new MoveSequence.Event(2.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
+                                new MoveSequence.Event(2.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
+                                new MoveSequence.Event(2.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
+                                new MoveSequence.Event(2.75, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
+                                new MoveSequence.Event(3.00, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
+                                new MoveSequence.Event(3.25, new LynxArmAngles(0.50, 0.80, 0.900, 0.50, 0.5, 0.9)),
+                                new MoveSequence.Event(3.50, new LynxArmAngles(0.50, 0.80, 0.900, 0.60, 0.5, 0.9)),
+                                new MoveSequence.Event(3.75, new LynxArmAngles(0.50, 0.80, 0.725, 0.60, 0.5, 0.9)),// stick up
                                 // note 1 again
-                                new Sequencer.Event(4.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(4.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(4.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(4.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(5.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
-                                new Sequencer.Event(5.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
-                                new Sequencer.Event(5.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)))));
+                                new MoveSequence.Event(4.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(4.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(4.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(4.75, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(5.00, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)),
+                                new MoveSequence.Event(5.25, new LynxArmAngles(0.25, 0.61, 0.795, 0.63, 0.5, 0.9)),
+                                new MoveSequence.Event(5.50, new LynxArmAngles(0.25, 0.61, 0.795, 0.73, 0.5, 0.9)))));
 
         // Plays a sequence of preset moves.
         // new JoystickButton(m_controller,
