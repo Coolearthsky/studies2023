@@ -17,7 +17,10 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /** Contains and binds components. */
 public class RobotContainer {
-    private final Arm m_arm = new Arm();
+
+    private final Arm m_arm = new Arm(Arm.PWMPorts.MAIN);
+    private final Arm m_arm2 = new Arm(Arm.PWMPorts.MXP);
+
     // private final Command m_mover = new MoveAllAxes(m_ntGoal, m_arm);
     private final XboxController m_controller = new XboxController(0);
     // private final Command m_manualMover = new ManualMove(m_controller, m_arm);
@@ -30,44 +33,33 @@ public class RobotContainer {
     }
 
     private void configureButtonBindings() {
-        // Moves to the spot specified in the network tables.
-        // MXP
-        // new JoystickButton(m_controller, XboxController.Button.kA.value).whileTrue(
-        // new MoveAllAxes(() -> new LynxArmAngles(0.5, 0.75, 0.25, 0.25, 0.5, 0.5),
-        // m_arm));
-        // new JoystickButton(m_controller, XboxController.Button.kB.value).whileTrue(
-        // new MoveAllAxes(() -> new LynxArmAngles(0.6, 0.6, 0.25, 0.6, 0.6, 0.6),
-        // m_arm));
-        // new JoystickButton(m_controller, XboxController.Button.kX.value).whileTrue(
-        // new MoveAllAxes(() -> new LynxArmAngles(0.6, 0.6, 0.25, 0.6, 0.6, 0.6),
-        // m_arm));
-        // new JoystickButton(m_controller, XboxController.Button.kY.value).whileTrue(
-        // new MoveAllAxes(() -> new LynxArmAngles(0.6, 0.6, 0.25, 0.6, 0.6, 0.6),
-        // m_arm));
 
         // calibrating servos.
         // don't use +/- pi/2 for calibration, it's in the saturation region.
+        // these are for arm "ONE".
+        // each arm is different. TODO: multiple configs.
         LynxArmAngles.Config config = new LynxArmAngles.Config();
+        config.swingCenter = 0.47;
+        config.swingScale = 3.2;
+        config.boomCenter = 0.48;
+        config.boomScale = 4;
+        config.stickOffset = 0.05;
+        config.stickScale = 3.4;
         config.wristCenter = 0.55;
         config.wristScale = 3.3;
-        config.stickScale = Math.PI;
+
         LynxArmAngles.Factory factory = new LynxArmAngles.Factory(config);
 
-        //
         new JoystickButton(m_controller, XboxController.Button.kA.value).whileTrue(
-                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, 0, 0.5, 0.9), m_arm));
-        //
+                new MoveAllAxes(() -> factory.fromRad(0, -0.8, Math.PI / 2, 0, 0.5, 0.9), m_arm));
         new JoystickButton(m_controller, XboxController.Button.kB.value).whileTrue(
-                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, Math.PI / 3, 0.5, 0.9), m_arm));
-        //
+                new MoveAllAxes(() -> factory.fromRad(0, -0.8, Math.PI / 6, 0, 0.5, 0.9), m_arm));
         new JoystickButton(m_controller, XboxController.Button.kX.value).whileTrue(
-                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, -Math.PI / 3, 0.5, 0.9), m_arm));
-
+                new MoveAllAxes(() -> factory.fromRad(0, -0.8, 5 * Math.PI / 6, 0, 0.5, 0.9), m_arm));
         new JoystickButton(m_controller, XboxController.Button.kLeftBumper.value).whileTrue(
-                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, Math.PI / 6, 0.5, 0.9), m_arm));
-
+                new MoveAllAxes(() -> factory.fromRad(0, -0.8, Math.PI / 3, 0, 0.5, 0.9), m_arm));
         new JoystickButton(m_controller, XboxController.Button.kRightBumper.value).whileTrue(
-                new MoveAllAxes(() -> factory.fromRad(0, 0, 0, -Math.PI / 6, 0.5, 0.9), m_arm));
+                new MoveAllAxes(() -> factory.fromRad(0, -0.8, 2 * Math.PI / 3, 0, 0.5, 0.9), m_arm));
 
         // move in a circle in the xz plane
         LynxArmKinematics k = new LynxArmKinematics(0.148, 0.185, 0.1);

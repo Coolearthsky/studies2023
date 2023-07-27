@@ -4,7 +4,10 @@ package org.team100.frc2023.kinematics;
 public class LynxArmAngles {
     public static class Config {
         public double swingCenter = 0.5;
+        public double swingScale = Math.PI;
         public double boomCenter = 0.5;
+        public double boomScale = 4;
+        public double stickOffset = 0.0;
         public double stickScale = Math.PI;
         /** Zero rad is this in servo level */
         // double wristCenter = 0.55;
@@ -67,15 +70,15 @@ public class LynxArmAngles {
         }
 
         private double fromSwingRad(double swingRad) {
-            return m_config.swingCenter - swingRad / Math.PI;
+            return m_config.swingCenter - swingRad / m_config.swingScale;
         }
 
         private double fromBoomRad(double boomRad) {
-            return m_config.boomCenter - boomRad / 4;
+            return m_config.boomCenter - boomRad / m_config.boomScale;
         }
 
         private double fromStickRad(double stickRad) {
-            return stickRad / m_config.stickScale;
+            return m_config.stickOffset + stickRad / m_config.stickScale;
         }
 
         private double fromWristRad(double wristRad) {
@@ -120,14 +123,14 @@ public class LynxArmAngles {
      * Swing is zero at center, positive counterclockwise.
      */
     public double swingRad() {
-        return (m_config.swingCenter - swing) * Math.PI;
+        return (m_config.swingCenter - swing) * m_config.swingScale;
     };
 
     /**
      * Boom straight up is zero, positive forward.
      */
     public double boomRad() {
-        return (m_config.boomCenter - boom) * 4;
+        return (m_config.boomCenter - boom) * m_config.boomScale;
     };
 
     /**
@@ -135,7 +138,7 @@ public class LynxArmAngles {
      * Zero is fully extended, positive is forward.
      */
     public double stickRad() {
-        return stick * m_config.stickScale;
+        return (m_config.stickOffset + stick) * m_config.stickScale;
     };
 
     /**
