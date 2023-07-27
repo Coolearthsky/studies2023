@@ -28,7 +28,7 @@ public final class Main {
 
         Sequencer sequencer = MidiSystem.getSequencer();
         System.out.println(sequencer.getClass().getName());
-        InputStream is = new BufferedInputStream(new FileInputStream(new File("src/main/deploy/Autumn_Leaves.mid")));
+        InputStream is = new BufferedInputStream(new FileInputStream(new File("src/main/deploy/scales.mid")));
         sequencer.setSequence(is);
         Sequence sequence = sequencer.getSequence();
         Track[] tracks = sequence.getTracks();

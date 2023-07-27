@@ -11,8 +11,6 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
  * This is "live" all the time; it's never not going towards a goal.
  */
 public class Arm extends Subsystem {
-    public final static LynxArmAngles initial = new LynxArmAngles.Factory().fromRad(
-            0, -Math.PI / 4, Math.PI / 2, Math.PI / 4, 0.5, 0.9);
 
     // public enum Axis {
     // Swing, Boom, Stick, Wrist, Twist, Grip
@@ -24,6 +22,8 @@ public class Arm extends Subsystem {
         MXP
     }
 
+    private final LynxArmAngles.Factory m_factory;
+
     // MXP PWM output
     public final ProfiledServo swing;
     public final ProfiledServo boom;
@@ -32,11 +32,13 @@ public class Arm extends Subsystem {
     public final ProfiledServo twist;
     public final ProfiledServo grip;
 
-    public Arm(PWMPorts ports) {
+    public Arm(LynxArmAngles.Factory factory,    PWMPorts ports) {
+        m_factory = factory;
         int channel_offset = 0;
         if (ports == PWMPorts.MXP) {
             channel_offset = 10;
         }
+         LynxArmAngles initial = m_factory.fromRad(    0, -Math.PI / 4, Math.PI / 2, Math.PI / 4, 0.5, 0.9);
         swing = new ProfiledServo("Swing", channel_offset + 0, initial.swing, 0, 1, 5, 5);
         boom = new ProfiledServo("Boom", channel_offset + 1, initial.boom, 0, 1, 5, 5);
         stick = new ProfiledServo("Stick", channel_offset + 2, initial.stick, 0, 1, 5, 5);

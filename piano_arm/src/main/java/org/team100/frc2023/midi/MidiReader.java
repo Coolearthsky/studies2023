@@ -24,7 +24,7 @@ public class MidiReader {
     private final Track[] m_tracks;
 
     public MidiReader() {
-        this("src/main/deploy/head_over_heels_duet.mid");
+        this("src/main/deploy/scales.mid");
     }
 
     public MidiReader(String filepath) {
