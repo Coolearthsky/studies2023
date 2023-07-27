@@ -36,7 +36,7 @@ public class Piano {
             return (x - ctr.x) * keyWidthM;
         }
 
-        /** y (ahead positive) offset (m) of the key, relative to the given midi */
+        /** y (ahead positive) offset (m) of the key */
         public double y() {
             if (isWhite())
                 return 0;
