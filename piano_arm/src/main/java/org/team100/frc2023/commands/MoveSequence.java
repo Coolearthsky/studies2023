@@ -41,6 +41,7 @@ public class MoveSequence extends Command {
 
     @Override
     public void execute() {
+        if (m_events.isEmpty()) return;
         double currentTimeSec = m_timer.get();
         Event event = m_events.get(m_nextEvent);
         if (event.timeSec < currentTimeSec) {

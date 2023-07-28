@@ -1,20 +1,19 @@
 package org.team100.frc2023.midi;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
-import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
+
+import edu.wpi.first.wpilibj.Filesystem;
 
 /**
  * Read a MIDI file.
@@ -24,7 +23,8 @@ public class MidiReader {
     private final Track[] m_tracks;
 
     public MidiReader() {
-        this("src/main/deploy/scales.mid");
+        // this("src/main/deploy/scales.mid");
+        this("scales.mid");
     }
 
     public MidiReader(String filepath) {
@@ -72,15 +72,11 @@ public class MidiReader {
 
     /** Returns an array of tracks, empty if something goes wrong. */
     private Track[] makeTracks(String filepath) {
-        try {
-            Sequencer sequencer = MidiSystem.getSequencer();
-            InputStream is = new BufferedInputStream(new FileInputStream(new File(filepath)));
-            sequencer.setSequence(is);
-            Sequence sequence = sequencer.getSequence();
-            return sequence.getTracks();  
-        } catch (MidiUnavailableException | IOException | InvalidMidiDataException e) {
-            e.printStackTrace();
+        Path path = Filesystem.getDeployDirectory().toPath().resolve(filepath);
+        try (InputStream is = Files.newInputStream(path)) {
+            return MidiSystem.getSequence(is).getTracks();
+        } catch (IOException | InvalidMidiDataException e) {
+            throw new RuntimeException(e);
         }
-        return new Track[0];
     }
 }

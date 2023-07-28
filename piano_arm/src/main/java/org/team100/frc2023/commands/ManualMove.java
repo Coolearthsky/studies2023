@@ -13,7 +13,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 
 /** Moves the arm incrementally using the Xbox controller. */
 public class ManualMove extends Command {
-    private static double kDt = 0.02;
+    //private static double kDt = 0.02;
     // private static double kScale = 0.1;
     private static double kScale = 1;
     private static double kDeadband = 0.05;

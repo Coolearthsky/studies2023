@@ -55,7 +55,7 @@ public class TracksToEvents {
                 Piano.Key pianoKey = m_piano.get(key);
                 double x = pianoKey.x(m_center);
                 double y = pianoKey.y() + 0.15;
-                double z = 0.04;
+                double z = 0.08;
                 double wristDown = Math.PI / 8;
                 double tSec = tick / 1000;
 

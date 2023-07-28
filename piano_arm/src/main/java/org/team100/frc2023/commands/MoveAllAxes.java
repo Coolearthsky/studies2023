@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 
 /** Captures goals at initialization time, moves the arm. */
 public class MoveAllAxes extends Command {
-    private static double kDt = 0.02;
+   // private static double kDt = 0.02;
     private final Supplier<LynxArmAngles> m_input;
     private final Arm m_arm;
 
