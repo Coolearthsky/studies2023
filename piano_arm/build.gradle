@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath 'com.guardsquare:proguard-gradle:7.2.0-beta2'
+    }
+}
+
 plugins {
     id "java"
     id "edu.wpi.first.GradleRIO" version "2023.4.2"
@@ -104,3 +115,23 @@ wpi.java.configureTestTasks(test)
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
+
+task proguardshrink(type: proguard.gradle.ProGuardTask) {
+    configuration 'proguard-shrink.txt'
+}
+
+jar.finalizedBy proguardshrink
+
+task copyJar(type: Copy) {
+    from "$buildDir/libs/piano_arm.jar"
+    into "$buildDir/libs/"
+    rename('piano_arm.jar', 'piano_arm_big.jar')
+}
+task overwriteJar(type: Copy) {
+    from "$buildDir/libs/piano_arm_out.jar"
+    into "$buildDir/libs/"
+    rename('piano_arm_out.jar', 'piano_arm.jar')
+}
+proguardshrink.finalizedBy copyJar
+copyJar.finalizedBy overwriteJar
+
