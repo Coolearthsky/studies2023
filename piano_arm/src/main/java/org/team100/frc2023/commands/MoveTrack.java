@@ -31,16 +31,23 @@ public class MoveTrack extends Command {
     private final Arm m_arm;
 
     private final Track m_track;
+    private final int m_ticksPerSec;
     private final Piano m_piano;
     private final Piano.Key m_center;
     private final LynxArmKinematics m_kinematics;
     private final Timer m_timer;
     private int m_nextEvent;
+    private boolean moving = false;
 
-    public MoveTrack(Arm arm, Track track, Piano piano, Piano.Key center, LynxArmKinematics kinematics) {
+    public MoveTrack(Arm arm,
+            Track track,
+            int ticksPerSec,
+            Piano piano,
+            Piano.Key center,
+            LynxArmKinematics kinematics) {
         m_arm = arm;
-
         m_track = track;
+        m_ticksPerSec = ticksPerSec;
         m_piano = piano;
         m_center = center;
         m_kinematics = kinematics;
@@ -99,30 +106,34 @@ public class MoveTrack extends Command {
                 continue;
             }
 
-            double tSec = (double) event.getTick() / 1000;
+            double tSec = (double) event.getTick() / m_ticksPerSec;
             double currentTimeSec = m_timer.get();
-           // System.out.printf("%5.3f tick %5.3f\n", currentTimeSec, tSec);
+            // System.out.printf("%5.3f tick %5.3f\n", currentTimeSec, tSec);
 
             int key = sm.getData1();
             int velocity = sm.getData2();
 
             if (velocity > 0) {
                 if (tSec < currentTimeSec) {
-                   // System.out.printf("%5.3f skip %d\n", currentTimeSec, key);
+                    // System.out.printf("%5.3f skip %d\n", currentTimeSec, key);
                     m_nextEvent += 1;
                     return null;
                 }
                 if (tSec - 0.25 > currentTimeSec) {
-                   // System.out.printf("%5.3f wait for %d\n", currentTimeSec, key);
+                    // System.out.printf("%5.3f wait for %d\n", currentTimeSec, key);
                     // not time yet
                     return null;
                 }
                 if (tSec - 0.2 > currentTimeSec) {
-                    System.out.printf("%5.3f move to %d\n", currentTimeSec, key);
+                    if (moving)
+                        return null;
+                    moving = true;
+                    System.out.printf("%5.3f (%5.3f) move to %d\n", currentTimeSec, tSec, key);
                     return up(key);
                 }
                 // play on time
-                System.out.printf("%5.3f attack %d\n", currentTimeSec, key);
+                moving = false;
+                System.out.printf("%5.3f (%5.3f) attack %d\n", currentTimeSec, tSec, key);
                 m_nextEvent += 1;
                 return down(key);
             } else {
@@ -130,7 +141,8 @@ public class MoveTrack extends Command {
                     // not time yet
                     return null;
                 }
-                System.out.printf("%5.3f release %d\n", currentTimeSec, key);
+                moving = false;
+                System.out.printf("%5.3f (%5.3f) release %d\n", currentTimeSec, tSec, key);
                 m_nextEvent += 1;
                 return up(key);
             }
@@ -142,8 +154,8 @@ public class MoveTrack extends Command {
         Piano.Key pianoKey = m_piano.get(key);
         double x = pianoKey.x(m_center);
         double y = pianoKey.y() + 0.15;
-        double z = 0.08;
-        double wristDown = -Math.PI / 8;
+        double z = 0.06 + pianoKey.y() > 0 ? 0.01 : 0;
+        double wristDown = -Math.PI / 12;
         return m_kinematics.inverse(new Translation3d(x, y, z), 0, 0.5, 0.9).down(wristDown);
     }
 
@@ -151,8 +163,8 @@ public class MoveTrack extends Command {
         Piano.Key pianoKey = m_piano.get(key);
         double x = pianoKey.x(m_center);
         double y = pianoKey.y() + 0.15;
-        double z = 0.06;
-        double wristDown = Math.PI / 12;
+        double z = 0.04 + pianoKey.y() > 0 ? 0.01 : 0;
+        double wristDown = Math.PI / 10;
         return m_kinematics.inverse(new Translation3d(x, y, z), 0, 0.5, 0.9).down(wristDown);
     }
 

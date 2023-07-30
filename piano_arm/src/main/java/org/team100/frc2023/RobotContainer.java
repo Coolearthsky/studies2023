@@ -13,7 +13,6 @@ import org.team100.frc2023.kinematics.LynxArmAngles;
 import org.team100.frc2023.math.LynxArmKinematics;
 import org.team100.frc2023.midi.MidiReader;
 import org.team100.frc2023.subsystems.Arm;
-import org.team100.frc2023.util.TracksToEvents;
 
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.wpilibj.XboxController;
@@ -71,7 +70,8 @@ public class RobotContainer {
         Piano piano = new Piano();
         //TracksToEvents tte = new TracksToEvents(piano, piano.get(60), k);
 
-        MoveTrack mt = new MoveTrack(m_arm, tracks[0], piano, piano.get(60), k);
+        int ticksPerSec = 500; // slow
+        MoveTrack mt = new MoveTrack(m_arm, tracks[0], ticksPerSec, piano, piano.get(60), k);
 
        // List<MoveSequence.Event> events = tte.toEvents(tracks);
 
@@ -147,7 +147,7 @@ public class RobotContainer {
      * this uses the whole arm for finger action which is not what i want
      * but it does work.
      */
-    private List<MoveSequence.Event> forearm(LynxArmKinematics k) {
+     List<MoveSequence.Event> forearm(LynxArmKinematics k) {
         List<MoveSequence.Event> events = new ArrayList<>();
         double keyWidthM = 0.0232;
         int key = 0;

@@ -19,7 +19,10 @@ public class LynxArmKinematics {
 
     private final TwoDofKinematics twodof;
 
-    public LynxArmKinematics( LynxArmAngles.Factory factory, double boomLength, double stickLength, double wristLength) {
+    public LynxArmKinematics(
+            LynxArmAngles.Factory factory,
+            double boomLength, double stickLength,
+            double wristLength) {
         m_factory = factory;
         m_boomLength = boomLength;
         m_stickLength = stickLength;
