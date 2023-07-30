@@ -1,14 +1,13 @@
-package examples;
-
-import glc.GlcParameters;
-import glc.Planner;
-import glc.PlannerOutput;
+package glc.examples;
 
 import java.util.Vector;
 
 import glc.GlcLogging;
 import glc.GlcMath;
 import glc.GlcNode;
+import glc.GlcParameters;
+import glc.Planner;
+import glc.PlannerOutput;
 import glc.glc_interface.CostFunction;
 import glc.glc_interface.GoalRegion;
 import glc.glc_interface.Heuristic;
@@ -17,39 +16,12 @@ import glc.glc_interface.Obstacles;
 import glc.glc_interpolation.InterpolatingPolynomial;
 import glc.glc_numerical_integration.RungeKuttaTwo;
 
-/* This example illustrates how to interface with the glc planner.
- * One must provide:
- * 
- * 1) A finite subset of admissible control inputs
- * parameterized by a resolution so that this finite
- * so that this finite set converges to a dense subset
- * with increasing resolution. 
- * 
- * 2) A goal checking subroutine that determines
- * if a trajectory object intersects the goal set.
- * 
- * 3) An admissible heuristic that underestimates 
- * the optimal cost-to-go from every feasible state.
- * One can always use h(x)=0 for all x as a heuristic.
- * 
- * 4) A dynamic model describing the response of the 
- * system to control inputs and also a lipschitz 
- * constant for the model.
- * 
- * 5) A feasibility or collision checking function.
- * 
- * 6) A Lipschitz continuous cost running cost for
- * candidate trajectories along with a known Lipschitz
- * constant.
- */
-
-class ShortestPathDemo {
+public class NonholonomicCarDemo {
 
     ////////////////////////////////////////////////////////
     ///////// Discretization of Control Inputs///////////////
     ////////////////////////////////////////////////////////
     public static class ControlInputs2D extends Inputs {
-
         // uniformly spaced points on a circle
         public ControlInputs2D(int num_inputs) {
 
@@ -66,15 +38,16 @@ class ShortestPathDemo {
     /////////////// Goal Checking Interface//////////////////
     ////////////////////////////////////////////////////////
     public static class SphericalGoal extends GoalRegion {
-        private double goal_radius;
-        private double goal_radius_sqr;
-        private final double[] error;
-        private double[] x_g;
-        private final int resolution;
+        private  double goal_radius;
+        private  double goal_radius_sqr;
+        private final  double[] error;
+        private    double[] x_g;
+        private final  int resolution;
 
         public SphericalGoal(final int _state_dim,
                 final double _goal_radius,
                 int _resolution) {
+
             x_g = new double[_state_dim];
             resolution = _resolution;
             goal_radius = _goal_radius;
@@ -91,11 +64,11 @@ class ShortestPathDemo {
 
             double dt = (traj.numberOfIntervals() * traj.intervalLength()) / resolution;
             for (int i = 0; i < resolution; i++) {
-                time += dt;
-                // don't need to check t0 since it was part of last traj
+                time += dt;// don't need to check t0 since it was part of last traj
                 for (int j = 0; j < x_g.length; ++j) {
                     error[j] = x_g[j] - traj.at(time)[j];
                 }
+
                 if (GlcMath.dot(error, error) < goal_radius_sqr) {
                     return time;
                 }
@@ -119,37 +92,14 @@ class ShortestPathDemo {
         double[] getGoal() {
             return x_g;
         }
-    };
 
-    ////////////////////////////////////////////////////////
-    //////// Problem Specific Admissible Heuristic///////////
-    ////////////////////////////////////////////////////////
-    public static class EuclideanHeuristic extends Heuristic {
-        private final double radius;
-        private  double[] goal;
-
-        public EuclideanHeuristic(double[] _goal, double _radius) {
-            radius = _radius;
-            goal = _goal;
-        }
-
-        @Override
-        public double costToGo(final double[] state) {
-            return Math.max(0.0, Math.sqrt(GlcMath.sqr(goal[0] - state[0]) + GlcMath.sqr(goal[1] - state[1])) - radius);
-            // offset by goal radius
-        }
-
-        void setGoal(final double[] goal_) {
-            goal = goal_;
-        }
     };
 
     ////////////////////////////////////////////////////////
     ///////////////// Dynamic Model//////////////////////////
     ////////////////////////////////////////////////////////
     public static class SingleIntegrator extends RungeKuttaTwo {
-
-        SingleIntegrator(final double max_time_step_) {
+        public SingleIntegrator(final double max_time_step_) {
             super(0.0, max_time_step_, 2);
         }
 
@@ -160,7 +110,6 @@ class ShortestPathDemo {
             }
         }
 
-        @Override
         public double getLipschitzConstant() {
             return 0.0;
         }
@@ -170,11 +119,12 @@ class ShortestPathDemo {
     ///////////////// Cost Function//////////////////////////
     ////////////////////////////////////////////////////////
     public static class ArcLength extends CostFunction {
-        private final double sample_resolution;
+        private final  double sample_resolution;
 
         public ArcLength(int _sample_resolution) {
             super(0.0);
             sample_resolution = _sample_resolution;
+
         }
 
         @Override
@@ -200,12 +150,108 @@ class ShortestPathDemo {
         }
     };
 
+    public static class CarControlInputs extends Inputs {
+
+        // uniformly spaced points on a circle
+        public CarControlInputs(int num_steering_angles) {
+
+            // Make all pairs (forward_speed,steering_angle)
+            double[] car_speeds = new double[] { 1.0 };// Pure path planning
+
+            double[] steering_angles = GlcMath.linearSpace(-0.0625 * Math.PI, 0.0625 * Math.PI, num_steering_angles);
+
+            double[] control_input = new double[2];
+            for (double vel : car_speeds) {
+                for (double ang : steering_angles) {
+                    control_input[0] = vel;
+                    control_input[1] = ang;
+                    addInputSample(control_input);
+                }
+            }
+        }
+
+    };
+
+    ////////////////////////////////////////////////////////
+    /////////////// Goal Checking Interface//////////////////
+    ////////////////////////////////////////////////////////
+    public static class Sphericalgoal extends GoalRegion {
+        private final   double radius_sqr;
+        private final  double[] center;
+        private final  int resolution;
+
+        public Sphericalgoal(double _goal_radius_sqr,
+                double[] _goal_center,
+                int _resolution) {
+            resolution = _resolution;
+            center = _goal_center;
+            radius_sqr = _goal_radius_sqr;
+        }
+
+        // Returns true if traj intersects goal and sets t to the first time at which
+        // the trajectory is in the goal
+        public double inGoal(final InterpolatingPolynomial traj) {
+            double time = traj.initialTime();
+
+            double dt = (traj.numberOfIntervals() * traj.intervalLength()) / resolution;
+            for (int i = 0; i < resolution; i++) {
+                time += dt;// don't need to check t0 since it was part of last traj
+                double[] state = traj.at(time);
+                if (GlcMath.sqr(state[0] - center[0]) + GlcMath.sqr(state[1] - center[1]) < radius_sqr) {
+                    return time;
+                }
+            }
+            return -1;
+        }
+
+    }
+
+    ////////////////////////////////////////////////////////
+    //////// Problem Specific Admissible Heuristic///////////
+    ////////////////////////////////////////////////////////
+    public static class EuclideanHeuristic extends Heuristic {
+        private final   double radius;
+        private final  double[] goal;
+
+        public EuclideanHeuristic(double[] _goal, double _radius) {
+            radius = _radius;
+            goal = _goal;
+        }
+
+        @Override
+        public double costToGo(final double[] state) {
+            return Math.max(0.0, Math.sqrt(GlcMath.sqr(goal[0] - state[0]) + GlcMath.sqr(goal[1] - state[1])) - radius);
+            // offset by goal radius
+        }
+    };
+
+    ////////////////////////////////////////////////////////
+    ///////////////// Dynamic Model//////////////////////////
+    ////////////////////////////////////////////////////////
+    public static class CarNonholonomicConstraint extends RungeKuttaTwo {
+        public CarNonholonomicConstraint(final double _max_time_step) {
+            super(1.0, _max_time_step, 3);
+        }
+
+        @Override
+        public void flow(final double[] dx, final double[] x, final double[] u) {
+            dx[0] = u[0] * Math.cos(x[2]);
+            dx[1] = u[0] * Math.sin(x[2]);
+            dx[2] = u[1];
+        }
+
+        @Override
+        public double getLipschitzConstant() {
+            return lipschitz_constant;
+        }
+    };
+
     ////////////////////////////////////////////////////////
     ///////////////// State Constraints//////////////////////
     ////////////////////////////////////////////////////////
     public static class PlanarDemoObstacles extends Obstacles {
-        private final int resolution;
-        private final double[] center1;
+        private final  int resolution;
+        private final  double[] center1;
         private final double[] center2;
 
         public PlanarDemoObstacles(int _resolution) {
@@ -220,12 +266,12 @@ class ShortestPathDemo {
             double dt = (traj.numberOfIntervals() * traj.intervalLength()) / resolution;
             double[] state;
             for (int i = 0; i < resolution; i++) {
-                t += dt;
-                // don't need to check t0 since it was part of last traj
+                t += dt;// don't need to check t0 since it was part of last traj
                 state = traj.at(t);
 
-                if (GlcMath.normSqr(new double[] { state[0] - center1[0], state[1] - center1[1] }) <= 4.0
-                        || GlcMath.normSqr(new double[] { state[0] - center2[0], state[1] - center2[1] }) <= 4.0) {
+                // Disk shaped obstacles
+                if (GlcMath.sqr(state[0] - center1[0]) + GlcMath.sqr(state[1] - center1[1]) <= 4.0 ||
+                        GlcMath.sqr(state[0] - center2[0]) + GlcMath.sqr(state[1] - center2[1]) <= 4.0) {
                     return false;
                 }
             }
@@ -233,40 +279,47 @@ class ShortestPathDemo {
         }
     };
 
+    ////////////////////////////////////////////////////////
+    /////////////// Run a planning query in main/////////////
+    ////////////////////////////////////////////////////////
+
     public static void main(String... args) {
 
         // Motion planning algorithm parameters
         GlcParameters alg_params = new GlcParameters();
-        alg_params.res = 16;
+        ;
+        alg_params.res = 21;
         alg_params.control_dim = 2;
-        alg_params.state_dim = 2;
+        alg_params.state_dim = 3;
         alg_params.depth_scale = 100;
         alg_params.dt_max = 5.0;
         alg_params.max_iter = 50000;
         alg_params.time_scale = 20;
-        alg_params.partition_scale = 40;
-        alg_params.x0 = new double[] { 0.0, 0.0 };
+        alg_params.partition_scale = 60;
+        alg_params.x0 = new double[] { 0.0, 0.0, Math.PI / 2.0 };
 
         // Create a dynamic model
-        SingleIntegrator dynamic_model = new SingleIntegrator(alg_params.dt_max);
+        CarNonholonomicConstraint dynamic_model = new CarNonholonomicConstraint(alg_params.dt_max);
 
         // Create the control inputs
-        ControlInputs2D controls = new ControlInputs2D(alg_params.res);
+        CarControlInputs controls = new CarControlInputs(alg_params.res);
 
         // Create the cost function
         ArcLength performance_objective = new ArcLength(4);
 
         // Create instance of goal region
-        double[] xg = new double[] { 10.0, 10.0 };
+        double goal_radius_sqr = .25;
 
-        SphericalGoal goal = new SphericalGoal(xg.length, 0.25, 4);
-        goal.setGoal(xg);
+        double[] goal_center = new double[] { 10.0, 10.0 };
+
+        Sphericalgoal goal = new Sphericalgoal(goal_radius_sqr, goal_center, 10);
 
         // Create the obstacles
-        PlanarDemoObstacles obstacles = new PlanarDemoObstacles(4);
+        PlanarDemoObstacles obstacles = new PlanarDemoObstacles(10);
 
         // Create a heuristic for the current goal
-        EuclideanHeuristic heuristic = new EuclideanHeuristic(xg, goal.getRadius());
+        EuclideanHeuristic heuristic = new EuclideanHeuristic(goal_center, Math.sqrt(goal_radius_sqr));
+
         Planner planner = new Planner(obstacles,
                 goal,
                 dynamic_model,
@@ -274,16 +327,14 @@ class ShortestPathDemo {
                 performance_objective,
                 alg_params,
                 controls.readInputs());
-
         // Run the planner and print solution
         PlannerOutput out = planner.plan();
         if (out.solution_found) {
             Vector<GlcNode> path = planner.pathToRoot(true);
             InterpolatingPolynomial solution = planner.recoverTraj(path);
             solution.printSpline(20, "Solution");
-            GlcLogging.trajectoryToFile("shortest_path_demo.txt", "./", solution, 500);
-            GlcLogging.nodesToFile("shortest_path_demo_nodes.txt", "./", planner.partition_labels.keySet());
+            GlcLogging.trajectoryToFile("nonholonomic_car_demo.txt", "./", solution, 500);
+            GlcLogging.nodesToFile("nonholonomic_car_demo_nodes.txt", "./", planner.partition_labels.keySet());
         }
     }
-
 }

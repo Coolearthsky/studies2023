@@ -1,4 +1,4 @@
-package examples;
+package glc.examples;
 
 import glc.GlcParameters;
 import glc.Planner;
