@@ -1,8 +1,8 @@
 package org.team100.controllib.reference.examples;
 
-import com.acmerobotics.roadrunner.profile.MotionProfile;
-import com.acmerobotics.roadrunner.profile.MotionProfileGenerator;
-import com.acmerobotics.roadrunner.profile.MotionState;
+import org.team100.lib.profile.MotionProfile;
+import org.team100.lib.profile.MotionProfileGenerator;
+import org.team100.lib.profile.MotionState;
 
 /**
  * WPI profiles have infinite jerk which makes the feedback controller ring.
