@@ -10,3 +10,6 @@ The general idea:
 * build a tree of states, forward simulating each segment
 * prune segments that yield the same state partition at higher cost
 
+This is a straight port of C++ to Java based on Brian's own implementation:
+
+https://github.com/bapaden/Global-Trajectory-Optimization
