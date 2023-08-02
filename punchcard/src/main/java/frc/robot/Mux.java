@@ -23,9 +23,9 @@ public class Mux {
     }
 
     public void set(int channel) {
-        int[] truth = truth(channel);
+        boolean[] truth = truth(channel);
         for (int i = 0; i < kSelectors; ++i) {
-            m_outputs[i].set(truth[i] != 0);
+            m_outputs[i].set(truth[i]);
         }
     }
 
@@ -33,12 +33,8 @@ public class Mux {
      * The truth table as described on the datasheet page two:
      * https://www.sparkfun.com/datasheets/IC/cd74hc4067.pdf
      */
-    static int[] truth(int channel) {
-        int[] result = new int[kSelectors];
-        for (int i = 0; i < kSelectors; ++i) {
-            result[i] = (channel & (1 << i)) == 0 ? 0 : 1;
-        }
-        return result;
+    static boolean[] truth(int channel) {
+        return Util.toArray(channel, kSelectors);
     }
 
 }

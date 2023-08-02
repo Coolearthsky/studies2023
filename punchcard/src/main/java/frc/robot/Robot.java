@@ -7,7 +7,6 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 
 public class Robot extends TimedRobot {
-    private static final int kChannels = 5;
     private final DigitalOutput[] m_outputs = new DigitalOutput[] {
             new DigitalOutput(0),
             new DigitalOutput(1),
@@ -19,23 +18,31 @@ public class Robot extends TimedRobot {
     private final AnalogInput m_input = new AnalogInput(0);
     private final AnalogInput m_testInput = new AnalogInput(1);
     private final Timer m_testTimer = new Timer();
+    // TODO: tune the thresholds
+    private final MultiplexedSensorArray m_array = new MultiplexedSensorArray(
+        new ReflectiveSensor[] {
+            new ReflectiveSensor(m_input, 1),
+            new ReflectiveSensor(m_input, 1),
+            new ReflectiveSensor(m_input, 1),
+            new ReflectiveSensor(m_input, 1),
+            new ReflectiveSensor(m_input, 1)
+        }, mux);
+        private final Decoder m_decoder = new Decoder(m_array);
+    
+    private int id;
 
     public Robot() {
-        m_testTimer.start();
     }
 
     @Override
-    public void robotPeriodic() {
-        // try {
-        for (int i = 0; i < kChannels; ++i) {
-            // mux.set(i);
-            // Thread.sleep(0, 100);// 100ns of settling time
-            // final int v = m_input.getValue();
-            // System.out.println(v);
-        }
-        // } catch (final InterruptedException e) {
-        // e.printStackTrace();
-        // }
+    public void robotInit() {
+        m_testTimer.start();
+        id = m_decoder.read();
+    }
+
+    @Override
+    public void teleopPeriodic() {
+        System.out.println(m_decoder.read());
     }
 
     @Override
