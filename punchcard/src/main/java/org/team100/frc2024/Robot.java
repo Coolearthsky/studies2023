@@ -1,5 +1,8 @@
 
-package frc.robot;
+package org.team100.frc2024;
+
+import org.team100.lib.barcode.Sensor;
+import org.team100.lib.barcode.Mux;
 
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalOutput;
@@ -19,16 +22,11 @@ public class Robot extends TimedRobot {
     private final AnalogInput m_testInput = new AnalogInput(1);
     private final Timer m_testTimer = new Timer();
     // TODO: tune the thresholds
-    private final MultiplexedSensorArray m_array = new MultiplexedSensorArray(
-        new ReflectiveSensor[] {
-            new ReflectiveSensor(m_input, 1),
-            new ReflectiveSensor(m_input, 1),
-            new ReflectiveSensor(m_input, 1),
-            new ReflectiveSensor(m_input, 1),
-            new ReflectiveSensor(m_input, 1)
-        }, mux);
-        private final Decoder m_decoder = new Decoder(m_array);
-    
+    private final Sensor m_array = new Sensor(
+            m_input,
+            new double[] { 1, 1, 1, 1, 1 },
+            mux);
+
     private int id;
 
     public Robot() {
@@ -37,12 +35,12 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         m_testTimer.start();
-        id = m_decoder.read();
+        id = m_array.readValue();
     }
 
     @Override
     public void teleopPeriodic() {
-        System.out.println(m_decoder.read());
+        System.out.println(m_array.readValue());
     }
 
     @Override

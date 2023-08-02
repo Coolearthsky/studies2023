@@ -1,4 +1,4 @@
-package frc.robot;
+package org.team100.lib.barcode;
 
 import edu.wpi.first.wpilibj.DigitalOutput;
 
@@ -7,6 +7,8 @@ import edu.wpi.first.wpilibj.DigitalOutput;
  * Instruments CD74HC4067.
  * 
  * https://www.sparkfun.com/products/9056
+ * 
+ * TODO: add partitioning, when we have anything to partition.
  */
 public class Mux {
     private static final int kSelectors = 4;
@@ -29,12 +31,22 @@ public class Mux {
         }
     }
 
+    ///////////////////////////////////////////////////
+
     /**
      * The truth table as described on the datasheet page two:
      * https://www.sparkfun.com/datasheets/IC/cd74hc4067.pdf
      */
     static boolean[] truth(int channel) {
-        return Util.toArray(channel, kSelectors);
+        return toArray(channel, kSelectors);
     }
 
+    /** @return binary representation of channel */
+    static boolean[] toArray(int channel, int maxChannels) {
+        boolean[] result = new boolean[maxChannels];
+        for (int i = 0; i < maxChannels; ++i) {
+            result[i] = (channel & (1 << i)) != 0;
+        }
+        return result;
+    }
 }
