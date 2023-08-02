@@ -20,12 +20,16 @@ public class Robot extends TimedRobot {
     private final Mux mux = new Mux(m_outputs);
     private final AnalogInput m_input = new AnalogInput(0);
     private final AnalogInput m_testInput = new AnalogInput(1);
+    private final DigitalOutput m_odd = new DigitalOutput(0);
+    private final DigitalOutput m_even = new DigitalOutput(1);
     private final Timer m_testTimer = new Timer();
     // TODO: tune the thresholds
     private final Sensor m_array = new Sensor(
             m_input,
             new double[] { 1, 1, 1, 1, 1 },
-            mux);
+            mux,
+            m_odd,
+            m_even);
 
     private int id;
 
@@ -35,7 +39,8 @@ public class Robot extends TimedRobot {
     @Override
     public void robotInit() {
         m_testTimer.start();
-        id = m_array.readValue();
+        // TODO: represent failure in a better way than -1.
+        id = m_array.readValue().orElse(-1);
     }
 
     @Override
