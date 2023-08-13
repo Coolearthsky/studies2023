@@ -104,6 +104,7 @@ ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
 ax.set_aspect('equal', adjustable='box')
 
 plt.autoscale()
+plt.savefig("field.png")
 
 plt.figure()
 
