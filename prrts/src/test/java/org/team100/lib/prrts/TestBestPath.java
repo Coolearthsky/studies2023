@@ -4,20 +4,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import edu.unc.robotics.prrts.ArrayState;
 import edu.unc.robotics.prrts.PRRTStar;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.arena.HolonomicArena;
 
+/**
+ * These tests are really dependent on what else the machine is doing, so they
+ * should have wide bounds.
+ */
 @SuppressWarnings("unused")
 public class TestBestPath {
 
     /** Cribbed from ArenaFrame */
     @Test
     public void testTime() {
-        final HolonomicArena arena = new HolonomicArena(1);
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        final HolonomicArena arena = new HolonomicArena();
+        ArrayState init = new ArrayState(new double[] { 7.0, 1.0 });
 
-        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
+        final PRRTStar<ArrayState> rrtStar = new PRRTStar<ArrayState>(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
@@ -38,16 +43,16 @@ public class TestBestPath {
         }
         // assertEquals(2300, nodes, 300);
         assertEquals(3600, nodes, 800);// AtomicReference speeds it up a lot
-        Path bestPath = rrtStar.getBestPath();
+        Path<ArrayState> bestPath = rrtStar.getBestPath();
         assertEquals(10.2, bestPath.dist, 0.5); // very approximate
     }
 
     @Test
     public void testSteps() {
-        final HolonomicArena arena = new HolonomicArena(1);
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        final HolonomicArena arena = new HolonomicArena();
+        ArrayState init = new ArrayState(new double[] { 7.0, 1.0 });
 
-        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
+        final PRRTStar<ArrayState> rrtStar = new PRRTStar<ArrayState>(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
@@ -65,7 +70,7 @@ public class TestBestPath {
             nodes++;
         }
         assertEquals(500, nodes, 10);
-        Path bestPath = rrtStar.getBestPath();
+        Path<ArrayState> bestPath = rrtStar.getBestPath();
         assertEquals(10.8, bestPath.dist, 0.5);
     }
 

@@ -17,6 +17,7 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import edu.unc.robotics.prrts.ArrayState;
 import edu.unc.robotics.prrts.PRRTStar;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
@@ -29,7 +30,7 @@ import edu.unc.robotics.prrts.tree.Node;
  */
 public class ArenaView extends JComponent {
 
-    private PRRTStar _rrtStar;
+    private PRRTStar<ArrayState> _rrtStar;
     private HolonomicArena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
@@ -37,13 +38,13 @@ public class ArenaView extends JComponent {
     };
 
     private Image _backgroundImage;
-    private Path _bestPath = null;
+    private Path<ArrayState> _bestPath = null;
 
     private boolean _paintTree = true;
 
     private NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public ArenaView(HolonomicArena arena, PRRTStar rrtStar) {
+    public ArenaView(HolonomicArena arena, PRRTStar<ArrayState> rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
@@ -62,17 +63,17 @@ public class ArenaView extends JComponent {
 
     public void doPaint(Graphics2D g, Dimension size) {
         HolonomicArena robotModel = _robotModel;
-        double[] min = new double[robotModel.dimensions()];
-        double[] max = new double[robotModel.dimensions()];
+        ArrayState min = new ArrayState(new double[robotModel.dimensions()]);
+        ArrayState max = new ArrayState(new double[robotModel.dimensions()]);
         robotModel.getBounds(min, max);
 
-        Path bestPath = _rrtStar.getBestPath();
+        Path<ArrayState> bestPath = _rrtStar.getBestPath();
 
         if (_backgroundImage == null ||
                 _backgroundImage.getWidth(null) != size.width ||
                 _backgroundImage.getHeight(null) != size.height ||
                 Path.isBetter(bestPath, _bestPath)) {
-            createBGImage(min, max, size, bestPath);
+            createBGImage(min.getConfig(), max.getConfig(), size, bestPath);
             _bestPath = bestPath;
         }
 
@@ -90,7 +91,7 @@ public class ArenaView extends JComponent {
         g.drawString(count, 3, 3 + fm.getAscent());
     }
 
-    private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
+    private void createBGImage(double[] min, double[] max, Dimension size, Path<ArrayState> link) {
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
@@ -122,26 +123,23 @@ public class ArenaView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
-       // int count = 0;
 
-        for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.getParent();
+        for (Node<ArrayState> node : _rrtStar.getNodes()) {
+            Node<ArrayState> parent = node.getParent();
             if (parent != null) {
-                double[] n = node.getConfig();
-                double[] p = parent.getConfig();
+                double[] n = node.getConfig().getConfig();
+                double[] p = parent.getConfig().getConfig();
                 for (int i = 0; i < dim; i += 2) {
                     g.setColor(COLORS[i / 2]);
                     line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
                     g.draw(line);
                 }
-               // count++;
             }
         }
 
     }
 
-    private void renderPaths(
-            Path link, Graphics2D g, double scale) {
+    private void renderPaths(Path<ArrayState> link, Graphics2D g, double scale) {
         if (link == null) {
             return;
         }
@@ -151,13 +149,14 @@ public class ArenaView extends JComponent {
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
         if (link.configs.size() > 1) {
-            Iterator<double[]> pathIter = link.configs.iterator();
-            double[] prev = pathIter.next();
+            Iterator<ArrayState> pathIter = link.configs.iterator();
+            ArrayState prev = pathIter.next();
             while (pathIter.hasNext()) {
-                double[] curr = pathIter.next();
+                ArrayState curr = pathIter.next();
                 for (int i = 0; i < dim; i += 2) {
                     g.setColor(brighter(COLORS[i / 2]));
-                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
+                    line.setLine(prev.getConfig()[i], prev.getConfig()[i + 1],
+                            curr.getConfig()[i], curr.getConfig()[i + 1]);
                     g.draw(line);
                 }
                 prev = curr;

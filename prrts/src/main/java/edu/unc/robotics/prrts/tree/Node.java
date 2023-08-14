@@ -2,6 +2,8 @@ package edu.unc.robotics.prrts.tree;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import edu.unc.robotics.prrts.State;
+
 /**
  * Just shrinking the enormous PRRTStar class
  * 
@@ -17,30 +19,29 @@ import java.util.concurrent.atomic.AtomicReference;
  * efficiency, the config member is exposed as a direct reference an array.
  * It should NOT be modified by the caller.
  */
-public class Node {
-    public final double[] config;
+public class Node<T extends State> {
+    public final T config;
     public final boolean inGoal;
+    public final AtomicReference<Link<T>> link = new AtomicReference<>();
 
-    public final AtomicReference<Link> link = new AtomicReference<>();
-
-    public Node(double[] config, boolean inGoal) {
+    public Node(T config, boolean inGoal) {
         this.config = config;
         this.inGoal = inGoal;
-        this.link.set(new Link(this));
+        this.link.set(new Link<>(this));
     }
 
-    public Node(double[] config, boolean inGoal, double linkDist, Link parent) {
+    public Node(T config, boolean inGoal, double linkDist, Link<T> parent) {
         this.config = config;
         this.inGoal = inGoal;
 
-        Link link = new Link(this, linkDist, parent);
+        Link<T> link = new Link<>(this, linkDist, parent);
 
         this.link.set(link);
         parent.addChild(link);
     }
 
-    public Link setLink(Link oldLink, double linkDist, Link parent) {
-        Link newLink = new Link(this, linkDist, parent);
+    public Link<T> setLink(Link<T> oldLink, double linkDist, Link<T> parent) {
+        Link<T> newLink = new Link<>(this, linkDist, parent);
 
         if (!link.compareAndSet(oldLink, newLink)) {
             return null;
@@ -58,7 +59,7 @@ public class Node {
      *
      * @return the configuration
      */
-    public double[] getConfig() {
+    public T getConfig() {
         return config;
     }
 
@@ -71,8 +72,8 @@ public class Node {
      *
      * @return the nodes parent, or null if this is the root node.
      */
-    public Node getParent() {
-        Link parent = this.link.get().parent.get();
+    public Node<T> getParent() {
+        Link<T> parent = this.link.get().parent.get();
         return parent == null ? null : parent.node;
     }
 

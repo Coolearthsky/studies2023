@@ -4,52 +4,53 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import edu.unc.robotics.prrts.State;
+
 /**
  * KDTree
  *
  * @author jeffi
  */
-public class KDTree<V> {
+public class KDTree<T extends State,V> {
 
-    static final class Node<V> {
-        final double[] config;
+    private static final class Node<T, V> {
+        final T config;
         final V value;
 
-        final AtomicReference<Node<V>> a = new AtomicReference<>();
-        final AtomicReference<Node<V>> b = new AtomicReference<>();
+        final AtomicReference<Node<T,V>> a = new AtomicReference<>();
+        final AtomicReference<Node<T,V>> b = new AtomicReference<>();
 
-        Node(double[] c, V v) {
+        Node(T c, V v) {
             assert c != null && v != null;
             config = c;
             value = v;
         }
 
-        boolean setA(Node<V> old, Node<V> n) {
+        boolean setA(Node<T,V> old, Node<T,V> n) {
             return a.compareAndSet(old, n);
         }
 
-        boolean setB(Node<V> old, Node<V> n) {
+        boolean setB(Node<T,V> old, Node<T,V> n) {
             return b.compareAndSet(old, n);
         }
 
-        public Node<V> getA() {
+        public Node<T,V> getA() {
             return a.get();
         }
 
-        // @SuppressWarnings("unchecked")
-        public Node<V> getB() {
+        public Node<T,V> getB() {
             return b.get();
         }
     }
 
-    final KDModel _model;
+    final KDModel<T>  _model;
     final int _dimensions;
-    final Node<V> _root;
+    final Node<T,V> _root;
 
-    public KDTree(KDModel model, double[] rootConfig, V rootValue) {
+    public KDTree(KDModel<T> model, T rootConfig, V rootValue) {
         _model = model;
         _dimensions = model.dimensions();
-        _root = new Node<V>(rootConfig, rootValue);
+        _root = new Node<>(rootConfig, rootValue);
     }
 
     public Iterable<V> values() {
@@ -58,7 +59,7 @@ public class KDTree<V> {
         return list;
     }
 
-    private void buildList(List<V> list, Node<V> node) {
+    private void buildList(List<V> list, Node<T,V> node) {
         if (node != null) {
             list.add(node.value);
             buildList(list, node.a.get());
@@ -66,14 +67,14 @@ public class KDTree<V> {
         }
     }
 
-    public KDTraversal<V> newTraversal() {
+    public KDTraversal<T,V> newTraversal() {
         return new Traversal();
     }
 
-    class Traversal implements KDTraversal<V> {
+    class Traversal implements KDTraversal<T,V> {
         private final int _dimensions = KDTree.this._dimensions;
-        private final double[] _min = new double[_dimensions];
-        private final double[] _max = new double[_dimensions];
+        private final T _min = _model.getMin();
+        private final T _max = _model.getMax();
 
         int _statConcurrentInserts;
 
@@ -86,20 +87,20 @@ public class KDTree<V> {
         }
 
         @Override
-        public void insert(double[] config, V value) {
-            double[] min = _min;
-            double[] max = _max;
+        public void insert(T config, V value) {
+            T min = _min;
+            T max = _max;
 
             _model.getBounds(min, max);
 
-            Node<V> newNode = new Node<V>(config, value);
-            Node<V> n = _root;
+            Node<T,V> newNode = new Node<>(config, value);
+            Node<T,V> n = _root;
             int depth = 0;
 
             for (;; ++depth) {
                 int axis = depth % _dimensions;
-                double mp = (min[axis] + max[axis]) / 2;
-                double v = config[axis];
+                double mp = (min.get(axis) + max.get(axis)) / 2;
+                double v = config.get(axis);
 
                 if (v < mp) {
                     // a-side
@@ -109,7 +110,7 @@ public class KDTree<V> {
                         }
                         _statConcurrentInserts++;
                     }
-                    _max[axis] = mp;
+                    _max.set(axis, mp);
                     n = n.getA();
                 } else {
                     // b-side
@@ -119,20 +120,20 @@ public class KDTree<V> {
                         }
                         _statConcurrentInserts++;
                     }
-                    _min[axis] = mp;
+                    _min.set(axis, mp);
                     n = n.getB();
                 }
             }
         }
 
-        public V nearest(double[] target) {
+        public V nearest(T target) {
             _dist = Double.MAX_VALUE;
             _model.getBounds(_min, _max);
             nearest(_root, target, 0);
             return _nearest;
         }
 
-        private void nearest(Node<V> n, double[] target, int depth) {
+        private void nearest(Node<T,V> n, T target, int depth) {
             final int axis = depth % _dimensions;
             final double d = _model.dist(n.config, target);
 
@@ -141,84 +142,84 @@ public class KDTree<V> {
                 _nearest = n.value;
             }
 
-            final double mp = (_min[axis] + _max[axis]) / 2;
+            final double mp = (_min.get(axis) + _max.get(axis)) / 2;
 
-            if (target[axis] < mp) {
+            if (target.get(axis) < mp) {
                 // a-side
-                Node<V> a = n.getA();
+                Node<T, V> a = n.getA();
                 if (a != null) {
-                    double tmp = _max[axis];
-                    _max[axis] = mp;
+                    double tmp = _max.get(axis);
+                    _max.set(axis, mp);
                     nearest(a, target, depth + 1);
-                    _max[axis] = tmp;
+                    _max.set(axis, tmp);
                 }
 
-                Node<V> b = n.getB();
+                Node<T, V> b = n.getB();
                 if (b != null) {
-                    double tmp = Math.abs(mp - target[axis]);
+                    double tmp = Math.abs(mp - target.get(axis));
                     if (tmp < _dist) {
-                        tmp = _min[axis];
-                        _min[axis] = mp;
+                        tmp = _min.get(axis);
+                        _min.set(axis, mp);
                         nearest(b, target, depth + 1);
-                        _min[axis] = tmp;
+                        _min.set(axis, tmp);
                     }
                 }
             } else {
                 // b-side
-                Node<V> b = n.getB();
+                Node<T, V> b = n.getB();
                 if (b != null) {
-                    double tmp = _min[axis];
-                    _min[axis] = mp;
+                    double tmp = _min.get(axis);
+                    _min.set(axis, mp);
                     nearest(b, target, depth + 1);
-                    _min[axis] = tmp;
+                    _min.set(axis, tmp);
                 }
 
-                Node<V> a = n.getA();
+                Node<T, V> a = n.getA();
                 if (a != null) {
-                    double tmp = Math.abs(mp - target[axis]);
+                    double tmp = Math.abs(mp - target.get(axis));
                     if (tmp < _dist) {
-                        tmp = _max[axis];
-                        _max[axis] = mp;
+                        tmp = _max.get(axis);
+                        _max.set(axis, mp);
                         nearest(a, target, depth + 1);
-                        _max[axis] = tmp;
+                        _max.set(axis, tmp);
                     }
                 }
             }
         }
 
         @Override
-        public int near(double[] target, double radius, KDNearCallback<V> callback) {
+        public int near(T target, double radius, KDNearCallback<T, V> callback) {
             _model.getBounds(_min, _max);
             return near(_root, target, radius, callback, 0, 0);
         }
 
-        private int near(Node<V> n, double[] target, double radius, KDNearCallback<V> callback, int count, int depth) {
+        private int near(Node<T, V> n, T target, double radius, KDNearCallback<T, V> callback, int count, int depth) {
             final double d = _model.dist(n.config, target);
             if (d < radius) {
                 callback.kdNear(target, count++, n.config, n.value, d);
             }
             final int axis = depth % _dimensions;
-            final double mp = (_min[axis] + _max[axis]) / 2;
-            final double dm = Math.abs(mp - target[axis]);
+            final double mp = (_min.get(axis) + _max.get(axis)) / 2;
+            final double dm = Math.abs(mp - target.get(axis));
 
-            Node<V> a = n.getA();
+            Node<T, V> a = n.getA();
 
-            if (a != null && (target[axis] < mp || dm < radius)) {
+            if (a != null && (target.get(axis) < mp || dm < radius)) {
                 // in or near a-side
-                double tmp = _max[axis];
-                _max[axis] = mp;
+                double tmp = _max.get(axis);
+                _max.set(axis, mp);
                 count = near(a, target, radius, callback, count, depth + 1);
-                _max[axis] = tmp;
+                _max.set(axis, tmp);
             }
 
-            Node<V> b = n.getB();
+            Node<T, V> b = n.getB();
 
-            if (b != null && (mp <= target[axis] || dm < radius)) {
+            if (b != null && (mp <= target.get(axis) || dm < radius)) {
                 // in or near b-side
-                double tmp = _min[axis];
-                _min[axis] = mp;
+                double tmp = _min.get(axis);
+                _min.set(axis, mp);
                 count = near(b, target, radius, callback, count, depth + 1);
-                _min[axis] = tmp;
+                _min.set(axis, tmp);
             }
 
             return count;

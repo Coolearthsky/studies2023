@@ -1,5 +1,6 @@
 package edu.unc.robotics.prrts;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -28,42 +29,42 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
  *
  * @author jeffi
  */
-public class PRRTStar {
+public class PRRTStar<T extends State> {
     private static final Logger _log = Logger.getLogger(PRRTStar.class.getName());
 
     private static final int INITIAL_NEAR_LIST_CAPACITY = 1024;
 
     // Robotic System
-    KDModel _kdModel;
-    Supplier<RobotModel> _robotModelProvider;
-    Supplier<Random> _randomProvider = () -> new MersenneTwister();
+    private final KDModel<T> _kdModel;
+    private final Supplier<RobotModel<T>> _robotModelProvider;
+    private final Supplier<Random> _randomProvider = () -> new MersenneTwister();
 
     // RRT* Parameters
-    double[] _startConfig;
+    T _startConfig;
     double _gamma = 5.0;
     boolean _perThreadRegionSampling = true;
     int _regionSplitAxis = 0;
     int _samplesPerStep = 1;
-    double[] _targetConfig;
+    T _targetConfig;
 
     // Run duration
     int _threadCount;
     long _timeLimit;
     long _startTime;
-    int _sampleLimit;
+    private int _sampleLimit;
 
     // Runtime data
-    KDTree<Node> _kdTree;
+    private final KDTree<T, Node<T>> _kdTree;
     final AtomicInteger _stepNo = new AtomicInteger(0);
     final AtomicBoolean _done = new AtomicBoolean(false);
     CountDownLatch _doneLatch;
-    final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
+    final AtomicReference<Link<T>> _bestPath = new AtomicReference<>();
 
-    public PRRTStar(KDModel kdModel, Supplier<RobotModel> robotModelProvider, double[] init) {
+    public PRRTStar(KDModel<T> kdModel, Supplier<RobotModel<T>> robotModelProvider, T init) {
         _kdModel = kdModel;
         _robotModelProvider = robotModelProvider;
         _startConfig = init;
-        _kdTree = new KDTree<Node>(kdModel, init, new Node(init, false));
+        _kdTree = new KDTree<T, Node<T>>(kdModel, init, new Node<>(init, false));
     }
 
     /**
@@ -87,15 +88,15 @@ public class PRRTStar {
         _perThreadRegionSampling = b;
     }
 
-    /**
-     * Sets a pseudo-random number generator provider. The provider is asked
-     * to provide random number generators for each of the threads at runtime.
-     *
-     * @param randomProvider
-     */
-    public void setRandomProvider(Supplier<Random> randomProvider) {
-        _randomProvider = randomProvider;
-    }
+    // /**
+    //  * Sets a pseudo-random number generator provider. The provider is asked
+    //  * to provide random number generators for each of the threads at runtime.
+    //  *
+    //  * @param randomProvider
+    //  */
+    // public void setRandomProvider(Supplier<Random> randomProvider) {
+    //     _randomProvider = randomProvider;
+    // }
 
     /**
      * Returns the current step no. May be called while running, in which
@@ -109,7 +110,7 @@ public class PRRTStar {
         return _stepNo.get();
     }
 
-    public Iterable<Node> getNodes() {
+    public Iterable<Node<T>> getNodes() {
         return _kdTree.values();
     }
 
@@ -119,12 +120,12 @@ public class PRRTStar {
      *
      * @return the best path, or null if none found so far.
      */
-    public Path getBestPath() {
-        Link link = _bestPath.get();
+    public Path<T> getBestPath() {
+        Link<T> link = _bestPath.get();
         if (link == null) {
             return null;
         }
-        List<double[]> configs = new LinkedList<double[]>();
+        List<T> configs = new LinkedList<T>();
         double pathDist = link.pathDist;
         if (!link.node.inGoal) {
             assert _targetConfig != null;
@@ -135,29 +136,29 @@ public class PRRTStar {
             configs.add(link.node.config);
         }
         Collections.reverse(configs);
-        return new Path(pathDist, configs);
+        return new Path<T>(pathDist, configs);
     }
 
-    public Path runForDuration(int threadCount, long milliseconds) {
+    public Path<T> runForDuration(int threadCount, long milliseconds) {
         return runForDuration(threadCount, milliseconds, TimeUnit.MILLISECONDS);
     }
 
-    public Path runForDuration(int threadCount, long duration, TimeUnit timeUnit) {
+    public Path<T> runForDuration(int threadCount, long duration, TimeUnit timeUnit) {
         if (duration <= 0) {
             throw new IllegalArgumentException("invalid duration, must be > 0");
         }
         return run(threadCount, Integer.MAX_VALUE, duration, timeUnit);
     }
 
-    public Path runSamples(int threadCount, int samples) {
+    public Path<T> runSamples(int threadCount, int samples) {
         return run(threadCount, samples, 0, null);
     }
 
-    public Path runIndefinitely(int threadCount) {
+    public Path<T> runIndefinitely(int threadCount) {
         return run(threadCount, Integer.MAX_VALUE, 0, null);
     }
 
-    private Path run(int threadCount, int sampleLimit, long duration, TimeUnit timeUnit) {
+    private Path<T> run(int threadCount, int sampleLimit, long duration, TimeUnit timeUnit) {
         if (threadCount < 1) {
             throw new IllegalArgumentException("thread count must be >= 1");
         }
@@ -176,21 +177,21 @@ public class PRRTStar {
 
         _startTime = System.nanoTime();
 
-        Worker[] workers = new Worker[threadCount];
+        List<Worker> workers = new ArrayList<Worker>(threadCount);
         for (int i = 0; i < threadCount; ++i) {
-            workers[i] = new Worker(i, threadCount);
+            workers.add(new Worker(i, threadCount));
         }
 
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
         Thread[] threads = new Thread[threadCount];
         for (int i = 1; i < threadCount; ++i) {
-            threads[i] = new Thread(threadGroup, workers[i]);
+            threads[i] = new Thread(threadGroup, workers.get(i));
             threads[i].start();
         }
 
         // worker 0 runs on the calling thread (thus if only 1 thread is
         // specified, no additional threads are created)
-        workers[0].run();
+        workers.get(0).run();
 
         // We could join all worker threads here, but a latch will allow
         // the calling thread to continue sooner.
@@ -208,28 +209,28 @@ public class PRRTStar {
         return getBestPath();
     }
 
-    class Worker implements Runnable, KDNearCallback<Node> {
+    class Worker implements Runnable, KDNearCallback<T, Node<T>> {
         final int _dimensions = _kdModel.dimensions();
         final int _workerNo;
         final int _threadCount;
 
-        KDTraversal<Node> _kdTraversal;
-        RobotModel _robotModel;
-        double[] _sampleMin;
-        double[] _sampleMax;
+        KDTraversal<T, Node<T>> _kdTraversal;
+        RobotModel<T> _robotModel;
+        T _sampleMin;
+        T _sampleMax;
         Random _random;
 
-        NearNode[] _nearList = new NearNode[INITIAL_NEAR_LIST_CAPACITY];
+        List<NearNode<T>> _nearList = new ArrayList<NearNode<T>>(INITIAL_NEAR_LIST_CAPACITY);
 
         public Worker(int workerNo, int threadCount) {
             _workerNo = workerNo;
             _threadCount = threadCount;
         }
 
-        void updateBestPath(Link link, double radius) {
-            Link currentBestPath;
+        void updateBestPath(Link<T> link, double radius) {
+            Link<T> currentBestPath;
             double distToGoal;
-            Node node = link.node;
+            Node<T> node = link.node;
 
             if (node.inGoal) {
                 distToGoal = link.pathDist;
@@ -266,13 +267,13 @@ public class PRRTStar {
             } while (!_bestPath.compareAndSet(currentBestPath, link));
         }
 
-        private void updateChildren(Link newParent, Link oldParent, double radius) {
+        private void updateChildren(Link<T> newParent, Link<T> oldParent, double radius) {
             assert newParent.node == oldParent.node : "updating links of different nodes";
             assert oldParent.isExpired() : "updating non-expired link";
             assert newParent.pathDist <= oldParent.pathDist : "updating to longer path";
 
             for (;;) {
-                Link oldChild = oldParent.removeFirstChild();
+                Link<T> oldChild = oldParent.removeFirstChild();
 
                 if (oldChild == null) {
                     // done.
@@ -291,13 +292,13 @@ public class PRRTStar {
                     continue;
                 }
 
-                Node node = oldChild.node;
+                Node<T> node = oldChild.node;
 
                 if (node.link.get().parent.get().node != oldParent.node) {
                     continue;
                 }
 
-                Link newChild = node.setLink(oldChild, oldChild.linkDist, newParent);
+                Link<T> newChild = node.setLink(oldChild, oldChild.linkDist, newParent);
 
                 if (newChild != null) {
                     updateChildren(newChild, oldChild, radius);
@@ -309,13 +310,13 @@ public class PRRTStar {
             }
         }
 
-        private void rewire(Link oldLink, double linkDist, Node newParent, double radius) {
+        private void rewire(Link<T> oldLink, double linkDist, Node<T> newParent, double radius) {
             assert oldLink.parent != null;
             assert oldLink.parent.get().node != newParent;
 
-            Node node = oldLink.node;
+            Node<T> node = oldLink.node;
 
-            Link parentLink = newParent.link.get();
+            Link<T> parentLink = newParent.link.get();
 
             double pathDist = parentLink.pathDist + linkDist;
 
@@ -334,7 +335,7 @@ public class PRRTStar {
             // of the oldLink is found to be better than what we're trying
             // to put in
             do {
-                Link newLink = node.setLink(oldLink, linkDist, parentLink);
+                Link<T> newLink = node.setLink(oldLink, linkDist, parentLink);
 
                 if (newLink != null) {
                     updateChildren(newLink, oldLink, radius);
@@ -358,7 +359,7 @@ public class PRRTStar {
 
                 assert _threadCount > 1 : "concurrent update running with 1 thread";
 
-                Link updatedOldLink = node.link.get();
+                Link<T> updatedOldLink = node.link.get();
 
                 assert updatedOldLink != oldLink;
 
@@ -378,15 +379,15 @@ public class PRRTStar {
          * @param dist
          */
         @Override
-        public void kdNear(double[] target, int index, double[] config, Node value, double dist) {
+        public void kdNear(T target, int index, T config, Node<T> value, double dist) {
             if (index == _nearList.length) {
                 _nearList = Arrays.copyOf(_nearList, index * 2);
             }
 
-            NearNode n = _nearList[index];
+            NearNode<T> n = _nearList[index];
 
             if (n == null) {
-                _nearList[index] = n = new NearNode();
+                _nearList[index] = n = new NearNode<T>();
             }
 
             n.link = value.link.get();
@@ -403,24 +404,24 @@ public class PRRTStar {
          * @param config the configuration to test
          * @return true if the configuration is in the goal region
          */
-        private boolean inGoal(double[] config) {
+        private boolean inGoal(T config) {
             return _targetConfig == null && _robotModel.goal(config);
         }
 
-        private void randomize(double[] config) {
+        private void randomize(T config) {
             for (int i = _dimensions; --i >= 0;) {
                 config[i] = _random.nextDouble() * (_sampleMax[i] - _sampleMin[i])
                         + _sampleMin[i];
             }
         }
 
-        private void steer(double[] newConfig, double[] nearConfig, double t) {
+        private void steer(T newConfig, T nearConfig, double t) {
             for (int i = _dimensions; --i >= 0;) {
                 newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * t;
             }
         }
 
-        private boolean step(int stepNo, double[] newConfig) {
+        private boolean step(int stepNo, T newConfig) {
             // generate a new random sample
             randomize(newConfig);
 
@@ -436,7 +437,7 @@ public class PRRTStar {
 
             if (nearCount == 0) {
                 // nothing with in radius
-                Node nearest = _kdTraversal.nearest(newConfig);
+                Node<T> nearest = _kdTraversal.nearest(newConfig);
                 double distToNearest = _kdTraversal.distToLastNearest();
 
                 assert radius < distToNearest;
@@ -455,7 +456,7 @@ public class PRRTStar {
                 // recalculate just to be safe.
                 distToNearest = _kdModel.dist(newConfig, nearest.config);
 
-                Node newNode = new Node(
+                Node<T> newNode = new Node<>(
                         newConfig, inGoal(newConfig), distToNearest, nearest.link.get());
 
                 updateBestPath(newNode.link.get(), radius);
@@ -472,7 +473,7 @@ public class PRRTStar {
             Arrays.sort(_nearList, 0, nearCount);
 
             for (int i = 0; i < nearCount; ++i) {
-                Link link = _nearList[i].link;
+                Link<T> link = _nearList[i].link;
 
                 if (!_robotModel.link(link.node.config, newConfig)) {
                     // help GC
@@ -483,7 +484,7 @@ public class PRRTStar {
                 // Found a linkable configuration. Create the node
                 // and link it in here.
 
-                Node newNode = new Node(
+                Node<T> newNode = new Node<>(
                         newConfig, inGoal(newConfig), _nearList[i].linkDist, link);
 
                 updateBestPath(newNode.link.get(), radius);
@@ -525,7 +526,7 @@ public class PRRTStar {
         private void generateSamples() {
             // only have 1 worker check the time limit
             final boolean checkTimeLimit = (_workerNo == 0) && (_timeLimit > 0);
-            double[] newConfig = new double[_dimensions];
+            T newConfig = new double[_dimensions];
             int stepNo = _stepNo.get();
 
             while (!_done.get()) {

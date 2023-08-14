@@ -1,13 +1,18 @@
 package edu.unc.robotics.prrts.kdtree;
 
+import edu.unc.robotics.prrts.State;
+
 /**
  * KDTraversal
  *
  * @author jeffi
  */
-public interface KDTraversal<V> {
+public interface KDTraversal<T extends State, V> {
     double distToLastNearest();
-    void insert(double[] config, V value);
-    V nearest(double[] target);
-    int near(double[] target, double radius, KDNearCallback<V> callback);
+
+    void insert(T config, V value);
+
+    V nearest(T target);
+
+    int near(T target, double radius, KDNearCallback<T, V> callback);
 }
