@@ -25,8 +25,6 @@ public class TestBestPath {
         final PRRTStar<ArrayState> rrtStar = new PRRTStar<ArrayState>(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
-        rrtStar.setPerThreadRegionSampling(true);
-        // rrtStar.setSamplesPerStep(100);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
@@ -55,8 +53,6 @@ public class TestBestPath {
         final PRRTStar<ArrayState> rrtStar = new PRRTStar<ArrayState>(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
-        rrtStar.setPerThreadRegionSampling(true);
-        // rrtStar.setSamplesPerStep(100);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);

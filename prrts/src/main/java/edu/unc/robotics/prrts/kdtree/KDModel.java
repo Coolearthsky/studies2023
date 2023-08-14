@@ -12,6 +12,7 @@ public interface KDModel<T extends State> {
     void getBounds(T min, T max);
     T getMin();
     T getMax();
+    T zero();
     /** Distance Metric */
     double dist(T a, T b);
 }

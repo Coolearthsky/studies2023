@@ -31,8 +31,6 @@ public class ArenaFrame extends JFrame {
         final PRRTStar<ArrayState> rrtStar = new PRRTStar<>(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
-        rrtStar.setPerThreadRegionSampling(true);
-//        rrtStar.setSamplesPerStep(100);
 
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override

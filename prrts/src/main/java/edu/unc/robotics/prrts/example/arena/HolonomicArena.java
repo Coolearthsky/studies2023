@@ -76,6 +76,11 @@ public class HolonomicArena implements RobotModel<ArrayState>, KDModel<ArrayStat
     }
 
     @Override
+    public ArrayState zero() {
+        return new ArrayState(new double[]{0,0});
+    }
+
+    @Override
     public double dist(ArrayState a, ArrayState b) {
         double dist = 0;
         for (int i = 0; i < _dimensions; i += 2) {
