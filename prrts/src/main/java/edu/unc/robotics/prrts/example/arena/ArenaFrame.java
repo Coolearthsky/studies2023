@@ -1,13 +1,12 @@
 package edu.unc.robotics.prrts.example.arena;
 
-import edu.unc.robotics.prrts.PRRTStar;
-import edu.unc.robotics.prrts.RobotModel;
-import edu.unc.robotics.prrts.SingletonProvider;
+import java.awt.BorderLayout;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
-import java.awt.BorderLayout;
-import java.lang.reflect.InvocationTargetException;
+
+import edu.unc.robotics.prrts.PRRTStar;
 
 /**
  * ArenaFrame
@@ -28,7 +27,7 @@ public class ArenaFrame extends JFrame {
         final HolonomicArena arena = new HolonomicArena(1);
         double[] init = {7.0, 1.0, 8, 8, 9, 1, 1, 9};
 
-        final PRRTStar rrtStar = new PRRTStar(arena, new SingletonProvider<RobotModel>(arena), init);
+        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
@@ -48,6 +47,7 @@ public class ArenaFrame extends JFrame {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        rrtStar.runForDuration(4, 20);
+        // 2 threads works better than 4
+        rrtStar.runForDuration(2, 20);
     }
 }

@@ -1,11 +1,5 @@
 package edu.unc.robotics.prrts;
 
-import edu.unc.robotics.prrts.kdtree.KDModel;
-import edu.unc.robotics.prrts.kdtree.KDNearCallback;
-import edu.unc.robotics.prrts.kdtree.KDTraversal;
-import edu.unc.robotics.prrts.kdtree.KDTree;
-import edu.unc.robotics.prrts.util.MersenneTwister;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -16,9 +10,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import edu.unc.robotics.prrts.kdtree.KDModel;
+import edu.unc.robotics.prrts.kdtree.KDNearCallback;
+import edu.unc.robotics.prrts.kdtree.KDTraversal;
+import edu.unc.robotics.prrts.kdtree.KDTree;
+import edu.unc.robotics.prrts.tree.Link;
+import edu.unc.robotics.prrts.tree.NearNode;
+import edu.unc.robotics.prrts.tree.Node;
+import edu.unc.robotics.prrts.util.MersenneTwister;
 
 /**
  * PRRTStar
@@ -32,13 +35,8 @@ public class PRRTStar {
 
     // Robotic System
     KDModel _kdModel;
-    Provider<RobotModel> _robotModelProvider;
-    Provider<Random> _randomProvider = new Provider<Random>() {
-        @Override
-        public Random get() {
-            return new MersenneTwister();
-        }
-    };
+    Supplier<RobotModel> _robotModelProvider;
+    Supplier<Random> _randomProvider = () -> new MersenneTwister();
 
     // RRT* Parameters
     double[] _startConfig;
@@ -61,7 +59,7 @@ public class PRRTStar {
     CountDownLatch _doneLatch;
     final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
 
-    public PRRTStar(KDModel kdModel, Provider<RobotModel> robotModelProvider, double[] init) {
+    public PRRTStar(KDModel kdModel, Supplier<RobotModel> robotModelProvider, double[] init) {
         _kdModel = kdModel;
         _robotModelProvider = robotModelProvider;
         _startConfig = init;
@@ -69,7 +67,7 @@ public class PRRTStar {
     }
 
     /**
-     * Sets the gamma value (aka step size) for RRT*.  The default value is 5.
+     * Sets the gamma value (aka step size) for RRT*. The default value is 5.
      *
      * @param gamma the value to set.
      */
@@ -81,7 +79,7 @@ public class PRRTStar {
     }
 
     /**
-     * Enables per-thread region based sampling.  The default value is true.
+     * Enables per-thread region based sampling. The default value is true.
      *
      * @param b
      */
@@ -90,19 +88,19 @@ public class PRRTStar {
     }
 
     /**
-     * Sets a pseudo-random number generator provider.  The provider is asked
+     * Sets a pseudo-random number generator provider. The provider is asked
      * to provide random number generators for each of the threads at runtime.
      *
      * @param randomProvider
      */
-    public void setRandomProvider(Provider<Random> randomProvider) {
+    public void setRandomProvider(Supplier<Random> randomProvider) {
         _randomProvider = randomProvider;
     }
 
     /**
-     * Returns the current step no.  May be called while running, in which
+     * Returns the current step no. May be called while running, in which
      * case the value returned will be less than or equal to the actual
-     * step no.  Called after running, this may return more than the requested
+     * step no. Called after running, this may return more than the requested
      * number of samples since multiple threads may finish concurrently.
      *
      * @return the approximate step number.
@@ -116,220 +114,7 @@ public class PRRTStar {
     }
 
     /**
-     * Represents a single configuration in the RRT* tree.  The path to the
-     * node can be computed by following the parents until null, and then
-     * reversing the order.  This class is part of the public API, but is
-     * also used internally.  The package-private members are intentionally
-     * not part of the public API as they are subject to change.
-     *
-     * The public API may safely be accessed while the PRRTStar is running.
-     * There is a possibility that the path to a node will change while it
-     * is being accessed, but the config member will not change.  For
-     * efficiency, the config member is exposed as a direct reference an array.
-     * It should NOT be modified by the caller.
-     */
-    public static class Node {
-        final double[] config;
-        final boolean inGoal;
-
-        volatile Link link;
-
-        private static final AtomicReferenceFieldUpdater<Node,Link> LINK =
-            AtomicReferenceFieldUpdater.newUpdater(Node.class, Link.class, "link");
-
-        Node(double[] config, boolean inGoal) {
-            this.config = config;
-            this.inGoal = inGoal;
-            this.link = new Link(this);
-        }
-
-        Node(double[] config, boolean inGoal, double linkDist, Link parent) {
-            this.config = config;
-            this.inGoal = inGoal;
-
-            Link link = new Link(this, linkDist, parent);
-
-            this.link = link;
-            parent.addChild(link);
-        }
-
-        Link setLink(Link oldLink, double linkDist, Link parent) {
-            Link newLink = new Link(this, linkDist, parent);
-
-            if (!LINK.compareAndSet(this, oldLink, newLink)) {
-                return null;
-            }
-
-            assert newLink.pathDist <= oldLink.pathDist;
-            parent.addChild(newLink);
-            return newLink;
-        }
-
-        /**
-         * Returns the configuration of this node in the RRT* tree.  The
-         * returned value is a direct reference to an array (not a copy)
-         * and thus should NOT be modified by the caller.
-         *
-         * @return the configuration
-         */
-        public double[] getConfig() {
-            return config;
-        }
-
-        /**
-         * Returns the parent of this configuration.  It is the best known
-         * path to this configuration as of the time it is called.  The
-         * returned value may change while PRRT* is running.  If null is
-         * returned, the node represents the initial configuration.  There
-         * are no provisions to return the node's children.
-         *
-         * @return the nodes parent, or null if this is the root node.
-         */
-        public Node getParent() {
-            Link parent = this.link.parent;
-            return parent == null ? null : parent.node;
-        }
-    }
-
-    static class Link {
-        final Node node;
-        final double linkDist;
-        final double pathDist;
-
-        volatile Link parent;
-        volatile Link firstChild;
-        volatile Link nextSibling;
-
-        private static final AtomicReferenceFieldUpdater<Link,Link> PARENT =
-            AtomicReferenceFieldUpdater.newUpdater(Link.class, Link.class, "parent");
-        private static final AtomicReferenceFieldUpdater<Link,Link> FIRST_CHILD =
-            AtomicReferenceFieldUpdater.newUpdater(Link.class, Link.class, "firstChild");
-        private static final AtomicReferenceFieldUpdater<Link,Link> NEXT_SIBLING =
-            AtomicReferenceFieldUpdater.newUpdater(Link.class, Link.class, "nextSibling");
-
-        public Link(Node root) {
-            this.node = root;
-            this.linkDist = 0;
-            this.pathDist = 0;
-            this.parent = null;
-        }
-
-        public Link(Node node, double linkDist, Link parent) {
-            this.node = node;
-            this.linkDist = linkDist;
-            this.pathDist = parent.pathDist + linkDist;
-            this.parent = parent;
-        }
-
-        boolean setParent(Link oldValue, Link newValue) {
-            return PARENT.compareAndSet(this, oldValue, newValue);
-        }
-
-        boolean setFirstChild(Link oldValue, Link newValue) {
-            return FIRST_CHILD.compareAndSet(this, oldValue, newValue);
-        }
-
-        boolean setNextSibling(Link oldValue, Link newValue) {
-            return NEXT_SIBLING.compareAndSet(this, oldValue, newValue);
-        }
-
-        void addChild(Link child) {
-            Link expected = null;
-            Link nextSibling;
-
-            do {
-                nextSibling = firstChild;
-
-                if (!child.setNextSibling(expected, nextSibling)) {
-                    assert false : "nextSibling initialized to unexpected value";
-                }
-
-                expected = nextSibling;
-            } while (!setFirstChild(nextSibling, child));
-        }
-
-        public boolean isExpired() {
-            return node.link != this;
-        }
-
-        public Link removeFirstChild() {
-            Link child;
-            Link sibling;
-
-            do {
-                child = firstChild;
-                if (child == null) {
-                    return null;
-                }
-                sibling = child.nextSibling;
-            } while (!setFirstChild(child, sibling));
-
-            if (!child.setNextSibling(sibling, null)) {
-                assert false : "sibling changed after removal";
-            }
-
-            return child;
-        }
-
-        public boolean removeChild(final Link child) {
-            Link sibling;
-            Link n;
-            Link p;
-
-            assert child.isExpired() : "removing unexpired child";
-            assert child.parent == this : "not child's parent";
-
-        outer:
-            for (;;) {
-                n = firstChild;
-
-                if (n == child) {
-                    sibling = child.nextSibling;
-
-                    if (setFirstChild(child, sibling)) {
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-
-                if (n == null) {
-                    return false;
-                }
-
-                for (;;) {
-                    p = n;
-
-                    n = n.nextSibling;
-
-                    if (n == null) {
-                        return false;
-                    }
-
-                    if (n == child) {
-                        sibling = child.nextSibling;
-
-
-                        // TODO: double check this logic.  could the child
-                        // now be the first element in the list?
-
-                        if (p.setNextSibling(child, sibling)) {
-                            break outer;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
-
-            child.setNextSibling(sibling, null);
-
-            return true;
-        }
-    }
-
-    /**
-     * Returns the best path found so far.  This method is safe to be called
+     * Returns the best path found so far. This method is safe to be called
      * while PRRT* is running.
      *
      * @return the best path, or null if none found so far.
@@ -346,7 +131,7 @@ public class PRRTStar {
             configs.add(_targetConfig);
             pathDist += _kdModel.dist(link.node.config, _targetConfig);
         }
-        for ( ; link != null ; link = link.parent) {
+        for (; link != null; link = link.parent.get()) {
             configs.add(link.node.config);
         }
         Collections.reverse(configs);
@@ -381,11 +166,9 @@ public class PRRTStar {
 
         if (threadCount > availableProcessors) {
             _log.warning(String.format(
-                "Thread count (%d) exceeds available processors (%d)",
-                threadCount, availableProcessors));
+                    "Thread count (%d) exceeds available processors (%d)",
+                    threadCount, availableProcessors));
         }
-
-        int dimensions = _kdModel.dimensions();
 
         _doneLatch = new CountDownLatch(threadCount);
         _sampleLimit = sampleLimit;
@@ -394,13 +177,13 @@ public class PRRTStar {
         _startTime = System.nanoTime();
 
         Worker[] workers = new Worker[threadCount];
-        for (int i=0 ; i<threadCount ; ++i) {
+        for (int i = 0; i < threadCount; ++i) {
             workers[i] = new Worker(i, threadCount);
         }
 
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
         Thread[] threads = new Thread[threadCount];
-        for (int i=1 ; i<threadCount ; ++i) {
+        for (int i = 1; i < threadCount; ++i) {
             threads[i] = new Thread(threadGroup, workers[i]);
             threads[i].start();
         }
@@ -411,11 +194,10 @@ public class PRRTStar {
 
         // We could join all worker threads here, but a latch will allow
         // the calling thread to continue sooner.
-        // (TODO: test difference on multiple OSs)
         try {
             if (!_doneLatch.await(1, TimeUnit.SECONDS)) {
                 _log.warning("waiting too long for workers, trying to join");
-                for (int i=1 ; i<threadCount ; ++i) {
+                for (int i = 1; i < threadCount; ++i) {
                     threads[i].join();
                 }
             }
@@ -424,17 +206,6 @@ public class PRRTStar {
         }
 
         return getBestPath();
-    }
-
-    static class NearNode implements Comparable<NearNode> {
-        Link link;
-        double linkDist;
-        double pathDist;
-
-        @Override
-        public int compareTo(NearNode o) {
-            return Double.compare(this.pathDist, o.pathDist);
-        }
     }
 
     class Worker implements Runnable, KDNearCallback<Node> {
@@ -468,8 +239,7 @@ public class PRRTStar {
 
                 double distToTarget = _kdModel.dist(node.config, _targetConfig);
                 if (distToTarget > radius ||
-                    !_robotModel.link(node.config, _targetConfig))
-                {
+                        !_robotModel.link(node.config, _targetConfig)) {
                     return;
                 }
                 distToGoal = link.pathDist + distToTarget;
@@ -487,8 +257,6 @@ public class PRRTStar {
                         // current best is not a goal itself, so it must
                         // link to a target configuration
                         bestDist += _kdModel.dist(currentBestPath.node.config, _targetConfig);
-                        // TODO: dist will be called here on every update,
-                        // it might be worth caching
                     }
 
                     if (distToGoal >= bestDist) {
@@ -511,7 +279,7 @@ public class PRRTStar {
 
                     if (newParent.isExpired()) {
                         oldParent = newParent;
-                        newParent = oldParent.node.link;
+                        newParent = oldParent.node.link.get();
                         continue;
                     }
 
@@ -519,40 +287,35 @@ public class PRRTStar {
                 }
 
                 if (oldChild.isExpired()) {
-                    // TODO: increment concurrent rewiring stat
                     assert _threadCount > 1;
                     continue;
                 }
 
-                double pathDist = newParent.pathDist + oldChild.linkDist;
-
                 Node node = oldChild.node;
 
-                if (node.link.parent.node != oldParent.node) {
+                if (node.link.get().parent.get().node != oldParent.node) {
                     continue;
                 }
 
                 Link newChild = node.setLink(oldChild, oldChild.linkDist, newParent);
 
                 if (newChild != null) {
-                    // TODO: increment updated children count
                     updateChildren(newChild, oldChild, radius);
                     updateBestPath(newChild, radius);
                 } else {
-                    // TODO: increment concurrent rewirings stat
                     assert _threadCount > 1;
-                    assert node.link != oldChild;
+                    assert node.link.get() != oldChild;
                 }
             }
         }
 
         private void rewire(Link oldLink, double linkDist, Node newParent, double radius) {
             assert oldLink.parent != null;
-            assert oldLink.parent.node != newParent;
+            assert oldLink.parent.get().node != newParent;
 
             Node node = oldLink.node;
 
-            Link parentLink = newParent.link;
+            Link parentLink = newParent.link.get();
 
             double pathDist = parentLink.pathDist + linkDist;
 
@@ -562,11 +325,11 @@ public class PRRTStar {
             }
 
             // check if rewiring is possible
-            if (!_robotModel.link(oldLink.node.config,  newParent.config)) {
+            if (!_robotModel.link(oldLink.node.config, newParent.config)) {
                 return;
             }
 
-            // rewire the node.  this loop continues to attempt atomic
+            // rewire the node. this loop continues to attempt atomic
             // updates until either the update succeeds or the pathDist
             // of the oldLink is found to be better than what we're trying
             // to put in
@@ -578,26 +341,24 @@ public class PRRTStar {
                     updateBestPath(newLink, radius);
 
                     if (parentLink.isExpired()) {
-                        updateChildren(parentLink.node.link, parentLink, radius);
+                        updateChildren(parentLink.node.link.get(), parentLink, radius);
                     }
 
                     // Setting newLink expires oldLink but doesn not remove
-                    // it from its parent.  Here we do a little cleanup.
+                    // it from its parent. Here we do a little cleanup.
                     // We do it after the expired parent check since the parent
                     // will likely have already cleaned this up, and this call
                     // will be O(1) instead of O(n)
-                    if (!oldLink.parent.removeChild(oldLink)) {
+                    if (!oldLink.parent.get().removeChild(oldLink)) {
                         assert _threadCount > 1 : "concurrent update running with 1 thread";
                     }
 
                     return;
                 }
 
-                // TODO: increment concurrent rewiring stat
-
                 assert _threadCount > 1 : "concurrent update running with 1 thread";
 
-                Link updatedOldLink = node.link;
+                Link updatedOldLink = node.link.get();
 
                 assert updatedOldLink != oldLink;
 
@@ -607,7 +368,7 @@ public class PRRTStar {
         }
 
         /**
-         * Callback handler for calls to kdNear.  This method adds near nodes
+         * Callback handler for calls to kdNear. This method adds near nodes
          * to the worker's nearList.
          *
          * @param target
@@ -628,13 +389,13 @@ public class PRRTStar {
                 _nearList[index] = n = new NearNode();
             }
 
-            n.link = value.link;
+            n.link = value.link.get();
             n.linkDist = dist;
             n.pathDist = n.link.pathDist + dist;
         }
 
         /**
-         * Checks if a configuration is a goal configuration.  If we are
+         * Checks if a configuration is a goal configuration. If we are
          * searching for a path to a target goal configuration, this method
          * always returns false, since we will check the configuration can
          * extend to the target later.
@@ -647,14 +408,14 @@ public class PRRTStar {
         }
 
         private void randomize(double[] config) {
-            for (int i=_dimensions ; --i >= 0 ; ) {
+            for (int i = _dimensions; --i >= 0;) {
                 config[i] = _random.nextDouble() * (_sampleMax[i] - _sampleMin[i])
-                    + _sampleMin[i];
+                        + _sampleMin[i];
             }
         }
 
         private void steer(double[] newConfig, double[] nearConfig, double t) {
-            for (int i=_dimensions ; --i >= 0 ; ) {
+            for (int i = _dimensions; --i >= 0;) {
                 newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * t;
             }
         }
@@ -668,8 +429,8 @@ public class PRRTStar {
             }
 
             double radius = _gamma * Math.pow(
-                Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _dimensions);
+                    Math.log(stepNo + 1) / (stepNo + 1),
+                    1.0 / _dimensions);
 
             int nearCount = _kdTraversal.near(newConfig, radius, this);
 
@@ -695,22 +456,22 @@ public class PRRTStar {
                 distToNearest = _kdModel.dist(newConfig, nearest.config);
 
                 Node newNode = new Node(
-                    newConfig, inGoal(newConfig), distToNearest, nearest.link);
+                        newConfig, inGoal(newConfig), distToNearest, nearest.link.get());
 
-                updateBestPath(newNode.link, radius);
+                updateBestPath(newNode.link.get(), radius);
 
                 _kdTraversal.insert(newConfig, newNode);
                 return true;
             }
 
-            // Sort the array from nearest to farthest.  After sorting
+            // Sort the array from nearest to farthest. After sorting
             // we can traverse the array sequentially and select the first
-            // configuration that can link.  We know that anything after it
+            // configuration that can link. We know that anything after it
             // in the array will be further away, and thus potentially save
             // a lot of calls to the (usually) expensive link() method.
             Arrays.sort(_nearList, 0, nearCount);
 
-            for (int i=0 ; i<nearCount ; ++i) {
+            for (int i = 0; i < nearCount; ++i) {
                 Link link = _nearList[i].link;
 
                 if (!_robotModel.link(link.node.config, newConfig)) {
@@ -719,15 +480,15 @@ public class PRRTStar {
                     continue;
                 }
 
-                // Found a linkable configuration.  Create the node
+                // Found a linkable configuration. Create the node
                 // and link it in here.
 
                 Node newNode = new Node(
-                    newConfig, inGoal(newConfig), _nearList[i].linkDist, link);
+                        newConfig, inGoal(newConfig), _nearList[i].linkDist, link);
 
-                updateBestPath(newNode.link, radius);
+                updateBestPath(newNode.link.get(), radius);
 
-                // Put the node in the KD-Tree.  After insertion,
+                // Put the node in the KD-Tree. After insertion,
                 // other threads will "see" the new node and may start
                 // rewiring it.
 
@@ -745,7 +506,7 @@ public class PRRTStar {
                 // If we went from nearest to farthest, the far nodes might
                 // rewire through the near nodes, then through the newly added
                 // node.
-                for (int j=nearCount ; --j > i ; ) {
+                for (int j = nearCount; --j > i;) {
                     rewire(_nearList[j].link, _nearList[j].linkDist, newNode, radius);
 
                     // help GC
@@ -756,11 +517,10 @@ public class PRRTStar {
             }
 
             // if we're here, we've looped through the entire near list and
-            // found no nodes that can be linked through.  We return false
+            // found no nodes that can be linked through. We return false
             // indicating we failed to add a node.
             return false;
         }
-
 
         private void generateSamples() {
             // only have 1 worker check the time limit
@@ -805,7 +565,7 @@ public class PRRTStar {
                     double min = _sampleMin[_regionSplitAxis];
                     double t = (_sampleMax[_regionSplitAxis] - min) / _threadCount;
                     _sampleMin[_regionSplitAxis] = min + _workerNo * t;
-                    if (_workerNo+1 < _threadCount) {
+                    if (_workerNo + 1 < _threadCount) {
                         _sampleMax[_regionSplitAxis] = min + (_workerNo + 1) * t;
                     }
                 }

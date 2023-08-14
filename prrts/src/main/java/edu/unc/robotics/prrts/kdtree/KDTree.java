@@ -2,8 +2,7 @@ package edu.unc.robotics.prrts.kdtree;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * KDTree
@@ -11,18 +10,13 @@ import java.util.logging.Logger;
  * @author jeffi
  */
 public class KDTree<V> {
-    private static Logger _log = Logger.getLogger(KDTree.class.getName());
 
     static final class Node<V> {
         final double[] config;
         final V value;
-        volatile Node<V> a;
-        volatile Node<V> b;
 
-        static final AtomicReferenceFieldUpdater<Node,Node> A_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(Node.class, Node.class, "a");
-        static final AtomicReferenceFieldUpdater<Node,Node> B_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(Node.class, Node.class, "b");
+        final AtomicReference<Node<V>> a = new AtomicReference<>();
+        final AtomicReference<Node<V>> b = new AtomicReference<>();
 
         Node(double[] c, V v) {
             assert c != null && v != null;
@@ -31,21 +25,20 @@ public class KDTree<V> {
         }
 
         boolean setA(Node<V> old, Node<V> n) {
-            return A_UPDATER.compareAndSet(this, old, n);
+            return a.compareAndSet(old, n);
         }
 
         boolean setB(Node<V> old, Node<V> n) {
-            return B_UPDATER.compareAndSet(this, old, n);
+            return b.compareAndSet(old, n);
         }
 
-        @SuppressWarnings("unchecked")
         public Node<V> getA() {
-            return A_UPDATER.get(this);
+            return a.get();
         }
 
-        @SuppressWarnings("unchecked")
+        // @SuppressWarnings("unchecked")
         public Node<V> getB() {
-            return B_UPDATER.get(this);
+            return b.get();
         }
     }
 
@@ -68,8 +61,8 @@ public class KDTree<V> {
     private void buildList(List<V> list, Node<V> node) {
         if (node != null) {
             list.add(node.value);
-            buildList(list, node.a);
-            buildList(list, node.b);
+            buildList(list, node.a.get());
+            buildList(list, node.b.get());
         }
     }
 
