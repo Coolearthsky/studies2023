@@ -42,6 +42,7 @@ public class PRRTStar<T extends State> {
     // RRT* Parameters
     T _startConfig;
     double _gamma = 5.0;
+    boolean _perThreadRegionSampling = true;
     int _regionSplitAxis = 0;
     int _samplesPerStep = 1;
     T _targetConfig;
@@ -77,6 +78,25 @@ public class PRRTStar<T extends State> {
         }
         _gamma = gamma;
     }
+
+    /**
+     * Enables per-thread region based sampling. The default value is true.
+     *
+     * @param b
+     */
+    public void setPerThreadRegionSampling(boolean b) {
+        _perThreadRegionSampling = b;
+    }
+
+    // /**
+    //  * Sets a pseudo-random number generator provider. The provider is asked
+    //  * to provide random number generators for each of the threads at runtime.
+    //  *
+    //  * @param randomProvider
+    //  */
+    // public void setRandomProvider(Supplier<Random> randomProvider) {
+    //     _randomProvider = randomProvider;
+    // }
 
     /**
      * Returns the current step no. May be called while running, in which
@@ -360,11 +380,14 @@ public class PRRTStar<T extends State> {
          */
         @Override
         public void kdNear(T target, int index, T config, Node<T> value, double dist) {
-            NearNode<T> n = _nearList.get(index);
+            if (index == _nearList.length) {
+                _nearList = Arrays.copyOf(_nearList, index * 2);
+            }
+
+            NearNode<T> n = _nearList[index];
 
             if (n == null) {
-                n = new NearNode<T>();
-                _nearList.set(index, n);
+                _nearList[index] = n = new NearNode<T>();
             }
 
             n.link = value.link.get();
@@ -387,13 +410,14 @@ public class PRRTStar<T extends State> {
 
         private void randomize(T config) {
             for (int i = _dimensions; --i >= 0;) {
-                config.set(i, _random.nextDouble() * (_sampleMax.get(i) - _sampleMin.get(i)) + _sampleMin.get(i));
+                config[i] = _random.nextDouble() * (_sampleMax[i] - _sampleMin[i])
+                        + _sampleMin[i];
             }
         }
 
         private void steer(T newConfig, T nearConfig, double t) {
             for (int i = _dimensions; --i >= 0;) {
-                newConfig.set(i, nearConfig.get(i) + (newConfig.get(i) - nearConfig.get(i)) * t);
+                newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * t;
             }
         }
 
@@ -446,16 +470,14 @@ public class PRRTStar<T extends State> {
             // configuration that can link. We know that anything after it
             // in the array will be further away, and thus potentially save
             // a lot of calls to the (usually) expensive link() method.
-            // TODO this is probably wrong
-            // Arrays.sort(_nearList, 0, nearCount);
-            Collections.sort(_nearList);
+            Arrays.sort(_nearList, 0, nearCount);
 
             for (int i = 0; i < nearCount; ++i) {
-                Link<T> link = _nearList.get(i).link;
+                Link<T> link = _nearList[i].link;
 
                 if (!_robotModel.link(link.node.config, newConfig)) {
                     // help GC
-                    _nearList.get(i).link = null;
+                    _nearList[i].link = null;
                     continue;
                 }
 
@@ -463,7 +485,7 @@ public class PRRTStar<T extends State> {
                 // and link it in here.
 
                 Node<T> newNode = new Node<>(
-                        newConfig, inGoal(newConfig), _nearList.get(i).linkDist, link);
+                        newConfig, inGoal(newConfig), _nearList[i].linkDist, link);
 
                 updateBestPath(newNode.link.get(), radius);
 
@@ -474,7 +496,7 @@ public class PRRTStar<T extends State> {
                 _kdTraversal.insert(newConfig, newNode);
 
                 // help GC
-                _nearList.get(i).link = null;
+                _nearList[i].link = null;
 
                 // For the remaining nodes in the near list, rewire
                 // their links to go through the newly inserted node
@@ -486,10 +508,10 @@ public class PRRTStar<T extends State> {
                 // rewire through the near nodes, then through the newly added
                 // node.
                 for (int j = nearCount; --j > i;) {
-                    rewire(_nearList.get(j).link, _nearList.get(j).linkDist, newNode, radius);
+                    rewire(_nearList[j].link, _nearList[j].linkDist, newNode, radius);
 
                     // help GC
-                    _nearList.get(j).link = null;
+                    _nearList[j].link = null;
                 }
 
                 return true;
@@ -504,7 +526,7 @@ public class PRRTStar<T extends State> {
         private void generateSamples() {
             // only have 1 worker check the time limit
             final boolean checkTimeLimit = (_workerNo == 0) && (_timeLimit > 0);
-            T newConfig = _kdModel.zero();
+            T newConfig = new double[_dimensions];
             int stepNo = _stepNo.get();
 
             while (!_done.get()) {
@@ -514,7 +536,7 @@ public class PRRTStar<T extends State> {
                         _done.set(true);
                     }
                     // sample was added, create a new one
-                    newConfig = _kdModel.zero();
+                    newConfig = new double[_dimensions];
                 } else {
                     // failed add a sample, refresh the step no
                     // and try again
@@ -535,10 +557,19 @@ public class PRRTStar<T extends State> {
                 // worker initialization (normally would occur in constructor
                 // but put here it will be run on its own thread in parallel)
                 _robotModel = _robotModelProvider.get();
-                _sampleMin = _kdModel.getMin();
-                _sampleMax = _kdModel.getMax();
+                _sampleMin = new double[_kdModel.dimensions()];
+                _sampleMax = new double[_kdModel.dimensions()];
 
                 _kdModel.getBounds(_sampleMin, _sampleMax);
+
+                if (_perThreadRegionSampling) {
+                    double min = _sampleMin[_regionSplitAxis];
+                    double t = (_sampleMax[_regionSplitAxis] - min) / _threadCount;
+                    _sampleMin[_regionSplitAxis] = min + _workerNo * t;
+                    if (_workerNo + 1 < _threadCount) {
+                        _sampleMax[_regionSplitAxis] = min + (_workerNo + 1) * t;
+                    }
+                }
 
                 _kdTraversal = _kdTree.newTraversal();
                 _random = _randomProvider.get();
