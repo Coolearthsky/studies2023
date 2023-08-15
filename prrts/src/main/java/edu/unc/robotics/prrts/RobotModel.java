@@ -5,10 +5,8 @@ package edu.unc.robotics.prrts;
  *
  * @author jeffi
  */
-public interface RobotModel<T extends State> {
-    boolean goal(T config);
-
-    boolean clear(T config);
-
-    boolean link(T a, T b);
+public interface RobotModel {
+    boolean goal(double[] config);
+    boolean clear(double[] config);
+    boolean link(double[] a, double[] b);
 }

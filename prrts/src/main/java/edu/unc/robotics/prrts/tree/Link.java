@@ -2,46 +2,44 @@ package edu.unc.robotics.prrts.tree;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import edu.unc.robotics.prrts.State;
-
 /** Just shrinking the enormous PRRTStar class */
-public class Link<T extends State> {
-    public final Node<T> node;
+public class Link {
+    public final Node node;
     public final double linkDist;
     public final double pathDist;
 
-    public final AtomicReference<Link<T>> parent = new AtomicReference<>();
-    private final AtomicReference<Link<T>> firstChild = new AtomicReference<>();
-    final AtomicReference<Link<T>> nextSibling = new AtomicReference<>();
+    public final AtomicReference<Link> parent = new AtomicReference<>();
+    private final AtomicReference<Link> firstChild = new AtomicReference<>();
+    final AtomicReference<Link> nextSibling = new AtomicReference<>();
 
-    public Link(Node<T> root) {
+    public Link(Node root) {
         this.node = root;
         this.linkDist = 0;
         this.pathDist = 0;
     }
 
-    public Link(Node<T> node, double linkDist, Link<T> parent) {
+    public Link(Node node, double linkDist, Link parent) {
         this.node = node;
         this.linkDist = linkDist;
         this.pathDist = parent.pathDist + linkDist;
         this.parent.set(parent);
     }
 
-    boolean setParent(Link<T> oldValue, Link<T> newValue) {
+    boolean setParent(Link oldValue, Link newValue) {
         return parent.compareAndSet(oldValue, newValue);
     }
 
-    boolean setFirstChild(Link<T> oldValue, Link<T> newValue) {
+    boolean setFirstChild(Link oldValue, Link newValue) {
         return firstChild.compareAndSet(oldValue, newValue);
     }
 
-    boolean setNextSibling(Link<T> oldValue, Link<T> newValue) {
+    boolean setNextSibling(Link oldValue, Link newValue) {
         return nextSibling.compareAndSet(oldValue, newValue);
     }
 
-    void addChild(Link<T> child) {
-        Link<T> expected = null;
-        Link<T> nextSibling;
+    void addChild(Link child) {
+        Link expected = null;
+        Link nextSibling;
 
         do {
             nextSibling = firstChild.get();
@@ -58,9 +56,9 @@ public class Link<T extends State> {
         return node.link.get() != this;
     }
 
-    public Link<T> removeFirstChild() {
-        Link<T> child;
-        Link<T> sibling;
+    public Link removeFirstChild() {
+        Link child;
+        Link sibling;
 
         do {
             child = firstChild.get();
@@ -78,10 +76,10 @@ public class Link<T extends State> {
         return child;
     }
 
-    public boolean removeChild(final Link<T> child) {
-        Link<T> sibling;
-        Link<T> n;
-        Link<T> p;
+    public boolean removeChild(final Link child) {
+        Link sibling;
+        Link n;
+        Link p;
 
         assert child.isExpired() : "removing unexpired child";
         assert child.parent.get() == this : "not child's parent";

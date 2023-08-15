@@ -1,14 +1,12 @@
 package edu.unc.robotics.prrts.tree;
 
-import edu.unc.robotics.prrts.State;
-
-public class NearNode<T extends State> implements Comparable<NearNode<T>> {
-    public Link<T> link;
+public class NearNode implements Comparable<NearNode> {
+    public Link link;
     public double linkDist;
     public double pathDist;
 
     @Override
-    public int compareTo(NearNode<T> o) {
+    public int compareTo(NearNode o) {
         return Double.compare(this.pathDist, o.pathDist);
     }
 }

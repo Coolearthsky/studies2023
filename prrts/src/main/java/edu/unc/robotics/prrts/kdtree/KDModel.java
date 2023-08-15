@@ -1,17 +1,12 @@
 package edu.unc.robotics.prrts.kdtree;
 
-import edu.unc.robotics.prrts.State;
-
 /**
  * KDModel
  *
  * @author jeffi
  */
-public interface KDModel<T extends State> {
+public interface KDModel {
     int dimensions();
-    void getBounds(T min, T max);
-    T getMin();
-    T getMax();
-    /** Distance Metric */
-    double dist(T a, T b);
+    void getBounds(double[] min, double[] max);
+    double dist(double[] config, double[] target);
 }

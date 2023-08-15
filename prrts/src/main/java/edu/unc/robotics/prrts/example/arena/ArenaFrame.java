@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
-import edu.unc.robotics.prrts.ArrayState;
 import edu.unc.robotics.prrts.PRRTStar;
 
 /**
@@ -16,7 +15,7 @@ import edu.unc.robotics.prrts.PRRTStar;
  */
 public class ArenaFrame extends JFrame {
 
-    public ArenaFrame(HolonomicArena arena, PRRTStar<ArrayState> rrtStar) {
+    public ArenaFrame(HolonomicArena arena, PRRTStar rrtStar) {
         super("RRT*");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout());
@@ -25,10 +24,10 @@ public class ArenaFrame extends JFrame {
 
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final HolonomicArena arena = new HolonomicArena();
-        ArrayState init = new ArrayState(new double[] {7.0, 1.0, 8, 8, 9, 1, 1, 9});
+        final HolonomicArena arena = new HolonomicArena(1);
+        double[] init = {7.0, 1.0, 8, 8, 9, 1, 1, 9};
 
-        final PRRTStar<ArrayState> rrtStar = new PRRTStar<>(arena, () -> arena, init);
+        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
