@@ -17,10 +17,7 @@ public class TestBestPath {
         final HolonomicArena arena = new HolonomicArena();
         double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
 
-        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
-
-        rrtStar.setGamma(6.0);
-        rrtStar.setPerThreadRegionSampling(true);
+        final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
@@ -38,7 +35,7 @@ public class TestBestPath {
         // assertEquals(2300, nodes, 300);
         assertEquals(3600, nodes, 800);// AtomicReference speeds it up a lot
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(10.2, bestPath.dist, 0.5); // very approximate
+        assertEquals(10.2, bestPath.get_dist(), 0.5); // very approximate
     }
 
     @Test
@@ -46,10 +43,7 @@ public class TestBestPath {
         final HolonomicArena arena = new HolonomicArena();
         double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
 
-        final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
-
-        rrtStar.setGamma(6.0);
-        rrtStar.setPerThreadRegionSampling(true);
+        final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
@@ -64,7 +58,7 @@ public class TestBestPath {
         }
         assertEquals(500, nodes, 10);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(10.8, bestPath.dist, 0.5);
+        assertEquals(10.8, bestPath.get_dist(), 0.5);
     }
 
 }

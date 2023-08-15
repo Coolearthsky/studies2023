@@ -16,16 +16,16 @@ public class Path implements Comparable<Path> {
     /**
      * The distance of the computed path
      */
-    public double dist;
+    private final double _dist;
 
     /**
      * The configurations of the path.
      */
-    public List<double[]> configs;
+    private final List<double[]> _configs;
 
     public Path(double dist, List<double[]> configs) {
-        this.dist = dist;
-        this.configs = configs;
+        _dist = dist;
+        _configs = configs;
     }
 
     /**
@@ -37,11 +37,11 @@ public class Path implements Comparable<Path> {
      */
     @Override
     public int compareTo(Path that) {
-        return Double.compare(this.dist, that.dist);
+        return Double.compare(_dist, that._dist);
     }
 
     public void interpolate(double[] outConfig, double offset, KDModel kdModel) {
-        Iterator<double[]> pathIter = configs.iterator();
+        Iterator<double[]> pathIter = _configs.iterator();
         double[] from = pathIter.next();
         double[] dest = pathIter.next();
         double distToFrom = 0;
@@ -73,7 +73,7 @@ public class Path implements Comparable<Path> {
         if (b == null) {
             return true;
         }
-        return a.dist < b.dist;
+        return a._dist < b._dist;
     }
 
     @Override
@@ -83,10 +83,10 @@ public class Path implements Comparable<Path> {
 
         Path path = (Path) o;
 
-        if (Double.compare(path.dist, dist) != 0) return false;
-        if (configs.size() != path.configs.size()) return false;
-        Iterator<double[]> i1 = configs.iterator();
-        Iterator<double[]> i2 = path.configs.iterator();
+        if (Double.compare(path._dist, _dist) != 0) return false;
+        if (_configs.size() != path._configs.size()) return false;
+        Iterator<double[]> i1 = _configs.iterator();
+        Iterator<double[]> i2 = path._configs.iterator();
         while (i1.hasNext()) {
             if (!Arrays.equals(i1.next(), i2.next())) {
                  return false;
@@ -99,11 +99,19 @@ public class Path implements Comparable<Path> {
     public int hashCode() {
         int result;
         long temp;
-        temp = dist != +0.0d ? Double.doubleToLongBits(dist) : 0L;
+        temp = _dist != +0.0d ? Double.doubleToLongBits(_dist) : 0L;
         result = (int) (temp ^ (temp >>> 32));
-        for (double[] config : configs) {
+        for (double[] config : _configs) {
             result = 31 * result + Arrays.hashCode(config);
         }
         return result;
+    }
+
+    public double get_dist() {
+        return _dist;
+    }
+
+    public List<double[]> get_configs() {
+        return _configs;
     }
 }

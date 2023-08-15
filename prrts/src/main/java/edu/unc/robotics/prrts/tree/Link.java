@@ -4,56 +4,41 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Just shrinking the enormous PRRTStar class */
 public class Link {
-    public final Node node;
-    public final double linkDist;
-    public final double pathDist;
-
-    public final AtomicReference<Link> parent = new AtomicReference<>();
-    private final AtomicReference<Link> firstChild = new AtomicReference<>();
-    final AtomicReference<Link> nextSibling = new AtomicReference<>();
+    // tail of this edge
+    private final Node _node;
+    // length of this edge
+    private final double _linkDist;
+    // total path length so far
+    private final double _pathDist;
+    private final Link _parent;
+    private final AtomicReference<Link> _firstChild;
+    private final AtomicReference<Link> _nextSibling;
 
     public Link(Node root) {
-        this.node = root;
-        this.linkDist = 0;
-        this.pathDist = 0;
+        this(root, 0, 0, null, null, null);
     }
 
     public Link(Node node, double linkDist, Link parent) {
-        this.node = node;
-        this.linkDist = linkDist;
-        this.pathDist = parent.pathDist + linkDist;
-        this.parent.set(parent);
+        this(node, linkDist, parent._pathDist + linkDist, parent, null, null);
     }
 
-    boolean setParent(Link oldValue, Link newValue) {
-        return parent.compareAndSet(oldValue, newValue);
-    }
-
-    boolean setFirstChild(Link oldValue, Link newValue) {
-        return firstChild.compareAndSet(oldValue, newValue);
-    }
-
-    boolean setNextSibling(Link oldValue, Link newValue) {
-        return nextSibling.compareAndSet(oldValue, newValue);
-    }
-
-    void addChild(Link child) {
+    public void addChild(Link child) {
         Link expected = null;
         Link nextSibling;
 
         do {
-            nextSibling = firstChild.get();
+            nextSibling = _firstChild.get();
 
-            if (!child.setNextSibling(expected, nextSibling)) {
+            if (!child._nextSibling.compareAndSet(expected, nextSibling)) {
                 assert false : "nextSibling initialized to unexpected value";
             }
 
             expected = nextSibling;
-        } while (!setFirstChild(nextSibling, child));
+        } while (!_firstChild.compareAndSet(nextSibling, child));
     }
 
     public boolean isExpired() {
-        return node.link.get() != this;
+        return _node.get_link().get() != this;
     }
 
     public Link removeFirstChild() {
@@ -61,15 +46,15 @@ public class Link {
         Link sibling;
 
         do {
-            child = firstChild.get();
+            child = _firstChild.get();
             if (child == null) {
                 return null;
             }
 
-            sibling = child.nextSibling.get();
-        } while (!setFirstChild(child, sibling));
+            sibling = child._nextSibling.get();
+        } while (!_firstChild.compareAndSet(child, sibling));
 
-        if (!child.setNextSibling(sibling, null)) {
+        if (!child._nextSibling.compareAndSet(sibling, null)) {
             assert false : "sibling changed after removal";
         }
 
@@ -82,15 +67,15 @@ public class Link {
         Link p;
 
         assert child.isExpired() : "removing unexpired child";
-        assert child.parent.get() == this : "not child's parent";
+        assert child._parent == this : "not child's parent";
 
         outer: for (;;) {
-            n = firstChild.get();
+            n = _firstChild.get();
 
             if (n == child) {
-                sibling = child.nextSibling.get();
+                sibling = child._nextSibling.get();
 
-                if (setFirstChild(child, sibling)) {
+                if (_firstChild.compareAndSet(child, sibling)) {
                     break;
                 } else {
                     continue;
@@ -105,19 +90,19 @@ public class Link {
                 p = n;
 
                 if (n != null)
-                    n = n.nextSibling.get();
+                    n = n._nextSibling.get();
 
                 if (n == null) {
                     return false;
                 }
 
                 if (n == child) {
-                    sibling = child.nextSibling.get();
+                    sibling = child._nextSibling.get();
 
                     // TODO: double check this logic. could the child
                     // now be the first element in the list?
 
-                    if (p.setNextSibling(child, sibling)) {
+                    if (p._nextSibling.compareAndSet(child, sibling)) {
                         break outer;
                     } else {
                         break;
@@ -126,9 +111,41 @@ public class Link {
             }
         }
 
-        child.setNextSibling(sibling, null);
+        child._nextSibling.compareAndSet(sibling, null);
 
         return true;
+    }
+
+    public Node get_node() {
+        return _node;
+    }
+
+    public double get_linkDist() {
+        return _linkDist;
+    }
+
+    public double get_pathDist() {
+        return _pathDist;
+    }
+
+    public Link get_parent() {
+        return _parent;
+    }
+
+    //////////////////////////////////////////////////////////////////
+
+    private Link(Node root,
+            double linkDist,
+            double pathDist,
+            Link parent,
+            Link firstChild,
+            Link nextSibling) {
+        _node = root;
+        _linkDist = linkDist;
+        _pathDist = pathDist;
+        _parent = parent;
+        _firstChild = new AtomicReference<>(firstChild);
+        _nextSibling = new AtomicReference<>(nextSibling);
     }
 
 }

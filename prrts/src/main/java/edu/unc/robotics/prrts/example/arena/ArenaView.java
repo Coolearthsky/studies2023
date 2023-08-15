@@ -20,6 +20,7 @@ import javax.swing.SwingUtilities;
 import edu.unc.robotics.prrts.PRRTStar;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
+import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
 
 /**
@@ -122,27 +123,24 @@ public class ArenaView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
-       // int count = 0;
 
         for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.getParent();
+            Link parent1 = node.get_link().get().get_parent();
+            Node parent = parent1 == null ? null : parent1.get_node();
             if (parent != null) {
-                double[] n = node.getConfig();
-                double[] p = parent.getConfig();
+                double[] n = node.get_config();
+                double[] p = parent.get_config();
                 for (int i = 0; i < dim; i += 2) {
                     g.setColor(COLORS[i / 2]);
                     line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
                     g.draw(line);
                 }
-               // count++;
             }
         }
-
     }
 
-    private void renderPaths(
-            Path link, Graphics2D g, double scale) {
-        if (link == null) {
+    private void renderPaths(Path path, Graphics2D g, double scale) {
+        if (path == null) {
             return;
         }
 
@@ -150,8 +148,8 @@ public class ArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        if (link.configs.size() > 1) {
-            Iterator<double[]> pathIter = link.configs.iterator();
+        if (path.get_configs().size() > 1) {
+            Iterator<double[]> pathIter = path.get_configs().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();

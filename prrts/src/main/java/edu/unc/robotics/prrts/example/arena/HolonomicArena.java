@@ -16,13 +16,10 @@ import edu.unc.robotics.prrts.kdtree.KDModel;
  * @author jeffi
  */
 public class HolonomicArena implements RobotModel, KDModel {
-
     private static final double DISCRETIZATION = 0.25;
-
-    public static final double ROBOT_RADIUS = .4;
-    static final double GOAL_RADIUS = 0.4;
-    private static final boolean GOAL_BIASED = false;
-    final static int _dimensions = 2;
+    private static final double ROBOT_RADIUS = .4;
+    private static final double GOAL_RADIUS = 0.4;
+    private final static int DIMENSIONS = 2;
 
     double _eta = 1.0;
 
@@ -58,19 +55,19 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     @Override
     public int dimensions() {
-        return _dimensions;
+        return DIMENSIONS;
     }
 
     @Override
     public void getBounds(double[] min, double[] max) {
-        System.arraycopy(_min, 0, min, 0, _dimensions);
-        System.arraycopy(_max, 0, max, 0, _dimensions);
+        System.arraycopy(_min, 0, min, 0, DIMENSIONS);
+        System.arraycopy(_max, 0, max, 0, DIMENSIONS);
     }
 
     @Override
     public double dist(double[] a, double[] b) {
         double dist = 0;
-        for (int i = 0; i < _dimensions; i += 2) {
+        for (int i = 0; i < DIMENSIONS; i += 2) {
             double dx = a[i] - b[i];
             double dy = a[i + 1] - b[i + 1];
             dist += dx * dx + dy * dy;
@@ -83,7 +80,7 @@ public class HolonomicArena implements RobotModel, KDModel {
             return dist;
         } else {
             double scale = _eta / dist;
-            for (int i = 0; i < _dimensions; ++i) {
+            for (int i = 0; i < DIMENSIONS; ++i) {
                 b[i] = a[i] + (b[i] - a[i]) * scale;
             }
             return _eta;
@@ -94,7 +91,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     public boolean clear(double[] config) {
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
-            for (int j = 0; j < _dimensions; j += 2) {
+            for (int j = 0; j < DIMENSIONS; j += 2) {
                 if (obstacle.distToPoint(config[j], config[j + 1]) < ROBOT_RADIUS) {
                     return false;
                 }
@@ -105,9 +102,9 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     @Override
     public boolean link(double[] a, double[] b) {
-        double[] dx = new double[_dimensions];
+        double[] dx = new double[DIMENSIONS];
         double dist = 0;
-        for (int i = 0; i < _dimensions; ++i) {
+        for (int i = 0; i < DIMENSIONS; ++i) {
             dx[i] = b[i] - a[i];
             dist += dx[i] * dx[i];
         }
@@ -116,11 +113,11 @@ public class HolonomicArena implements RobotModel, KDModel {
 
         int steps = (int) Math.floor(dist / DISCRETIZATION) + 2;
 
-        double[] p = new double[_dimensions];
+        double[] p = new double[DIMENSIONS];
 
         for (int i = 0; i <= steps; ++i) {
-            for (int j = 0; j < _dimensions; ++j) {
-                p[j] = (a[j] * (steps - i) + b[j] * i) / steps; // - ROBOT_RADIUS/2;
+            for (int j = 0; j < DIMENSIONS; ++j) {
+                p[j] = (a[j] * (steps - i) + b[j] * i) / steps;
             }
             if (!clear(p)) {
                 return false;
@@ -132,11 +129,7 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     @Override
     public boolean goal(double[] conf) {
-        if (GOAL_BIASED) {
-            return link(conf, _goal);
-        } else {
-            return dist(conf, _goal) < GOAL_RADIUS;
-        }
+        return dist(conf, _goal) < GOAL_RADIUS;
     }
 
     public Obstacle[] obstacles() {
