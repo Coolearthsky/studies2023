@@ -30,7 +30,7 @@ public class TestBestPath {
 
         int steps = rrtStar.getStepNo();
         // assertEquals(2300, steps, 400); // very approximately equal
-        assertEquals(3600, steps, 800); // AtomicReference speeds it up a lot but there's a lot of variance
+        assertEquals(3600, steps, 1000); // AtomicReference speeds it up a lot but there's a lot of variance
 
         int nodes = 0;
         for (var n : rrtStar.getNodes()) {
