@@ -34,29 +34,28 @@ public class PRRTStar {
     private static final int INITIAL_NEAR_LIST_CAPACITY = 1024;
 
     // Robotic System
-    KDModel _kdModel;
-    Supplier<RobotModel> _robotModelProvider;
-    Supplier<Random> _randomProvider = () -> new MersenneTwister();
+    private final KDModel _kdModel;
+    private final Supplier<RobotModel> _robotModelProvider;
+    private final Supplier<Random> _randomProvider = () -> new MersenneTwister();
 
     // RRT* Parameters
-    private  double _gamma = 5.0;
-    boolean _perThreadRegionSampling = true;
+    private double _gamma = 5.0;
+    private boolean _perThreadRegionSampling = true;
     private final int _regionSplitAxis = 0;
     // this doesn't seem to do anything
-   // double[] _targetConfig;
+    // double[] _targetConfig;
 
     // Run duration
-    int _threadCount;
-    long _timeLimit;
-    long _startTime;
-    int _sampleLimit;
+    private long _timeLimit;
+    private long _startTime;
+    private int _sampleLimit;
 
     // Runtime data
-    KDTree<Node> _kdTree;
-    final AtomicInteger _stepNo = new AtomicInteger(0);
-    final AtomicBoolean _done = new AtomicBoolean(false);
-    CountDownLatch _doneLatch;
-    final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
+    private final KDTree<Node> _kdTree;
+    private final AtomicInteger _stepNo = new AtomicInteger(0);
+    private final AtomicBoolean _done = new AtomicBoolean(false);
+    private CountDownLatch _doneLatch;
+    private final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
 
     public PRRTStar(KDModel kdModel, Supplier<RobotModel> robotModelProvider, double[] init) {
         _kdModel = kdModel;
@@ -83,16 +82,6 @@ public class PRRTStar {
      */
     public void setPerThreadRegionSampling(boolean b) {
         _perThreadRegionSampling = b;
-    }
-
-    /**
-     * Sets a pseudo-random number generator provider. The provider is asked
-     * to provide random number generators for each of the threads at runtime.
-     *
-     * @param randomProvider
-     */
-    public void setRandomProvider(Supplier<Random> randomProvider) {
-        _randomProvider = randomProvider;
     }
 
     /**
@@ -125,9 +114,9 @@ public class PRRTStar {
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = link.pathDist;
         // if (!link.node.inGoal) {
-        //     assert _targetConfig != null;
-        //     configs.add(_targetConfig);
-        //     pathDist += _kdModel.dist(link.node.config, _targetConfig);
+        // assert _targetConfig != null;
+        // configs.add(_targetConfig);
+        // pathDist += _kdModel.dist(link.node.config, _targetConfig);
         // }
         for (; link != null; link = link.parent.get()) {
             configs.add(link.node.config);
@@ -231,16 +220,16 @@ public class PRRTStar {
 
             if (node.inGoal) {
                 distToGoal = link.pathDist;
-            // } else if (_targetConfig != null) {
-            //     // searching for a configuration that can reach a pre-specified
-            //     // target configuration
+                // } else if (_targetConfig != null) {
+                // // searching for a configuration that can reach a pre-specified
+                // // target configuration
 
-            //     double distToTarget = _kdModel.dist(node.config, _targetConfig);
-            //     if (distToTarget > radius ||
-            //             !_robotModel.link(node.config, _targetConfig)) {
-            //         return;
-            //     }
-            //     distToGoal = link.pathDist + distToTarget;
+                // double distToTarget = _kdModel.dist(node.config, _targetConfig);
+                // if (distToTarget > radius ||
+                // !_robotModel.link(node.config, _targetConfig)) {
+                // return;
+                // }
+                // distToGoal = link.pathDist + distToTarget;
             } else {
                 return;
             }
@@ -252,9 +241,9 @@ public class PRRTStar {
                     double bestDist = currentBestPath.pathDist;
 
                     // if (!currentBestPath.node.inGoal) {
-                    //     // current best is not a goal itself, so it must
-                    //     // link to a target configuration
-                    //     bestDist += _kdModel.dist(currentBestPath.node.config, _targetConfig);
+                    // // current best is not a goal itself, so it must
+                    // // link to a target configuration
+                    // bestDist += _kdModel.dist(currentBestPath.node.config, _targetConfig);
                     // }
 
                     if (distToGoal >= bestDist) {
@@ -403,8 +392,8 @@ public class PRRTStar {
          */
         private boolean inGoal(double[] config) {
             return
-            //  _targetConfig == null &&
-             _robotModel.goal(config);
+            // _targetConfig == null &&
+            _robotModel.goal(config);
         }
 
         private void randomize(double[] config) {
