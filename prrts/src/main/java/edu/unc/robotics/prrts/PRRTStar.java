@@ -39,12 +39,11 @@ public class PRRTStar {
     Supplier<Random> _randomProvider = () -> new MersenneTwister();
 
     // RRT* Parameters
-    double[] _startConfig;
-    double _gamma = 5.0;
+    private  double _gamma = 5.0;
     boolean _perThreadRegionSampling = true;
-    int _regionSplitAxis = 0;
-    int _samplesPerStep = 1;
-    double[] _targetConfig;
+    private final int _regionSplitAxis = 0;
+    // this doesn't seem to do anything
+   // double[] _targetConfig;
 
     // Run duration
     int _threadCount;
@@ -62,7 +61,6 @@ public class PRRTStar {
     public PRRTStar(KDModel kdModel, Supplier<RobotModel> robotModelProvider, double[] init) {
         _kdModel = kdModel;
         _robotModelProvider = robotModelProvider;
-        _startConfig = init;
         _kdTree = new KDTree<Node>(kdModel, init, new Node(init, false));
     }
 
@@ -126,11 +124,11 @@ public class PRRTStar {
         }
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = link.pathDist;
-        if (!link.node.inGoal) {
-            assert _targetConfig != null;
-            configs.add(_targetConfig);
-            pathDist += _kdModel.dist(link.node.config, _targetConfig);
-        }
+        // if (!link.node.inGoal) {
+        //     assert _targetConfig != null;
+        //     configs.add(_targetConfig);
+        //     pathDist += _kdModel.dist(link.node.config, _targetConfig);
+        // }
         for (; link != null; link = link.parent.get()) {
             configs.add(link.node.config);
         }
@@ -233,16 +231,16 @@ public class PRRTStar {
 
             if (node.inGoal) {
                 distToGoal = link.pathDist;
-            } else if (_targetConfig != null) {
-                // searching for a configuration that can reach a pre-specified
-                // target configuration
+            // } else if (_targetConfig != null) {
+            //     // searching for a configuration that can reach a pre-specified
+            //     // target configuration
 
-                double distToTarget = _kdModel.dist(node.config, _targetConfig);
-                if (distToTarget > radius ||
-                        !_robotModel.link(node.config, _targetConfig)) {
-                    return;
-                }
-                distToGoal = link.pathDist + distToTarget;
+            //     double distToTarget = _kdModel.dist(node.config, _targetConfig);
+            //     if (distToTarget > radius ||
+            //             !_robotModel.link(node.config, _targetConfig)) {
+            //         return;
+            //     }
+            //     distToGoal = link.pathDist + distToTarget;
             } else {
                 return;
             }
@@ -253,11 +251,11 @@ public class PRRTStar {
                 if (currentBestPath != null) {
                     double bestDist = currentBestPath.pathDist;
 
-                    if (!currentBestPath.node.inGoal) {
-                        // current best is not a goal itself, so it must
-                        // link to a target configuration
-                        bestDist += _kdModel.dist(currentBestPath.node.config, _targetConfig);
-                    }
+                    // if (!currentBestPath.node.inGoal) {
+                    //     // current best is not a goal itself, so it must
+                    //     // link to a target configuration
+                    //     bestDist += _kdModel.dist(currentBestPath.node.config, _targetConfig);
+                    // }
 
                     if (distToGoal >= bestDist) {
                         return;
@@ -404,7 +402,9 @@ public class PRRTStar {
          * @return true if the configuration is in the goal region
          */
         private boolean inGoal(double[] config) {
-            return _targetConfig == null && _robotModel.goal(config);
+            return
+            //  _targetConfig == null &&
+             _robotModel.goal(config);
         }
 
         private void randomize(double[] config) {

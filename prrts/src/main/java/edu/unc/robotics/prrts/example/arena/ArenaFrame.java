@@ -24,14 +24,13 @@ public class ArenaFrame extends JFrame {
 
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final HolonomicArena arena = new HolonomicArena(1);
+        final HolonomicArena arena = new HolonomicArena();
         double[] init = {7.0, 1.0, 8, 8, 9, 1, 1, 9};
 
         final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
-//        rrtStar.setSamplesPerStep(100);
 
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override

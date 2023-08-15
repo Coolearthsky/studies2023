@@ -14,14 +14,13 @@ public class TestBestPath {
     /** Cribbed from ArenaFrame */
     @Test
     public void testTime() {
-        final HolonomicArena arena = new HolonomicArena(1);
+        final HolonomicArena arena = new HolonomicArena();
         double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
 
         final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
-        // rrtStar.setSamplesPerStep(100);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
@@ -44,14 +43,13 @@ public class TestBestPath {
 
     @Test
     public void testSteps() {
-        final HolonomicArena arena = new HolonomicArena(1);
+        final HolonomicArena arena = new HolonomicArena();
         double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
 
         final PRRTStar rrtStar = new PRRTStar(arena, () -> arena, init);
 
         rrtStar.setGamma(6.0);
         rrtStar.setPerThreadRegionSampling(true);
-        // rrtStar.setSamplesPerStep(100);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
