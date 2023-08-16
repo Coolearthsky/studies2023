@@ -2,29 +2,40 @@ package edu.unc.robotics.prrts.tree;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-/** Just shrinking the enormous PRRTStar class */
+/**
+ * A doubly-connected directed graph which also has a linked list of siblings.
+ */
 public class Link {
-    /** tail of this edge */
+    /** head of this link */
     private final Node _node;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
     /** total path length, i.e. cost, so far */
     private final double _pathDist;
+    /**
+     * tail of this link
+     * it's weird that this is another link instead of a node. maybe that's some
+     * sort of infinitesimal speedup?
+     */
     private final Link _parent;
-    private final AtomicReference<Link> _firstChild;
-    private final AtomicReference<Link> _nextSibling;
+    /** link to a node that this node is the parent of, if any */
+    final AtomicReference<Link> _firstChild;
+    /** link to a node with the same parent as this node */
+    final AtomicReference<Link> _nextSibling;
 
     public Link(Node root) {
-        this(root, 0, 0, null, null, null);
+        this(root, 0, 0, null);
     }
 
     /**
-     * @param node     tail of this link
-     * @param linkDist length, i.e. cost, of this link
-     * @param parent link whose head is the node
+     * Create a new link pointing at the node, linkDist away from parent.
+     * 
+     * @param node     head of this link
+     * @param linkDist distance to the parent
+     * @param parent   link whose head is the parent node
      */
     public Link(Node node, double linkDist, Link parent) {
-        this(node, linkDist, parent._pathDist + linkDist, parent, null, null);
+        this(node, linkDist, parent._pathDist + linkDist, parent);
     }
 
     public void addChild(Link child) {
@@ -143,15 +154,13 @@ public class Link {
     private Link(Node node,
             double linkDist,
             double pathDist,
-            Link parent,
-            Link firstChild,
-            Link nextSibling) {
+            Link parent) {
         _node = node;
         _linkDist = linkDist;
         _pathDist = pathDist;
         _parent = parent;
-        _firstChild = new AtomicReference<>(firstChild);
-        _nextSibling = new AtomicReference<>(nextSibling);
+        _firstChild = new AtomicReference<>(null);
+        _nextSibling = new AtomicReference<>(null);
     }
 
 }

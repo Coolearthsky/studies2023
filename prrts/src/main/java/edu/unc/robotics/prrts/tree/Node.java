@@ -3,13 +3,9 @@ package edu.unc.robotics.prrts.tree;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Just shrinking the enormous PRRTStar class
- * 
  * Represents a single configuration in the RRT* tree. The path to the
  * node can be computed by following the parents until null, and then
- * reversing the order. This class is part of the public API, but is
- * also used internally. The package-private members are intentionally
- * not part of the public API as they are subject to change.
+ * reversing the order.
  *
  * The public API may safely be accessed while the PRRTStar is running.
  * There is a possibility that the path to a node will change while it
@@ -20,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Node {
     private final double[] _config;
     private final boolean _inGoal;
+    /** the parent.  maybe call it the parent? */
     private final AtomicReference<Link> _link;
 
     public Node(double[] config, boolean inGoal) {
@@ -29,11 +26,16 @@ public class Node {
     }
 
     /**
+     * Create a new node and 
+     * @param config state of this node
+     * @param inGoal true if the state is within the goal
+     * @param linkDist distance to the parent?
      * @param parent link pointing to this node (node is head of the link)
      */
     public Node(double[] config, boolean inGoal, double linkDist, Link parent) {
         _config = config;
         _inGoal = inGoal;
+        // link from parent to this node
         Link link = new Link(this, linkDist, parent);
         _link = new AtomicReference<>(link);
         parent.addChild(link);

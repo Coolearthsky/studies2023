@@ -162,6 +162,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
         // of the oldLink is found to be better than what we're trying
         // to put in
         do {
+
             Link newLink = node.setLink(oldLink, linkDist, parentLink);
 
             if (newLink != null) {
@@ -276,8 +277,14 @@ class Worker implements Runnable, KDNearCallback<Node> {
             // recalculate just to be safe.
             distToNearest = _kdModel.dist(newConfig, nearest.get_config());
 
+            // the new node has the new sampled config, the distance(cost) to the
+            // nearest other node we found above, and the "parent" is the "link"
+            // from that nearest node.
             Node newNode = new Node(
-                    newConfig, _robotModel.goal(newConfig), distToNearest, nearest.get_link().get());
+                    newConfig,
+                    _robotModel.goal(newConfig),
+                    distToNearest,
+                    nearest.get_link().get());
 
             updateBestPath(newNode.get_link().get(), radius);
 
@@ -305,7 +312,10 @@ class Worker implements Runnable, KDNearCallback<Node> {
             // and link it in here.
 
             Node newNode = new Node(
-                    newConfig, _robotModel.goal(newConfig), _nearList[i].linkDist, link);
+                    newConfig,
+                    _robotModel.goal(newConfig),
+                    _nearList[i].linkDist,
+                    link);
 
             updateBestPath(newNode.get_link().get(), radius);
 
