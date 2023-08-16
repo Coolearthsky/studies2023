@@ -1,5 +1,6 @@
 package edu.unc.robotics.prrts.example.geom;
 
+import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
@@ -10,12 +11,14 @@ import java.awt.geom.Line2D;
  * @author jeffi
  */
 public class Circle implements Obstacle {
-    private double _x;
-    private double _y;
-    private double _r;
-    private Ellipse2D.Double _shape;
+    private final double _x;
+    private final double _y;
+    private final double _r;
+    private final Ellipse2D.Double _shape;
+    private final Color _color;
 
-    public Circle(double x, double y, double r) {
+    public Circle(Color color, double x, double y, double r) {
+        _color = color;
         _shape = new Ellipse2D.Double(x - r, y - r, r*2, r*2);
         _x = x;
         _y = y;
@@ -25,6 +28,11 @@ public class Circle implements Obstacle {
     @Override
     public Shape shape() {
         return _shape;
+    }
+
+    @Override
+    public Color color() {
+        return _color;
     }
 
     @Override

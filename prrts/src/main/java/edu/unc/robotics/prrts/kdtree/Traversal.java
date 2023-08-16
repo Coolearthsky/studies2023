@@ -1,0 +1,162 @@
+package edu.unc.robotics.prrts.kdtree;
+
+class Traversal<V> implements KDTraversal<V> {
+    private final KDModel _model;
+    private final KDNode<V> _root;
+    private final int _dimensions;
+    private final double[] _min;
+    private final double[] _max;
+    // updated by nearest()
+    private double _dist;
+    private V _nearest;
+
+    public Traversal(KDModel model, KDNode<V> root, int dimensions) {
+        _model = model;
+        _root = root;
+        _dimensions = dimensions;
+        _min = new double[_dimensions];
+        _max = new double[_dimensions];
+    }
+
+    @Override
+    public double distToLastNearest() {
+        return _dist;
+    }
+
+    @Override
+    public void insert(double[] config, V value) {
+        double[] min = _min;
+        double[] max = _max;
+
+        _model.getBounds(min, max);
+
+        KDNode<V> newNode = new KDNode<V>(config, value);
+        KDNode<V> n = _root;
+        int depth = 0;
+
+        for (;; ++depth) {
+            int axis = depth % _dimensions;
+            double mp = (min[axis] + max[axis]) / 2;
+            double v = config[axis];
+
+            if (v < mp) {
+                // a-side
+                if (n.getA() == null) {
+                    if (n.setA(null, newNode)) {
+                        break;
+                    }
+                }
+                _max[axis] = mp;
+                n = n.getA();
+            } else {
+                // b-side
+                if (n.getB() == null) {
+                    if (n.setB(null, newNode)) {
+                        break;
+                    }
+                }
+                _min[axis] = mp;
+                n = n.getB();
+            }
+        }
+    }
+
+    public V nearest(double[] target) {
+        _dist = Double.MAX_VALUE;
+        _model.getBounds(_min, _max);
+        nearest(_root, target, 0);
+        return _nearest;
+    }
+
+    private void nearest(KDNode<V> n, double[] target, int depth) {
+        final int axis = depth % _dimensions;
+        final double d = _model.dist(n.getConfig(), target);
+
+        if (d < _dist) {
+            _dist = d;
+            _nearest = n.getValue();
+        }
+
+        final double mp = (_min[axis] + _max[axis]) / 2;
+
+        if (target[axis] < mp) {
+            // a-side
+            KDNode<V> a = n.getA();
+            if (a != null) {
+                double tmp = _max[axis];
+                _max[axis] = mp;
+                nearest(a, target, depth + 1);
+                _max[axis] = tmp;
+            }
+
+            KDNode<V> b = n.getB();
+            if (b != null) {
+                double tmp = Math.abs(mp - target[axis]);
+                if (tmp < _dist) {
+                    tmp = _min[axis];
+                    _min[axis] = mp;
+                    nearest(b, target, depth + 1);
+                    _min[axis] = tmp;
+                }
+            }
+        } else {
+            // b-side
+            KDNode<V> b = n.getB();
+            if (b != null) {
+                double tmp = _min[axis];
+                _min[axis] = mp;
+                nearest(b, target, depth + 1);
+                _min[axis] = tmp;
+            }
+
+            KDNode<V> a = n.getA();
+            if (a != null) {
+                double tmp = Math.abs(mp - target[axis]);
+                if (tmp < _dist) {
+                    tmp = _max[axis];
+                    _max[axis] = mp;
+                    nearest(a, target, depth + 1);
+                    _max[axis] = tmp;
+                }
+            }
+        }
+    }
+
+    @Override
+    public int near(double[] target, double radius, KDNearCallback<V> callback) {
+        _model.getBounds(_min, _max);
+        return near(_root, target, radius, callback, 0, 0);
+    }
+
+    private int near(KDNode<V> n, double[] target, double radius, KDNearCallback<V> callback, int count, int depth) {
+        final double d = _model.dist(n.getConfig(), target);
+        if (d < radius) {
+            callback.kdNear(target, count++, n.getConfig(), n.getValue(), d);
+        }
+        final int axis = depth % _dimensions;
+        final double mp = (_min[axis] + _max[axis]) / 2;
+        final double dm = Math.abs(mp - target[axis]);
+
+        KDNode<V> a = n.getA();
+
+        if (a != null && (target[axis] < mp || dm < radius)) {
+            // in or near a-side
+            double tmp = _max[axis];
+            _max[axis] = mp;
+            count = near(a, target, radius, callback, count, depth + 1);
+            _max[axis] = tmp;
+        }
+
+        KDNode<V> b = n.getB();
+
+        if (b != null && (mp <= target[axis] || dm < radius)) {
+            // in or near b-side
+            double tmp = _min[axis];
+            _min[axis] = mp;
+            count = near(b, target, radius, callback, count, depth + 1);
+            _min[axis] = tmp;
+        }
+
+        return count;
+    }
+}

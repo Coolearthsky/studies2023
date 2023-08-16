@@ -7,6 +7,33 @@ package edu.unc.robotics.prrts.kdtree;
  */
 public interface KDModel {
     int dimensions();
+
+    /**
+     * Write model min and max
+     * 
+     * @param min OUTVAR model minimum
+     * @param max OUTVAR model maximum
+     */
     void getBounds(double[] min, double[] max);
-    double dist(double[] config, double[] target);
+
+    /**
+     * Distance, i.e. cost, between states. Note that this function is not, in
+     * general, symmetric.
+     * 
+     * @return cost
+     */
+    double dist(double[] start, double[] end);
+
+    /**
+     * adjust newConfig so that it's in the same direction as the input newConfig
+     * relative to nearConfig, but only dist of the way there. Note this should
+     * match the metric used by dist, which might be complicated for noneuclidean
+     * spaces.
+     * 
+     * @param nearConfig the nearest config
+     * @param newConfig  INOUT the candidate config
+     * @param dist       the fraction to go
+     */
+    void steer(double[] nearConfig, double[] newConfig, double dist);
+
 }

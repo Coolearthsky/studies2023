@@ -1,5 +1,6 @@
 package edu.unc.robotics.prrts.example.geom;
 
+import java.awt.Color;
 import java.awt.Shape;
 
 /**
@@ -9,6 +10,7 @@ import java.awt.Shape;
  */
 public interface Obstacle {
     Shape shape();
+    Color color();
 
     /**
      * Returns the distance from the exterior wall of the obstacle to a point.
