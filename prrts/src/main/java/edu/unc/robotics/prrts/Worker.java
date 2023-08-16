@@ -201,7 +201,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
      *
      * @param target
      * @param index
-     * @param config
+     * @param config this does nothing
      * @param value
      * @param dist
      */
@@ -252,13 +252,17 @@ class Worker implements Runnable, KDNearCallback<Node> {
         int nearCount = _kdTraversal.near(newConfig, radius, this);
 
         if (nearCount == 0) {
-            // nothing within radius
+            // near() found nothing nearby
+
+            // sometimes the "nearest" node was added between near() and nearest().
+            // there used to be an assert to exclude that case, which was wrong.
             Node nearest = _kdTraversal.nearest(newConfig);
             double distToNearest = _kdTraversal.distToLastNearest();
 
-            assert radius < distToNearest;
-
-            _kdModel.steer(nearest.get_config(),newConfig, radius / distToNearest);
+            if (distToNearest > radius) {
+                // usually the "nearest" node is outside the radius, so bring it closer
+                _kdModel.steer(nearest.get_config(), newConfig, radius / distToNearest);
+            }
 
             if (!_robotModel.clear(newConfig)) {
                 return false;

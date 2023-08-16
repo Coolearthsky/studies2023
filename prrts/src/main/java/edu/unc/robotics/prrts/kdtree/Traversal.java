@@ -4,8 +4,8 @@ class Traversal<V> implements KDTraversal<V> {
     private final KDModel _model;
     private final KDNode<V> _root;
     private final int _dimensions;
-    private final double[] _min;
-    private final double[] _max;
+     final double[] _min;
+     final double[] _max;
     // updated by nearest()
     private double _dist;
     private V _nearest;
