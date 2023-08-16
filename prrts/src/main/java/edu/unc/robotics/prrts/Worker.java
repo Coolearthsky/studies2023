@@ -258,7 +258,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
 
             assert radius < distToNearest;
 
-            //steer(newConfig, nearest.get_config(), radius / distToNearest);
             _kdModel.steer(nearest.get_config(),newConfig, radius / distToNearest);
 
             if (!_robotModel.clear(newConfig)) {

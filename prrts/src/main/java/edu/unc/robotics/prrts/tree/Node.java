@@ -28,6 +28,9 @@ public class Node {
         _link = new AtomicReference<>(new Link(this));
     }
 
+    /**
+     * @param parent link pointing to this node (node is head of the link)
+     */
     public Node(double[] config, boolean inGoal, double linkDist, Link parent) {
         _config = config;
         _inGoal = inGoal;

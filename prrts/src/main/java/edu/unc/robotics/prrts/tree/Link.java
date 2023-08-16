@@ -4,11 +4,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Just shrinking the enormous PRRTStar class */
 public class Link {
-    // tail of this edge
+    /** tail of this edge */
     private final Node _node;
-    // length of this edge
+    /** length, i.e. cost, of this edge */
     private final double _linkDist;
-    // total path length so far
+    /** total path length, i.e. cost, so far */
     private final double _pathDist;
     private final Link _parent;
     private final AtomicReference<Link> _firstChild;
@@ -18,6 +18,11 @@ public class Link {
         this(root, 0, 0, null, null, null);
     }
 
+    /**
+     * @param node     tail of this link
+     * @param linkDist length, i.e. cost, of this link
+     * @param parent link whose head is the node
+     */
     public Link(Node node, double linkDist, Link parent) {
         this(node, linkDist, parent._pathDist + linkDist, parent, null, null);
     }
@@ -134,13 +139,14 @@ public class Link {
 
     //////////////////////////////////////////////////////////////////
 
-    private Link(Node root,
+    /** @param node tail of this link */
+    private Link(Node node,
             double linkDist,
             double pathDist,
             Link parent,
             Link firstChild,
             Link nextSibling) {
-        _node = root;
+        _node = node;
         _linkDist = linkDist;
         _pathDist = pathDist;
         _parent = parent;
