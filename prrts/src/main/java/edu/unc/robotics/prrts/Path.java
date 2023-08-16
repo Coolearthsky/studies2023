@@ -53,7 +53,6 @@ public class Path implements Comparable<Path> {
             dest = pathIter.next();
             distToDest += kdModel.dist(from, dest);
         }
-//        assert distToFrom <= offset && offset <= distToDest : String.format("%f <= %f <= %f", distToFrom, offset, distToDest);
         double distBetween = distToDest - distToFrom;
         offset -= distToFrom;
         offset /= distBetween;

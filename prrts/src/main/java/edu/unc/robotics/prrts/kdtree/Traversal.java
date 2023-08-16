@@ -1,14 +1,12 @@
 package edu.unc.robotics.prrts.kdtree;
 
-/**
- * 
- */
 class Traversal<V> implements KDTraversal<V> {
     private final KDModel _model;
     private final KDNode<V> _root;
     private final int _dimensions;
     private final double[] _min;
     private final double[] _max;
+    // updated by nearest()
     private double _dist;
     private V _nearest;
 
@@ -72,11 +70,11 @@ class Traversal<V> implements KDTraversal<V> {
 
     private void nearest(KDNode<V> n, double[] target, int depth) {
         final int axis = depth % _dimensions;
-        final double d = _model.dist(n.config, target);
+        final double d = _model.dist(n.getConfig(), target);
 
         if (d < _dist) {
             _dist = d;
-            _nearest = n.value;
+            _nearest = n.getValue();
         }
 
         final double mp = (_min[axis] + _max[axis]) / 2;
@@ -131,9 +129,9 @@ class Traversal<V> implements KDTraversal<V> {
     }
 
     private int near(KDNode<V> n, double[] target, double radius, KDNearCallback<V> callback, int count, int depth) {
-        final double d = _model.dist(n.config, target);
+        final double d = _model.dist(n.getConfig(), target);
         if (d < radius) {
-            callback.kdNear(target, count++, n.config, n.value, d);
+            callback.kdNear(target, count++, n.getConfig(), n.getValue(), d);
         }
         final int axis = depth % _dimensions;
         final double mp = (_min[axis] + _max[axis]) / 2;

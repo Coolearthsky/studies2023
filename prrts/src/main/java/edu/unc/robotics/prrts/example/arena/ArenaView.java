@@ -29,9 +29,8 @@ import edu.unc.robotics.prrts.tree.Node;
  * @author jeffi
  */
 public class ArenaView extends JComponent {
-
-    private PRRTStar _rrtStar;
-    private HolonomicArena _robotModel;
+    private final PRRTStar _rrtStar;
+    private final HolonomicArena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
             Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
@@ -40,9 +39,7 @@ public class ArenaView extends JComponent {
     private Image _backgroundImage;
     private Path _bestPath = null;
 
-    private boolean _paintTree = true;
-
-    private NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
+    private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
     public ArenaView(HolonomicArena arena, PRRTStar rrtStar) {
         _rrtStar = rrtStar;
@@ -102,17 +99,15 @@ public class ArenaView extends JComponent {
         g.setColor(Color.WHITE);
         g.fillRect(0, 0, size.width, size.height);
 
-        if (true) {
-            g.setStroke(new BasicStroke(0f));
-            g.setColor(new Color(0x8888ff));
-            for (Obstacle obstacle : _robotModel.obstacles()) {
-                g.fill(obstacle.shape());
-            }
+        // obstacles
+        g.setStroke(new BasicStroke(0f));
+        // g.setColor(new Color(0x8888ff));
+        for (Obstacle obstacle : _robotModel.obstacles()) {
+            g.setColor(obstacle.color());
+            g.fill(obstacle.shape());
         }
 
-        if (_paintTree) {
-            renderRRTTree(g);
-        }
+        renderRRTTree(g);
 
         renderPaths(link, g, scale);
 

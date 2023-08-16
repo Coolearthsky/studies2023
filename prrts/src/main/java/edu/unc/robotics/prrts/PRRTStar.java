@@ -23,27 +23,36 @@ import edu.unc.robotics.prrts.tree.Node;
  */
 public class PRRTStar {
     private static final Logger _log = Logger.getLogger(PRRTStar.class.getName());
+    
     private final KDModel _kdModel;
     private final RobotModel _robotModel;
     private final double _gamma; // step size
     private final KDTree<Node> _kdTree;
-    final AtomicInteger _stepNo = new AtomicInteger(0);
-    final AtomicBoolean _done = new AtomicBoolean(false);
-    CountDownLatch _doneLatch;
-    final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
+    private final AtomicInteger _stepNo = new AtomicInteger(0);
+    private final AtomicBoolean _done = new AtomicBoolean(false);
+    private final CountDownLatch _doneLatch;
+    private final int _threadCount;
+    private final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
 
     public PRRTStar(
             KDModel kdModel,
             RobotModel robotModel,
             double[] init,
-            double gamma) {
+            double gamma,
+            int threadCount) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
+        }
+        if (threadCount < 1) {
+            throw new IllegalArgumentException("thread count must be >= 1");
         }
         _kdModel = kdModel;
         _robotModel = robotModel;
         _kdTree = new KDTree<Node>(kdModel, init, new Node(init, false));
         _gamma = gamma;
+        _threadCount = threadCount;
+        _doneLatch = new CountDownLatch(_threadCount);
+
     }
 
     /**
@@ -82,53 +91,43 @@ public class PRRTStar {
         return new Path(pathDist, configs);
     }
 
-    public Path runForDuration(int threadCount, long milliseconds) {
-        return runForDuration(threadCount, milliseconds, TimeUnit.MILLISECONDS);
+    public Path runForDurationMS(long milliseconds) {
+        return run(Integer.MAX_VALUE, milliseconds);
     }
 
-    public Path runForDuration(int threadCount, long duration, TimeUnit timeUnit) {
-        if (duration <= 0) {
-            throw new IllegalArgumentException("invalid duration, must be > 0");
+    public Path runSamples(int samples) {
+        return run(samples, 0);
+    }
+
+    private Path run(int sampleLimit, long timeLimitMS) {
+
+        if (timeLimitMS < 0) {
+            throw new IllegalArgumentException("invalid duration, must be >= 0");
         }
-        return run(threadCount, Integer.MAX_VALUE, duration, timeUnit);
-    }
-
-    public Path runSamples(int threadCount, int samples) {
-        return run(threadCount, samples, 0, null);
-    }
-
-    public Path runIndefinitely(int threadCount) {
-        return run(threadCount, Integer.MAX_VALUE, 0, null);
-    }
-
-    private Path run(int threadCount, int sampleLimit, long duration, TimeUnit timeUnit) {
-        if (threadCount < 1) {
-            throw new IllegalArgumentException("thread count must be >= 1");
-        }
-
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-
-        if (threadCount > availableProcessors) {
-            _log.warning(String.format(
-                    "Thread count (%d) exceeds available processors (%d)",
-                    threadCount, availableProcessors));
-        }
-
-        _doneLatch = new CountDownLatch(threadCount);
-
-        long timeLimit = duration > 0 ? timeUnit.toNanos(duration) : 0;
+        long timeLimitNS = timeLimitMS * 1000000;
 
         long startTime = System.nanoTime();
 
-        Worker[] workers = new Worker[threadCount];
-        for (int i = 0; i < threadCount; ++i) {
-            workers[i] = new Worker(this, _kdModel,  _kdTree,_robotModel,
-                    _gamma, i, threadCount, timeLimit, startTime, sampleLimit);
+        Worker[] workers = new Worker[_threadCount];
+        for (int i = 0; i < _threadCount; ++i) {
+            workers[i] = new Worker(
+                    _kdModel,
+                    _kdTree.newTraversal(),
+                    _robotModel,
+                    _gamma, i,
+                    _threadCount,
+                    timeLimitNS,
+                    startTime,
+                    sampleLimit,
+                    _doneLatch,
+                    _stepNo,
+                    _bestPath,
+                    _done);
         }
 
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
-        Thread[] threads = new Thread[threadCount];
-        for (int i = 1; i < threadCount; ++i) {
+        Thread[] threads = new Thread[_threadCount];
+        for (int i = 1; i < _threadCount; ++i) {
             threads[i] = new Thread(threadGroup, workers[i]);
             threads[i].start();
         }
@@ -142,7 +141,7 @@ public class PRRTStar {
         try {
             if (!_doneLatch.await(1, TimeUnit.SECONDS)) {
                 _log.warning("waiting too long for workers, trying to join");
-                for (int i = 1; i < threadCount; ++i) {
+                for (int i = 1; i < _threadCount; ++i) {
                     threads[i].join();
                 }
             }

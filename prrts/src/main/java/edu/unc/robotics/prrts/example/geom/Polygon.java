@@ -1,5 +1,6 @@
 package edu.unc.robotics.prrts.example.geom;
 
+import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
@@ -11,10 +12,12 @@ import java.util.Arrays;
  * @author jeffi
  */
 public class Polygon implements Obstacle {
-    private Path2D.Double _shape;
-    private double[] _coords;
+    private final Path2D.Double _shape;
+    private final Color _color;
+    private final double[] _coords;
 
-    public Polygon(double ... coords) {
+    public Polygon(Color color, double ... coords) {
+        _color = color;
         _shape = new Path2D.Double();
         _shape.moveTo(coords[0], coords[1]);
         for (int i=2 ; i<coords.length ; i+=2) {
@@ -27,6 +30,10 @@ public class Polygon implements Obstacle {
     @Override
     public Shape shape() {
         return _shape;
+    }
+    @Override
+    public Color color() {
+        return _color;
     }
 
     @Override

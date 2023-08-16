@@ -27,9 +27,9 @@ public class KDTree<V> {
         if (node == null)
             return;
 
-        list.add(node.value);
-        buildList(list, node.a.get());
-        buildList(list, node.b.get());
+        list.add(node.getValue());
+        buildList(list, node.getA());
+        buildList(list, node.getB());
     }
 
     public KDTraversal<V> newTraversal() {

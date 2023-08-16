@@ -1,11 +1,8 @@
 package edu.unc.robotics.prrts.example.arena;
 
-import java.awt.Shape;
-import java.awt.geom.Area;
-import java.awt.geom.Ellipse2D;
+import java.awt.Color;
 
 import edu.unc.robotics.prrts.RobotModel;
-import edu.unc.robotics.prrts.example.geom.Circle;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
 import edu.unc.robotics.prrts.kdtree.KDModel;
@@ -19,38 +16,27 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;
-    private final static int DIMENSIONS = 2;
+    private static final int DIMENSIONS = 2;
 
-    double _eta = 1.0;
-
-    double[] _goal = { 2.7, 9.0, 1, 1, 1, 9, 9, 1 };
-    Shape _goalShape;
-    double[] _min = { 0, 0, 0, 0, 0, 0, 0, 0 };
-    double[] _max = { 10, 10, 10, 10, 10, 10, 10, 10 };
+    double[] _goal = { 1.93, 2.748 };
+    double[] _min = { 0, 0 };
+    double[] _max = { 16, 8 };
 
     Obstacle[] _obstacles = new Obstacle[] {
-            new Circle(2.0, 2.5, 1.1), // dinner table
-            new Polygon(0.5, 4.5, 2.1, 4.5, 2.1, 8.0, 0.5, 8.0), // couch
-            new Circle(1.5, 9.0, 1.5 / 2), // end table
-            new Polygon(3.9, 8.5, 4.2, 9.9, 6.2, 9.5, 5.9, 8.1), // blue chair
-            new Polygon(4.1, 5.4, 5.5, 5.4, 5.5, 7.0, 4.1, 7.0), // coffee table
-            new Polygon(4.5, 2.5, 7.1, 2.5, 7.1, 3.5, 4.5, 3.5), // island
-            new Circle(3.6, 4.3, 0.35), // chair v2
-            new Polygon(9.2, 2.5, 10.0, 2.5, 10.0, 3.5, 9.2, 3.5), // fridge
-            new Circle(6.6, 4.1, 0.5), // toy
-            new Polygon(9.2, 4.5, 10.0, 4.5, 10.0, 9.0, 9.2, 9.0), // wall
-            new Circle(2.4, 7.0, 0.3), // ottoman
+            // see studies2023/glc
+            // nodes
+            new Polygon(Color.RED, 0, 0, 1.43, 0, 1.43, 5.49, 0, 5.49),
+            // community
+            new Polygon(Color.BLUE, 13.18, 0, 16, 0, 16, 5.49, 13.18, 5.49),
+            // loading
+            new Polygon(Color.BLUE, 0, 8, 3.36, 8, 3.36, 5.49, 0, 5.49),
+            // charge stations
+            new Polygon(Color.RED, 2.98, 1.51, 4.91, 1.51, 4.91, 3.98, 2.98, 3.98),
+            new Polygon(Color.BLUE, 11.63, 1.51, 13.56, 1.51, 13.56, 3.98, 11.63, 3.98)
     };
 
     public HolonomicArena() {
 
-
-        Area goalShape = new Area();
-
-        goalShape.add(new Area(new Ellipse2D.Double(
-                _goal[0] - GOAL_RADIUS, _goal[1] - GOAL_RADIUS, GOAL_RADIUS, GOAL_RADIUS)));
-
-        _goalShape = goalShape;
     }
 
     @Override
@@ -65,25 +51,20 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public double dist(double[] a, double[] b) {
+    public double dist(double[] start, double[] end) {
         double dist = 0;
         for (int i = 0; i < DIMENSIONS; i += 2) {
-            double dx = a[i] - b[i];
-            double dy = a[i + 1] - b[i + 1];
+            double dx = start[i] - end[i];
+            double dy = start[i + 1] - end[i + 1];
             dist += dx * dx + dy * dy;
         }
         return Math.sqrt(dist);
     }
 
-    public double steer(double[] a, double[] b, double dist) {
-        if (dist < _eta) {
-            return dist;
-        } else {
-            double scale = _eta / dist;
-            for (int i = 0; i < DIMENSIONS; ++i) {
-                b[i] = a[i] + (b[i] - a[i]) * scale;
-            }
-            return _eta;
+    @Override
+    public void steer(double[] nearConfig, double[] newConfig, double dist) {
+        for (int i = 0; i < DIMENSIONS; ++i) {
+            newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * dist;
         }
     }
 

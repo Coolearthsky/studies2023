@@ -17,7 +17,16 @@ public interface RobotModel {
      */
     boolean goal(double[] config);
 
+    /**
+     * Checks for obstacles.
+     * 
+     * @return true if the config is not within an obstacle
+     */
     boolean clear(double[] config);
 
+    /** Checks if a link from config a to b is feasible
+     * 
+     * @return true if the link is feasible
+     */
     boolean link(double[] a, double[] b);
 }

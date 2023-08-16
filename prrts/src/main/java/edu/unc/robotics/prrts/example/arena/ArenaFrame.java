@@ -24,15 +24,16 @@ public class ArenaFrame extends JFrame {
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        double[] init = { 15.5, 6.75 };
 
-        final PRRTStar rrtStar = new PRRTStar(arena,  arena, init, 6.0);
+        // 2 threads works better than 4
+        final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 2);
 
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override
             public void run() {
                 ArenaFrame frame = new ArenaFrame(arena, rrtStar);
-                frame.setSize(800, 800);
+                frame.setSize(1600, 800);
                 frame.setVisible(true);
                 frame.repaint();
             }
@@ -41,7 +42,6 @@ public class ArenaFrame extends JFrame {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        // 2 threads works better than 4
-        rrtStar.runForDuration(2, 20);
+        rrtStar.runForDurationMS(20);
     }
 }

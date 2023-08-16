@@ -2,11 +2,14 @@ package edu.unc.robotics.prrts;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
 import edu.unc.robotics.prrts.kdtree.KDNearCallback;
 import edu.unc.robotics.prrts.kdtree.KDTraversal;
-import edu.unc.robotics.prrts.kdtree.KDTree;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
@@ -14,9 +17,8 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
 
 class Worker implements Runnable, KDNearCallback<Node> {
     private static final int INITIAL_NEAR_LIST_CAPACITY = 1024;
-    private final PRRTStar _prrtStar;
+
     private final KDModel _kdModel;
-    private final KDTree<Node> _kdTree; // TODO: remove
     private final int _dimensions;
     private final int _workerNo;
     private final int _threadCount;
@@ -29,22 +31,29 @@ class Worker implements Runnable, KDNearCallback<Node> {
     private final long _timeLimit;
     private final long _startTime;
     private final int _sampleLimit;
+    private final CountDownLatch _doneLatch;
+    private final AtomicInteger _stepNo;
+    private final AtomicReference<Link> _bestPath;
+    private final AtomicBoolean _done;
+
     private NearNode[] _nearList = new NearNode[INITIAL_NEAR_LIST_CAPACITY];
 
     public Worker(
-            PRRTStar prrtStar,
             KDModel kdModel,
-            KDTree<Node> kdTree,
+            KDTraversal<Node> kdTraversal,
             RobotModel robotModel,
             double gamma,
             int workerNo,
             int threadCount,
             long timeLimit,
             long startTime,
-            int sampleLimit) {
-        _prrtStar = prrtStar;
+            int sampleLimit,
+            CountDownLatch doneLatch,
+            AtomicInteger stepNo,
+            AtomicReference<Link> bestPath,
+            AtomicBoolean done) {
         _kdModel = kdModel;
-        _kdTree = kdTree;
+        _kdTraversal = kdTraversal;
         _robotModel = robotModel;
         _gamma = gamma;
         _dimensions = _kdModel.dimensions();
@@ -54,9 +63,12 @@ class Worker implements Runnable, KDNearCallback<Node> {
         _startTime = startTime;
         _sampleLimit = sampleLimit;
         _random = new MersenneTwister(workerNo);
-        _kdTraversal = _kdTree.newTraversal();
         _sampleMin = new double[_kdModel.dimensions()];
         _sampleMax = new double[_kdModel.dimensions()];
+        _doneLatch = doneLatch;
+        _stepNo = stepNo;
+        _bestPath = bestPath;
+        _done = done;
     }
 
     void updateBestPath(Link link, double radius) {
@@ -71,7 +83,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
         }
 
         do {
-            currentBestPath = _prrtStar._bestPath.get();
+            currentBestPath = _bestPath.get();
 
             if (currentBestPath != null) {
                 double bestDist = currentBestPath.get_pathDist();
@@ -79,7 +91,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
                     return;
                 }
             }
-        } while (!_prrtStar._bestPath.compareAndSet(currentBestPath, link));
+        } while (!_bestPath.compareAndSet(currentBestPath, link));
     }
 
     private void updateChildren(Link newParent, Link oldParent, double radius) {
@@ -223,14 +235,8 @@ class Worker implements Runnable, KDNearCallback<Node> {
     }
 
     /**
-     * 
+     * @return true if a new sample was added.
      */
-    private void steer(double[] newConfig, double[] nearConfig, double t) {
-        for (int i = _dimensions; --i >= 0;) {
-            newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * t;
-        }
-    }
-
     private boolean step(int stepNo, double[] newConfig) {
         // generate a new random sample
         randomize(newConfig);
@@ -252,7 +258,8 @@ class Worker implements Runnable, KDNearCallback<Node> {
 
             assert radius < distToNearest;
 
-            steer(newConfig, nearest.get_config(), radius / distToNearest);
+            //steer(newConfig, nearest.get_config(), radius / distToNearest);
+            _kdModel.steer(nearest.get_config(),newConfig, radius / distToNearest);
 
             if (!_robotModel.clear(newConfig)) {
                 return false;
@@ -337,26 +344,26 @@ class Worker implements Runnable, KDNearCallback<Node> {
         // only have 1 worker check the time limit
         final boolean checkTimeLimit = (_workerNo == 0) && (_timeLimit > 0);
         double[] newConfig = new double[_dimensions];
-        int stepNo = _prrtStar._stepNo.get();
+        int stepNo = _stepNo.get();
 
-        while (!_prrtStar._done.get()) {
+        while (!_done.get()) {
             if (step(stepNo, newConfig)) {
-                stepNo = _prrtStar._stepNo.incrementAndGet();
+                stepNo = _stepNo.incrementAndGet();
                 if (stepNo > _sampleLimit) {
-                    _prrtStar._done.set(true);
+                    _done.set(true);
                 }
                 // sample was added, create a new one
                 newConfig = new double[_dimensions];
             } else {
                 // failed add a sample, refresh the step no
                 // and try again
-                stepNo = _prrtStar._stepNo.get();
+                stepNo = _stepNo.get();
             }
 
             if (checkTimeLimit) {
                 long now = System.nanoTime();
                 if (now - _startTime > _timeLimit) {
-                    _prrtStar._done.set(true);
+                    _done.set(true);
                 }
             }
         }
@@ -367,7 +374,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
             _kdModel.getBounds(_sampleMin, _sampleMax);
             generateSamples();
         } finally {
-            _prrtStar._doneLatch.countDown();
+            _doneLatch.countDown();
         }
     }
 }
