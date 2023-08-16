@@ -18,9 +18,9 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double GOAL_RADIUS = 0.4;
     private static final int DIMENSIONS = 2;
 
-    double[] _goal = { 1.93, 2.748 };
-    double[] _min = { 0, 0 };
-    double[] _max = { 16, 8 };
+    private static final double[] _goal = { 1.93, 2.748 };
+    private static final double[] _min = { 0, 0 };
+    private static final double[] _max = { 16, 8 };
 
     Obstacle[] _obstacles = new Obstacle[] {
             // see studies2023/glc
