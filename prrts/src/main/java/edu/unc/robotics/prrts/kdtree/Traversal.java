@@ -68,6 +68,10 @@ class Traversal<V> implements KDTraversal<V> {
         return _nearest;
     }
 
+    /**
+     * returns when it's done digging; it leaves the answers in _nearest and _dist. yuck.
+     * TODO: recast as immutable
+     */
     private void nearest(KDNode<V> n, double[] target, int depth) {
         final int axis = depth % _dimensions;
         final double d = _model.dist(n.getConfig(), target);
