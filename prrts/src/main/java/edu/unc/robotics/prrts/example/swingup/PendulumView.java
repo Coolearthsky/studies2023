@@ -27,14 +27,13 @@ public class PendulumView extends JComponent {
     private final PendulumArena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
-        Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
-};
+            Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
+    };
 
-private Image _backgroundImage;
-private Path _bestPath = null;
+    private Image _backgroundImage;
+    private Path _bestPath = null;
 
-private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
-
+    private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
     public PendulumView(PendulumArena arena, PRRTStar rrtStar) {
         _rrtStar = rrtStar;
@@ -88,6 +87,11 @@ private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
         AffineTransform savedTransform = g.getTransform();
+
+        AffineTransform transform = 
+        AffineTransform.getTranslateInstance(size.width / 2, size.height / 2);
+        transform.scale(1, -1);
+        g.setTransform(transform);
 
         double scale = setupGraphics(min, max, size, g);
 
@@ -174,5 +178,4 @@ private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
         return color;
     }
 
-    
 }

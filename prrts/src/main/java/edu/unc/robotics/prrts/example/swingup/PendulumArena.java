@@ -1,6 +1,7 @@
 package edu.unc.robotics.prrts.example.swingup;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
@@ -48,8 +49,11 @@ public class PendulumArena implements RobotModel, KDModel {
      */
     private static final int DIMENSIONS = 2;
 
+    private static final double POSITION_TOLERANCE = 0.1;
+    private static final double VELOCITY_TOLERANCE = 0.1;
+
     /** goal is straight up, motionless. */
-    private static final double[] _goal = { Math.PI, 0 };
+    private final double[] _goal;
     /** guessing on the velocity limit */
     private static final double[] _min = { -2 * Math.PI, -2 * Math.PI };
     private static final double[] _max = { 2 * Math.PI, 2 * Math.PI };
@@ -64,15 +68,15 @@ public class PendulumArena implements RobotModel, KDModel {
 
     Matrix<N2, N1> B = VecBuilder.fill(0, 1);
 
-    double h = 0.02; // TODO: this is surely wrong. what time interval to use?
+    double h = 0.1; // TODO: this is surely wrong. what time interval to use?
 
-    public PendulumArena() {
+    public PendulumArena(double[] goal) {
+        _goal = goal;
+        // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
 
-        Matrix<N2, N2> S = getS(new double[] { 0, 0 });
-
-        System.out.println("==============");
-        System.out.println(S);
-        System.out.println("==============");
+        // System.out.println("==============");
+        // System.out.println(S);
+        // System.out.println("==============");
 
     }
 
@@ -80,7 +84,7 @@ public class PendulumArena implements RobotModel, KDModel {
      * use the WPI LQR lib to calculate S.
      */
     Matrix<N2, N2> getS(double[] x) {
-        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -1 * Math.cos(x[0]), 0);
+        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -10 * Math.cos(x[0]), 0);
         Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
         Matrix<N2, N2> discA = discABPair.getFirst();
         Matrix<N2, N1> discB = discABPair.getSecond();
@@ -120,43 +124,53 @@ public class PendulumArena implements RobotModel, KDModel {
      */
     @Override
     public double dist(double[] start, double[] end) {
+        // System.out.println(Arrays.toString(start) + Arrays.toString(end));
         Matrix<N2, N2> S = getS(start);
-        Matrix<N2, N1> dx =  VecBuilder.fill(end[0] - start[0], end[1] - start[1]);
+        Matrix<N2, N1> dx = VecBuilder.fill(end[0] - start[0], end[1] - start[1]);
         return dx.transpose().times(S).times(dx).get(0, 0);
     }
 
     /**
-     * steer from the near config towards the new config using the real dynamics
+     * steer from the near config towards the new config using the real dynamics and
+     * LQR full-state control, i.e. find the u value to try to go from the current
+     * point to the new point, and then integrate forward to find the new point.
      */
     @Override
     public void steer(double[] nearConfig, double[] newConfig, double dist) {
-        Matrix<N2,N1> x_near = VecBuilder.fill(nearConfig[0],nearConfig[1]);
-        Matrix<N2,N1> x_rand = VecBuilder.fill(newConfig[0],newConfig[1]);
-        Matrix<N2, N1> dx =  x_near.minus(x_rand);
-        Matrix<N1,N2> K = getK(newConfig);
-        double u = K.times(-1).times(dx).get(0,0);
-        Matrix<N2,N1> xdot  = VecBuilder.fill(nearConfig[1], (u - Math.sin(nearConfig[0])));
+        Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
+        Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
+        Matrix<N2, N1> dx = x_near.minus(x_rand);
+        Matrix<N1, N2> K = getK(newConfig);
+        double u = K.times(-1).times(dx).get(0, 0);
+        Matrix<N2, N1> xdot = VecBuilder.fill(nearConfig[1], (5*u - Math.sin(nearConfig[0])));
         Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-        newConfig[0] = x_new.get(0,0);
-        newConfig[1] = x_new.get(1,0);
+      //  System.out.println(x_new);
+        newConfig[0] = x_new.get(0, 0);
+        newConfig[1] = x_new.get(1, 0);
     }
 
     @Override
     public boolean goal(double[] config) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'goal'");
+        if (Math.abs(config[0] - _goal[0]) > POSITION_TOLERANCE)
+            return false;
+        if (Math.abs(config[1] - _goal[1]) > VELOCITY_TOLERANCE)
+            return false;
+        return true;
     }
 
+    /** There aren't really obstacles, but this will come in handy later. */
     @Override
     public boolean clear(double[] config) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'clear'");
+        return true;
     }
 
+    /**
+     * This checks for obstacles along the path. between a and b but since there
+     * aren't any obstacles.
+     */
     @Override
     public boolean link(double[] a, double[] b) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'link'");
+        return true;
     }
 
     public Obstacle[] obstacles() {

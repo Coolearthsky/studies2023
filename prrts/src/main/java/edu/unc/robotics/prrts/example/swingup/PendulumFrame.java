@@ -8,6 +8,7 @@ import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 
 import edu.unc.robotics.prrts.PRRTStar;
+import edu.unc.robotics.prrts.Path;
 
 public class PendulumFrame extends JFrame {
     public PendulumFrame(PendulumArena arena, PRRTStar rrtStar) {
@@ -20,8 +21,8 @@ public class PendulumFrame extends JFrame {
 
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final PendulumArena arena = new PendulumArena();
-        double[] init = { 15.5, 6.75 };
+        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 });
+        double[] init = { 0,0};
 
         // 2 threads works better than 4
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
@@ -30,7 +31,7 @@ public class PendulumFrame extends JFrame {
             @Override
             public void run() {
                 PendulumFrame frame = new PendulumFrame(arena, rrtStar);
-                frame.setSize(1600, 800);
+                frame.setSize(600, 600);
                 frame.setVisible(true);
                 frame.repaint();
             }
@@ -39,8 +40,11 @@ public class PendulumFrame extends JFrame {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        rrtStar.runForDurationMS(2, 6.0, 30);
-        //rrtStar.runSamples(2, 6.0, 500);
+        //rrtStar.runForDurationMS(2, 10, 3000);
+        rrtStar.runSamples(4, 2, 100000);
+        Path bestPath = rrtStar.getBestPath();
+       // System.out.println(bestPath);
+
     }
     
 }
