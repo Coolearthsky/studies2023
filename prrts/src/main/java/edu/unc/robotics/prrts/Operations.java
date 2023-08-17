@@ -8,7 +8,7 @@ import edu.unc.robotics.prrts.tree.Node;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Utility class for path operations, to make Worker shorter. */
+/** Utility class for path operations. */
 public class Operations {
     private static final Logger _log = Logger.getLogger(Operations.class.getName());
 
@@ -40,9 +40,7 @@ public class Operations {
     public static void updateChildren(
             AtomicReference<Link> bestPath,
             Link newParent,
-            Link oldParent,
-            double radius,
-            int threadCount) {
+            Link oldParent) {
         if (newParent.get_node() != oldParent.get_node()) {
             _log.log(Level.WARNING, "updating links of different nodes");
             return;
@@ -71,10 +69,6 @@ public class Operations {
             }
 
             if (oldChild.isExpired()) {
-                if (threadCount == 1) {
-                    // this shouldn't happen but it's not that big a deal
-                    _log.log(Level.WARNING, "found expired child with one thread");
-                }
                 continue;
             }
 
@@ -88,13 +82,9 @@ public class Operations {
             Link newChild = node.setLink(oldChild, oldChild.get_linkDist(), newParent);
 
             if (newChild != null) {
-                updateChildren(bestPath, newChild, oldChild, radius, threadCount);
+                updateChildren(bestPath, newChild, oldChild);
                 updateBestPath(bestPath, newChild);
             } else {
-                if (threadCount == 1) {
-                    // this shouldn't happen but it's not that big a deal
-                    _log.log(Level.WARNING, "found update conflict with one thread");
-                }
                 if (node.get_link().get() == oldChild) {
                     _log.log(Level.WARNING, "weird child situation");
                 }
@@ -102,14 +92,13 @@ public class Operations {
         }
     }
 
+    /** Rewire oldLink to newParent */
     public static void rewire(
             AtomicReference<Link> _bestPath,
             RobotModel _robotModel,
             Link oldLink,
             double linkDist,
-            Node newParent,
-            double radius,
-            int _threadCount) {
+            Node newParent) {
         if (oldLink.get_parent_node() == null) {
             _log.log(Level.WARNING, "attempted to rewire the root");
             return;
@@ -144,12 +133,11 @@ public class Operations {
             Link newLink = node.setLink(oldLink, linkDist, parentLink);
 
             if (newLink != null) {
-                Operations.updateChildren(_bestPath, newLink, oldLink, radius, _threadCount);
+                Operations.updateChildren(_bestPath, newLink, oldLink);
                 Operations.updateBestPath(_bestPath, newLink);
 
                 if (parentLink.isExpired()) {
-                    Operations.updateChildren(_bestPath,
-                            parentLink.get_node().get_link().get(), parentLink, radius, _threadCount);
+                    Operations.updateChildren(_bestPath, parentLink.get_node().get_link().get(), parentLink);
                 }
 
                 // Setting newLink expires oldLink but doesn not remove
@@ -157,17 +145,10 @@ public class Operations {
                 // We do it after the expired parent check since the parent
                 // will likely have already cleaned this up, and this call
                 // will be O(1) instead of O(n)
-                if (!oldLink.get_parent().removeChild(oldLink)) {
-                    if (_threadCount == 1) {
-                        _log.log(Level.WARNING, "concurrent update running with 1 thread");
-                    }
-                }
+                oldLink.get_parent().removeChild(oldLink);
                 return;
             }
-            if (_threadCount == 1) {
-                _log.log(Level.WARNING, "concurrent update running with 1 thread");
-            }
-            
+
             Link updatedOldLink = node.get_link().get();
 
             if (updatedOldLink == oldLink) {

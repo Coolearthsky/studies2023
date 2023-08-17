@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -20,9 +19,6 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
 
 class Worker implements Runnable {
     private final KDModel _kdModel;
-    private final int _dimensions;
-    private final int _workerNo;
-    private final int _threadCount;
     private final KDTraversal<Node> _kdTraversal;
     private final RobotModel _robotModel;
     private final double[] _sampleMin;
@@ -32,7 +28,6 @@ class Worker implements Runnable {
     private final long _timeLimit;
     private final long _startTime;
     private final int _sampleLimit;
-    private final CountDownLatch _doneLatch;
     private final AtomicInteger _stepNo;
     private final AtomicReference<Link> _bestPath;
     private final AtomicBoolean _done;
@@ -42,12 +37,9 @@ class Worker implements Runnable {
             KDTraversal<Node> kdTraversal,
             RobotModel robotModel,
             double gamma,
-            int workerNo,
-            int threadCount,
             long timeLimit,
             long startTime,
             int sampleLimit,
-            CountDownLatch doneLatch,
             AtomicInteger stepNo,
             AtomicReference<Link> bestPath,
             AtomicBoolean done) {
@@ -55,16 +47,12 @@ class Worker implements Runnable {
         _kdTraversal = kdTraversal;
         _robotModel = robotModel;
         _gamma = gamma;
-        _dimensions = _kdModel.dimensions();
-        _workerNo = workerNo;
-        _threadCount = threadCount;
         _timeLimit = timeLimit;
         _startTime = startTime;
         _sampleLimit = sampleLimit;
-        _random = new MersenneTwister(workerNo);
+        _random = new MersenneTwister();
         _sampleMin = new double[_kdModel.dimensions()];
         _sampleMax = new double[_kdModel.dimensions()];
-        _doneLatch = doneLatch;
         _stepNo = stepNo;
         _bestPath = bestPath;
         _done = done;
@@ -76,7 +64,7 @@ class Worker implements Runnable {
      * @param config OUTVAR result
      */
     private void randomize(double[] config) {
-        for (int i = _dimensions; --i >= 0;) {
+        for (int i = _kdModel.dimensions(); --i >= 0;) {
             config[i] = _random.nextDouble() * (_sampleMax[i] - _sampleMin[i])
                     + _sampleMin[i];
         }
@@ -95,7 +83,7 @@ class Worker implements Runnable {
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _dimensions);
+                1.0 / _kdModel.dimensions());
 
         List<NearNode> nearNodes = new ArrayList<>();
         _kdTraversal.near(newConfig, radius, (v, d) -> {
@@ -186,7 +174,7 @@ class Worker implements Runnable {
             ListIterator<NearNode> li = nearNodes.listIterator(nearNodes.size());
             while (li.hasPrevious()) {
                 NearNode jn = li.previous();
-                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode, radius, _threadCount);
+                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
             }
 
             return true;
@@ -199,9 +187,7 @@ class Worker implements Runnable {
     }
 
     private void generateSamples() {
-        // only have 1 worker check the time limit
-        final boolean checkTimeLimit = (_workerNo == 0) && (_timeLimit > 0);
-        double[] newConfig = new double[_dimensions];
+        double[] newConfig = new double[_kdModel.dimensions()];
         int stepNo = _stepNo.get();
 
         while (!_done.get()) {
@@ -211,14 +197,14 @@ class Worker implements Runnable {
                     _done.set(true);
                 }
                 // sample was added, create a new one
-                newConfig = new double[_dimensions];
+                newConfig = new double[_kdModel.dimensions()];
             } else {
                 // failed add a sample, refresh the step no
                 // and try again
                 stepNo = _stepNo.get();
             }
 
-            if (checkTimeLimit) {
+            if (_timeLimit > 0) {
                 long now = System.nanoTime();
                 if (now - _startTime > _timeLimit) {
                     _done.set(true);
@@ -228,11 +214,7 @@ class Worker implements Runnable {
     }
 
     public void run() {
-        try {
-            _kdModel.getBounds(_sampleMin, _sampleMax);
-            generateSamples();
-        } finally {
-            _doneLatch.countDown();
-        }
+        _kdModel.getBounds(_sampleMin, _sampleMax);
+        generateSamples();
     }
 }

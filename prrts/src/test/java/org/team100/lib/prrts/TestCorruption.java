@@ -13,12 +13,12 @@ public class TestCorruption {
             final HolonomicArena arena = new HolonomicArena();
             double[] init = { 7.0, 1.0 };
 
-            final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 2);
+            final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
             Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-            rrtStar.runForDurationMS(20);
+            rrtStar.runForDurationMS(2, 6.0, 20);
         }
 
     }
