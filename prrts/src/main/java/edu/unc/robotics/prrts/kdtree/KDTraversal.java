@@ -1,5 +1,7 @@
 package edu.unc.robotics.prrts.kdtree;
 
+import java.util.function.BiConsumer;
+
 /**
  * KDTraversal
  *
@@ -12,5 +14,5 @@ public interface KDTraversal<V> {
 
     V nearest(double[] target);
 
-    int near(double[] target, double radius, KDNearCallback<V> callback);
+    void near(double[] target, double radius, BiConsumer<V, Double> consumer);
 }

@@ -1,11 +1,14 @@
 package edu.unc.robotics.prrts.kdtree;
 
+import java.util.function.BiConsumer;
+
+/** This is like a thread-local view of the tree. */
 class Traversal<V> implements KDTraversal<V> {
     private final KDModel _model;
     private final KDNode<V> _root;
     private final int _dimensions;
-    private final double[] _min;
-    private final double[] _max;
+    final double[] _min;
+    final double[] _max;
     // updated by nearest()
     private double _dist;
     private V _nearest;
@@ -68,6 +71,11 @@ class Traversal<V> implements KDTraversal<V> {
         return _nearest;
     }
 
+    /**
+     * returns when it's done digging; it leaves the answers in _nearest and _dist.
+     * yuck.
+     * TODO: recast as immutable
+     */
     private void nearest(KDNode<V> n, double[] target, int depth) {
         final int axis = depth % _dimensions;
         final double d = _model.dist(n.getConfig(), target);
@@ -123,15 +131,15 @@ class Traversal<V> implements KDTraversal<V> {
     }
 
     @Override
-    public int near(double[] target, double radius, KDNearCallback<V> callback) {
+    public void near(double[] target, double radius, BiConsumer<V, Double> consumer) {
         _model.getBounds(_min, _max);
-        return near(_root, target, radius, callback, 0, 0);
+        near(consumer, _root, target, radius, 0);
     }
 
-    private int near(KDNode<V> n, double[] target, double radius, KDNearCallback<V> callback, int count, int depth) {
+    private void near(BiConsumer<V, Double> consumer, KDNode<V> n, double[] target, double radius, int depth) {
         final double d = _model.dist(n.getConfig(), target);
         if (d < radius) {
-            callback.kdNear(target, count++, n.getConfig(), n.getValue(), d);
+            consumer.accept(n.getValue(), d);
         }
         final int axis = depth % _dimensions;
         final double mp = (_min[axis] + _max[axis]) / 2;
@@ -143,7 +151,7 @@ class Traversal<V> implements KDTraversal<V> {
             // in or near a-side
             double tmp = _max[axis];
             _max[axis] = mp;
-            count = near(a, target, radius, callback, count, depth + 1);
+            near(consumer, a, target, radius, depth + 1);
             _max[axis] = tmp;
         }
 
@@ -153,10 +161,8 @@ class Traversal<V> implements KDTraversal<V> {
             // in or near b-side
             double tmp = _min[axis];
             _min[axis] = mp;
-            count = near(b, target, radius, callback, count, depth + 1);
+            near(consumer, b, target, radius, depth + 1);
             _min[axis] = tmp;
         }
-
-        return count;
     }
 }

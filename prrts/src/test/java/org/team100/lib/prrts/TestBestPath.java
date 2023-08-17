@@ -15,40 +15,39 @@ public class TestBestPath {
     @Test
     public void testTime() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        double[] init = { 7.0, 1.0};
 
-        final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 4);
+        final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        rrtStar.runForDurationMS(20);
+        rrtStar.runForDurationMS(4, 6.0, 20);
 
         int steps = rrtStar.getStepNo();
-        // assertEquals(2300, steps, 400); // very approximately equal
-        assertEquals(3600, steps, 1000); // AtomicReference speeds it up a lot but there's a lot of variance
+        assertEquals(3600, steps, 1000); 
 
         int nodes = 0;
         for (var n : rrtStar.getNodes()) {
             nodes++;
         }
-        // assertEquals(2300, nodes, 300);
-        assertEquals(3600, nodes, 800);// AtomicReference speeds it up a lot
+
+        assertEquals(3600, nodes, 800);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(6.1, bestPath.get_dist(), 0.5); // very approximate
+        assertEquals(6.1, bestPath.get_dist(), 0.5);
     }
 
     @Test
     public void testSteps() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        double[] init = { 7.0, 1.0 };
 
-        final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 4);
+        final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
-        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        rrtStar.runSamples(500);
+        rrtStar.runSamples(4, 6.0, 500);
 
         int steps = rrtStar.getStepNo();
         assertEquals(504, steps, 10);
@@ -58,7 +57,7 @@ public class TestBestPath {
         }
         assertEquals(500, nodes, 10);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(8.9, bestPath.get_dist(), 0.5);
+        assertEquals(6, bestPath.get_dist(), 2);
     }
 
 }

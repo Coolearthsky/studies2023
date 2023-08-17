@@ -24,7 +24,8 @@ public interface RobotModel {
      */
     boolean clear(double[] config);
 
-    /** Checks if a link from config a to b is feasible
+    /**
+     * Checks if a link from config a to b is feasible
      * 
      * @return true if the link is feasible
      */

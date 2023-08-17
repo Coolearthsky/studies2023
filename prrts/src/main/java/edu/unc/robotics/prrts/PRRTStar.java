@@ -3,8 +3,6 @@ package edu.unc.robotics.prrts;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,36 +21,24 @@ import edu.unc.robotics.prrts.tree.Node;
  */
 public class PRRTStar {
     private static final Logger _log = Logger.getLogger(PRRTStar.class.getName());
-    
+
     private final KDModel _kdModel;
     private final RobotModel _robotModel;
-    private final double _gamma; // step size
     private final KDTree<Node> _kdTree;
-    private final AtomicInteger _stepNo = new AtomicInteger(0);
-    private final AtomicBoolean _done = new AtomicBoolean(false);
-    private final CountDownLatch _doneLatch;
-    private final int _threadCount;
-    private final AtomicReference<Link> _bestPath = new AtomicReference<Link>();
+    private final AtomicInteger _stepNo;
+    private final AtomicBoolean _done;
+    private final AtomicReference<Link> _bestPath;
 
     public PRRTStar(
             KDModel kdModel,
             RobotModel robotModel,
-            double[] init,
-            double gamma,
-            int threadCount) {
-        if (gamma < 1.0) {
-            throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
-        }
-        if (threadCount < 1) {
-            throw new IllegalArgumentException("thread count must be >= 1");
-        }
+            double[] init) {
         _kdModel = kdModel;
         _robotModel = robotModel;
         _kdTree = new KDTree<Node>(kdModel, init, new Node(init, false));
-        _gamma = gamma;
-        _threadCount = threadCount;
-        _doneLatch = new CountDownLatch(_threadCount);
-
+        _stepNo = new AtomicInteger(0);
+        _done = new AtomicBoolean(false);
+        _bestPath = new AtomicReference<Link>();
     }
 
     /**
@@ -84,23 +70,31 @@ public class PRRTStar {
         }
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = link.get_pathDist();
-        for (; link != null; link = link.get_parent()) {
-            configs.add(link.get_node().get_config());
+
+        Node node = link.get_node();
+        while (node != null) {
+            configs.add(node.get_config());
+            node = node.get_parent_node();
         }
         Collections.reverse(configs);
         return new Path(pathDist, configs);
     }
 
-    public Path runForDurationMS(long milliseconds) {
-        return run(Integer.MAX_VALUE, milliseconds);
+    public Path runForDurationMS(int threadCount, double gamma, long milliseconds) {
+        return run(threadCount, gamma, Integer.MAX_VALUE, milliseconds);
     }
 
-    public Path runSamples(int samples) {
-        return run(samples, 0);
+    public Path runSamples(int threadCount, double gamma, int samples) {
+        return run(threadCount, gamma, samples, 0);
     }
 
-    private Path run(int sampleLimit, long timeLimitMS) {
-
+    private Path run(int threadCount, double gamma, int sampleLimit, long timeLimitMS) {
+        if (threadCount < 1) {
+            throw new IllegalArgumentException("thread count must be >= 1");
+        }
+        if (gamma < 1.0) {
+            throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
+        }
         if (timeLimitMS < 0) {
             throw new IllegalArgumentException("invalid duration, must be >= 0");
         }
@@ -108,42 +102,34 @@ public class PRRTStar {
 
         long startTime = System.nanoTime();
 
-        Worker[] workers = new Worker[_threadCount];
-        for (int i = 0; i < _threadCount; ++i) {
+        Worker[] workers = new Worker[threadCount];
+        for (int i = 0; i < threadCount; ++i) {
             workers[i] = new Worker(
                     _kdModel,
                     _kdTree.newTraversal(),
                     _robotModel,
-                    _gamma, i,
-                    _threadCount,
+                    gamma,
                     timeLimitNS,
                     startTime,
                     sampleLimit,
-                    _doneLatch,
                     _stepNo,
                     _bestPath,
                     _done);
         }
 
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
-        Thread[] threads = new Thread[_threadCount];
-        for (int i = 1; i < _threadCount; ++i) {
+        Thread[] threads = new Thread[threadCount];
+        for (int i = 1; i < threadCount; ++i) {
             threads[i] = new Thread(threadGroup, workers[i]);
             threads[i].start();
         }
 
-        // worker 0 runs on the calling thread (thus if only 1 thread is
-        // specified, no additional threads are created)
+        // worker 0 runs on the calling thread
         workers[0].run();
 
-        // We could join all worker threads here, but a latch will allow
-        // the calling thread to continue sooner.
         try {
-            if (!_doneLatch.await(1, TimeUnit.SECONDS)) {
-                _log.warning("waiting too long for workers, trying to join");
-                for (int i = 1; i < _threadCount; ++i) {
-                    threads[i].join();
-                }
+            for (int i = 1; i < threadCount; ++i) {
+                threads[i].join();
             }
         } catch (InterruptedException e) {
             _log.log(Level.WARNING, "Interrupted", e);
@@ -151,5 +137,4 @@ public class PRRTStar {
 
         return getBestPath();
     }
-
 }

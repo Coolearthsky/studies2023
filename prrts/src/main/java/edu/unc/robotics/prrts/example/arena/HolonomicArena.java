@@ -18,9 +18,9 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double GOAL_RADIUS = 0.4;
     private static final int DIMENSIONS = 2;
 
-    double[] _goal = { 1.93, 2.748 };
-    double[] _min = { 0, 0 };
-    double[] _max = { 16, 8 };
+    private static final double[] _goal = { 1.93, 2.748 };
+    private static final double[] _min = { 0, 0 };
+    private static final double[] _max = { 16, 8 };
 
     Obstacle[] _obstacles = new Obstacle[] {
             // see studies2023/glc
@@ -28,6 +28,14 @@ public class HolonomicArena implements RobotModel, KDModel {
             new Polygon(Color.RED, 0, 0, 1.43, 0, 1.43, 5.49, 0, 5.49),
             // community
             new Polygon(Color.BLUE, 13.18, 0, 16, 0, 16, 5.49, 13.18, 5.49),
+            // opponents
+            new Polygon(Color.BLUE, 8, 4, 9, 4, 9, 5, 8, 5),
+            new Polygon(Color.BLUE, 10, 5, 11, 5, 11, 6, 10, 6),
+            new Polygon(Color.BLUE, 9, 6, 10, 6, 10, 7, 9, 7),
+            // alliance-mate
+            new Polygon(Color.RED, 6, 5, 7, 5, 7, 6, 6, 6),
+            new Polygon(Color.RED, 4, 5, 5, 5, 5, 6, 4, 6),
+
             // loading
             new Polygon(Color.BLUE, 0, 8, 3.36, 8, 3.36, 5.49, 0, 5.49),
             // charge stations

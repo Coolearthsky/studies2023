@@ -113,4 +113,9 @@ public class Path implements Comparable<Path> {
     public List<double[]> get_configs() {
         return _configs;
     }
+
+    @Override
+    public String toString() {
+        return "Path [_dist=" + String.format("%8.5f", _dist) + ", _configs=" + _configs + "]";
+    }
 }
