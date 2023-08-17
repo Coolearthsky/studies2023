@@ -32,7 +32,7 @@ import edu.wpi.first.math.DARE;
  * 
  * let's say g = l.
  * 
- * A = [ 0 1, -cos x1 0]
+ * A = [ 0 1, -sin x1 0]
  * B = [0, 1]
  * 
  * note since this uses wpimathjni you have to run it in some way that knows
@@ -69,9 +69,11 @@ public class PendulumArena implements RobotModel, KDModel {
     Matrix<N2, N1> B = VecBuilder.fill(0, 1);
 
     double h = 0.1; // TODO: this is surely wrong. what time interval to use?
+    private final double _g;
 
-    public PendulumArena(double[] goal) {
+    public PendulumArena(double[] goal, double gravity) {
         _goal = goal;
+        _g=  gravity;
         // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
 
         // System.out.println("==============");
@@ -83,8 +85,10 @@ public class PendulumArena implements RobotModel, KDModel {
     /**
      * use the WPI LQR lib to calculate S.
      */
-    Matrix<N2, N2> getS(double[] x) {
-        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -10 * Math.cos(x[0]), 0);
+    public Matrix<N2, N2> getS(double[] x) {
+        // try without gravity first
+       // Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -_g * Math.sin(x[0]), 0);
+        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, 0, 0);
         Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
         Matrix<N2, N2> discA = discABPair.getFirst();
         Matrix<N2, N1> discB = discABPair.getSecond();
@@ -92,8 +96,8 @@ public class PendulumArena implements RobotModel, KDModel {
     }
 
     // TODO: speed this up
-    Matrix<N1, N2> getK(double[] x) {
-        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -1 * Math.cos(x[0]), 0);
+    public Matrix<N1, N2> getK(double[] x) {
+        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -1 * Math.sin(x[0]), 0);
         Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
         Matrix<N2, N2> discA = discABPair.getFirst();
         Matrix<N2, N1> discB = discABPair.getSecond();
@@ -142,9 +146,9 @@ public class PendulumArena implements RobotModel, KDModel {
         Matrix<N2, N1> dx = x_near.minus(x_rand);
         Matrix<N1, N2> K = getK(newConfig);
         double u = K.times(-1).times(dx).get(0, 0);
-        Matrix<N2, N1> xdot = VecBuilder.fill(nearConfig[1], (5*u - Math.sin(nearConfig[0])));
+        Matrix<N2, N1> xdot = VecBuilder.fill(nearConfig[1], (5 * u - Math.sin(nearConfig[0])));
         Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-      //  System.out.println(x_new);
+        // System.out.println(x_new);
         newConfig[0] = x_new.get(0, 0);
         newConfig[1] = x_new.get(1, 0);
     }

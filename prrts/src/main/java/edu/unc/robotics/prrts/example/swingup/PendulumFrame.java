@@ -21,7 +21,7 @@ public class PendulumFrame extends JFrame {
 
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 });
+        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 }, 10);
         double[] init = { 0,0};
 
         // 2 threads works better than 4
