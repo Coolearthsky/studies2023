@@ -54,15 +54,10 @@ public class TestTrees {
 
         List<String> nearList = new ArrayList<String>();
         List<Double> distList = new ArrayList<Double>();
-        int ctr = trav.near(new double[] { 0.25, 0.25 }, 0.5, new KDNearCallback<String>() {
-
-            @Override
-            public void kdNear(double[] target, int index, double[] config, String value, double dist) {
+        trav.near(new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
                 nearList.add(value);
                 distList.add(dist);
-            }
         });
-        assertEquals(3, ctr);
         assertEquals(3, nearList.size());
         assertEquals("root", nearList.get(0));
         assertEquals("child1", nearList.get(1));
@@ -85,15 +80,10 @@ public class TestTrees {
         List<String> nearList = new ArrayList<String>();
         List<Double> distList = new ArrayList<Double>();
         // small radius
-        int ctr = trav.near(new double[] { 0.25, 0.25 }, 0.1, new KDNearCallback<String>() {
-
-            @Override
-            public void kdNear(double[] target, int index, double[] config, String value, double dist) {
+        trav.near(new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
                 nearList.add(value);
                 distList.add(dist);
-            }
         });
-        assertEquals(0, ctr);
         assertEquals(0, nearList.size());
 
         String nearest = trav.nearest(new double[] { 0.25, 0.25 });
@@ -120,15 +110,10 @@ public class TestTrees {
         List<String> nearList = new ArrayList<String>();
         List<Double> distList = new ArrayList<Double>();
         // small radius
-        int ctr = trav1.near(new double[] { 0.25, 0.25 }, 0.1, new KDNearCallback<String>() {
-
-            @Override
-            public void kdNear(double[] target, int index, double[] config, String value, double dist) {
+        trav1.near(new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
                 nearList.add(value);
                 distList.add(dist);
-            }
         });
-        assertEquals(0, ctr);
         assertEquals(0, nearList.size());
 
         String nearest = trav1.nearest(new double[] { 0.25, 0.25 });
@@ -155,15 +140,10 @@ public class TestTrees {
         List<String> nearList = new ArrayList<String>();
         List<Double> distList = new ArrayList<Double>();
         // now it should find it
-        int ctr = trav1.near(new double[] { 0.25, 0.25 }, 0.26, new KDNearCallback<String>() {
-
-            @Override
-            public void kdNear(double[] target, int index, double[] config, String value, double dist) {
+        trav1.near(new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
                 nearList.add(value);
                 distList.add(dist);
-            }
         });
-        assertEquals(1, ctr);
         assertEquals(1, nearList.size());
         assertEquals("child3", nearList.get(0));
         assertEquals(0.25, distList.get(0), 0.001);
@@ -189,15 +169,10 @@ public class TestTrees {
         List<String> nearList = new ArrayList<String>();
         List<Double> distList = new ArrayList<Double>();
         // now it should find it
-        int ctr = trav1.near(new double[] { 0.25, 0.25 }, 0.26, new KDNearCallback<String>() {
-
-            @Override
-            public void kdNear(double[] target, int index, double[] config, String value, double dist) {
+        trav1.near(new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
                 nearList.add(value);
                 distList.add(dist);
-            }
         });
-        assertEquals(0, ctr);
         assertEquals(0, nearList.size());
 
         // do the insert *after* it would have been found...

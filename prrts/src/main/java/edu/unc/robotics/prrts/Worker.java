@@ -1,6 +1,10 @@
 package edu.unc.robotics.prrts;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -8,16 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
-import edu.unc.robotics.prrts.kdtree.KDNearCallback;
 import edu.unc.robotics.prrts.kdtree.KDTraversal;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
 import edu.unc.robotics.prrts.util.MersenneTwister;
 
-class Worker implements Runnable, KDNearCallback<Node> {
-    private static final int INITIAL_NEAR_LIST_CAPACITY = 1024;
-
+class Worker implements Runnable {
     private final KDModel _kdModel;
     private final int _dimensions;
     private final int _workerNo;
@@ -35,8 +36,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
     private final AtomicInteger _stepNo;
     private final AtomicReference<Link> _bestPath;
     private final AtomicBoolean _done;
-
-    private NearNode[] _nearList = new NearNode[INITIAL_NEAR_LIST_CAPACITY];
 
     public Worker(
             KDModel kdModel,
@@ -72,36 +71,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
     }
 
     /**
-     * Callback handler for calls to kdNear. This method adds near nodes
-     * to the worker's nearList.
-     *
-     * @param target
-     * @param index
-     * @param config this does nothing
-     * @param value
-     * @param dist
-     */
-    @Override
-    public void kdNear(double[] target, int index, double[] config, Node value, double dist) {
-        if (index == _nearList.length) {
-            _nearList = Arrays.copyOf(_nearList, index * 2);
-        }
-
-        _nearList[index] = new NearNode(value.get_link().get(), dist);
-        // _nearList[index] = new NearNode(value, dist);
-
-        // NearNode n = _nearList[index];
-
-        // if (n == null) {
-        // _nearList[index] = n = new NearNode();
-        // }
-
-        // n.link = value.get_link().get();
-        // n.linkDist = dist;
-        // n._pathDist = n.link.get_pathDist() + dist;
-    }
-
-    /**
      * write random doubles into config
      * 
      * @param config OUTVAR result
@@ -128,10 +97,12 @@ class Worker implements Runnable, KDNearCallback<Node> {
                 Math.log(stepNo + 1) / (stepNo + 1),
                 1.0 / _dimensions);
 
-        int nearCount = _kdTraversal.near(newConfig, radius, this);
+        List<NearNode> nearNodes = new ArrayList<>();
+        _kdTraversal.near(newConfig, radius, (v, d) -> {
+            nearNodes.add(new NearNode(v.get_link().get(), d));
+        });
 
-        if (nearCount == 0) {
-            // near() found nothing nearby
+        if (nearNodes.isEmpty()) {
 
             Node nearest = _kdTraversal.nearest(newConfig);
             double distToNearest = _kdTraversal.distToLastNearest();
@@ -173,14 +144,15 @@ class Worker implements Runnable, KDNearCallback<Node> {
         // configuration that can link. We know that anything after it
         // in the array will be further away, and thus potentially save
         // a lot of calls to the (usually) expensive link() method.
-        Arrays.sort(_nearList, 0, nearCount);
+        Collections.sort(nearNodes);
 
-        for (int i = 0; i < nearCount; ++i) {
-            Link link = _nearList[i].link;
+        Iterator<NearNode> ni = nearNodes.iterator();
+        while (ni.hasNext()) {
+            NearNode nn = ni.next();
+            ni.remove();
+            Link link = nn.link;
 
             if (!_robotModel.link(link.get_node().get_config(), newConfig)) {
-                // help GC
-                // _nearList[i].link = null;
                 continue;
             }
 
@@ -190,7 +162,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
             Node newNode = new Node(
                     newConfig,
                     _robotModel.goal(newConfig),
-                    _nearList[i].linkDist,
+                    nn.linkDist,
                     link);
 
             Operations.updateBestPath(_bestPath, newNode.get_link().get());
@@ -201,9 +173,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
 
             _kdTraversal.insert(newConfig, newNode);
 
-            // help GC
-            // _nearList[i].link = null;
-
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node
             // if doing so is feasible and would shorten their path
@@ -213,12 +182,11 @@ class Worker implements Runnable, KDNearCallback<Node> {
             // If we went from nearest to farthest, the far nodes might
             // rewire through the near nodes, then through the newly added
             // node.
-            for (int j = nearCount; --j > i;) {
-                Operations.rewire(_bestPath, _robotModel, _nearList[j].link, _nearList[j].linkDist, newNode, radius,
-                        _threadCount);
 
-                // help GC
-                // _nearList[j].link = null;
+            ListIterator<NearNode> li = nearNodes.listIterator(nearNodes.size());
+            while (li.hasPrevious()) {
+                NearNode jn = li.previous();
+                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode, radius, _threadCount);
             }
 
             return true;
