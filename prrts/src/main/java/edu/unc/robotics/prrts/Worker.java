@@ -71,131 +71,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
         _done = done;
     }
 
-    void updateBestPath(Link link, double radius) {
-        Link currentBestPath;
-        double distToGoal;
-        Node node = link.get_node();
-
-        if (node.is_inGoal()) {
-            distToGoal = link.get_pathDist();
-        } else {
-            return;
-        }
-
-        do {
-            currentBestPath = _bestPath.get();
-
-            if (currentBestPath != null) {
-                double bestDist = currentBestPath.get_pathDist();
-                if (distToGoal >= bestDist) {
-                    return;
-                }
-            }
-        } while (!_bestPath.compareAndSet(currentBestPath, link));
-    }
-
-    private void updateChildren(Link newParent, Link oldParent, double radius) {
-        assert newParent.get_node() == oldParent.get_node() : "updating links of different nodes";
-        assert oldParent.isExpired() : "updating non-expired link";
-        assert newParent.get_pathDist() <= oldParent.get_pathDist() : "updating to longer path";
-
-        for (;;) {
-            Link oldChild = oldParent.removeFirstChild();
-
-            if (oldChild == null) {
-                // done.
-
-                if (newParent.isExpired()) {
-                    oldParent = newParent;
-                    newParent = oldParent.get_node().get_link().get();
-                    continue;
-                }
-
-                return;
-            }
-
-            if (oldChild.isExpired()) {
-                assert _threadCount > 1;
-                continue;
-            }
-
-            Node node = oldChild.get_node();
-
-            if (node.get_link().get().get_parent().get_node() != oldParent.get_node()) {
-                continue;
-            }
-
-            Link newChild = node.setLink(oldChild, oldChild.get_linkDist(), newParent);
-
-            if (newChild != null) {
-                updateChildren(newChild, oldChild, radius);
-                updateBestPath(newChild, radius);
-            } else {
-                assert _threadCount > 1;
-                assert node.get_link().get() != oldChild;
-            }
-        }
-    }
-
-    private void rewire(Link oldLink, double linkDist, Node newParent, double radius) {
-        assert oldLink.get_parent() != null;
-        assert oldLink.get_parent().get_node() != newParent;
-
-        Node node = oldLink.get_node();
-
-        Link parentLink = newParent.get_link().get();
-
-        double pathDist = parentLink.get_pathDist() + linkDist;
-
-        // check if rewiring would create a shorter path
-        if (pathDist >= oldLink.get_pathDist()) {
-            return;
-        }
-
-        // check if rewiring is possible
-        if (!_robotModel.link(oldLink.get_node().get_config(), newParent.get_config())) {
-            return;
-        }
-
-        // rewire the node. this loop continues to attempt atomic
-        // updates until either the update succeeds or the pathDist
-        // of the oldLink is found to be better than what we're trying
-        // to put in
-        do {
-
-            Link newLink = node.setLink(oldLink, linkDist, parentLink);
-
-            if (newLink != null) {
-                updateChildren(newLink, oldLink, radius);
-                updateBestPath(newLink, radius);
-
-                if (parentLink.isExpired()) {
-                    updateChildren(parentLink.get_node().get_link().get(), parentLink, radius);
-                }
-
-                // Setting newLink expires oldLink but doesn not remove
-                // it from its parent. Here we do a little cleanup.
-                // We do it after the expired parent check since the parent
-                // will likely have already cleaned this up, and this call
-                // will be O(1) instead of O(n)
-                if (!oldLink.get_parent().removeChild(oldLink)) {
-                    assert _threadCount > 1 : "concurrent update running with 1 thread";
-                }
-
-                return;
-            }
-
-            assert _threadCount > 1 : "concurrent update running with 1 thread";
-
-            Link updatedOldLink = node.get_link().get();
-
-            assert updatedOldLink != oldLink;
-
-            oldLink = updatedOldLink;
-
-        } while (pathDist < oldLink.get_pathDist());
-    }
-
     /**
      * Callback handler for calls to kdNear. This method adds near nodes
      * to the worker's nearList.
@@ -212,15 +87,18 @@ class Worker implements Runnable, KDNearCallback<Node> {
             _nearList = Arrays.copyOf(_nearList, index * 2);
         }
 
-        NearNode n = _nearList[index];
+        _nearList[index] = new NearNode(value.get_link().get(), dist);
+        // _nearList[index] = new NearNode(value, dist);
 
-        if (n == null) {
-            _nearList[index] = n = new NearNode();
-        }
+        // NearNode n = _nearList[index];
 
-        n.link = value.get_link().get();
-        n.linkDist = dist;
-        n._pathDist = n.link.get_pathDist() + dist;
+        // if (n == null) {
+        // _nearList[index] = n = new NearNode();
+        // }
+
+        // n.link = value.get_link().get();
+        // n.linkDist = dist;
+        // n._pathDist = n.link.get_pathDist() + dist;
     }
 
     /**
@@ -255,8 +133,6 @@ class Worker implements Runnable, KDNearCallback<Node> {
         if (nearCount == 0) {
             // near() found nothing nearby
 
-            // sometimes the "nearest" node was added between near() and nearest().
-            // there used to be an assert to exclude that case, which was wrong.
             Node nearest = _kdTraversal.nearest(newConfig);
             double distToNearest = _kdTraversal.distToLastNearest();
 
@@ -286,7 +162,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
                     distToNearest,
                     nearest.get_link().get());
 
-            updateBestPath(newNode.get_link().get(), radius);
+            Operations.updateBestPath(_bestPath, newNode.get_link().get());
 
             _kdTraversal.insert(newConfig, newNode);
             return true;
@@ -304,7 +180,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
 
             if (!_robotModel.link(link.get_node().get_config(), newConfig)) {
                 // help GC
-                _nearList[i].link = null;
+                // _nearList[i].link = null;
                 continue;
             }
 
@@ -317,7 +193,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
                     _nearList[i].linkDist,
                     link);
 
-            updateBestPath(newNode.get_link().get(), radius);
+            Operations.updateBestPath(_bestPath, newNode.get_link().get());
 
             // Put the node in the KD-Tree. After insertion,
             // other threads will "see" the new node and may start
@@ -326,7 +202,7 @@ class Worker implements Runnable, KDNearCallback<Node> {
             _kdTraversal.insert(newConfig, newNode);
 
             // help GC
-            _nearList[i].link = null;
+            // _nearList[i].link = null;
 
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node
@@ -338,10 +214,11 @@ class Worker implements Runnable, KDNearCallback<Node> {
             // rewire through the near nodes, then through the newly added
             // node.
             for (int j = nearCount; --j > i;) {
-                rewire(_nearList[j].link, _nearList[j].linkDist, newNode, radius);
+                Operations.rewire(_bestPath, _robotModel, _nearList[j].link, _nearList[j].linkDist, newNode, radius,
+                        _threadCount);
 
                 // help GC
-                _nearList[j].link = null;
+                // _nearList[j].link = null;
             }
 
             return true;

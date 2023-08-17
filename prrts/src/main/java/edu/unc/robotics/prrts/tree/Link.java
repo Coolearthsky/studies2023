@@ -1,12 +1,25 @@
 package edu.unc.robotics.prrts.tree;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import edu.unc.robotics.prrts.Path;
 
 /**
  * A doubly-connected directed graph which also has a linked list of siblings.
  */
 public class Link {
-    /** head of this link */
+    private static final Logger _log = Logger.getLogger(Link.class.getName());
+
+    /**
+     * head of this link
+     * 
+     * @Nonnull
+     */
     private final Node _node;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
@@ -16,11 +29,21 @@ public class Link {
      * tail of this link
      * it's weird that this is another link instead of a node. maybe that's some
      * sort of infinitesimal speedup?
+     * 
+     * @Nullable for root
      */
     private final Link _parent;
-    /** link to a node that this node is the parent of, if any */
+    /**
+     * link to a node that this node is the parent of, if any
+     * 
+     * @Nullable
+     */
     final AtomicReference<Link> _firstChild;
-    /** link to a node with the same parent as this node */
+    /**
+     * link to a node with the same parent as this node
+     * 
+     * @Nullable
+     */
     final AtomicReference<Link> _nextSibling;
 
     public Link(Node root) {
@@ -38,6 +61,7 @@ public class Link {
         this(node, linkDist, parent._pathDist + linkDist, parent);
     }
 
+    /** make the child the first child, make the current first child into the sibling. */
     public void addChild(Link child) {
         Link expected = null;
         Link nextSibling;
@@ -46,7 +70,8 @@ public class Link {
             nextSibling = _firstChild.get();
 
             if (!child._nextSibling.compareAndSet(expected, nextSibling)) {
-                assert false : "nextSibling initialized to unexpected value";
+                _log.log(Level.WARNING, "nextSibling initialized to unexpected value");
+                // return;
             }
 
             expected = nextSibling;
@@ -66,24 +91,32 @@ public class Link {
             if (child == null) {
                 return null;
             }
-
             sibling = child._nextSibling.get();
         } while (!_firstChild.compareAndSet(child, sibling));
 
-        if (!child._nextSibling.compareAndSet(sibling, null)) {
-            assert false : "sibling changed after removal";
+        Link witness = child._nextSibling.compareAndExchange(sibling, null);
+        if (witness != null && witness != sibling) {
+            // this doesn't seem to hurt anything
+            _log.log(Level.WARNING, "child removal conflict, pressing on");
         }
 
         return child;
     }
 
+    /** @return true if success */
     public boolean removeChild(final Link child) {
+        if (!child.isExpired()) {
+            _log.log(Level.WARNING, "attempted to remove unexpired child");
+            return false;
+        }
+        if (child._parent != this) {
+            _log.log(Level.WARNING, "attempted to remove child not ours");
+            return false;
+        }
+
         Link sibling;
         Link n;
         Link p;
-
-        assert child.isExpired() : "removing unexpired child";
-        assert child._parent == this : "not child's parent";
 
         outer: for (;;) {
             n = _firstChild.get();
@@ -132,6 +165,19 @@ public class Link {
         return true;
     }
 
+    public Path path() {
+        Node node = get_node();
+        List<double[]> configs = new LinkedList<double[]>();
+        double pathDist = get_pathDist();
+        while (node != null) {
+            configs.add(node.get_config());
+            node = node.get_parent_node();
+        }
+        Collections.reverse(configs);
+        return new Path(pathDist, configs);
+    }
+
+    /** Head of this link */
     public Node get_node() {
         return _node;
     }
@@ -144,17 +190,33 @@ public class Link {
         return _pathDist;
     }
 
+    /** This is only used for removing child nodes */
     public Link get_parent() {
         return _parent;
     }
 
+    public Node get_parent_node() {
+        if (_parent == null)
+            return null;
+        return _parent.get_node();
+    }
+
     //////////////////////////////////////////////////////////////////
 
-    /** @param node tail of this link */
+    /**
+     * @param node   tail of this link
+     * @param parent root has a null parent
+     */
     private Link(Node node,
             double linkDist,
             double pathDist,
             Link parent) {
+        if (node == null)
+            throw new IllegalArgumentException();
+        if (linkDist < 0)
+            throw new IllegalArgumentException();
+        if (pathDist < 0)
+            throw new IllegalArgumentException();
         _node = node;
         _linkDist = linkDist;
         _pathDist = pathDist;

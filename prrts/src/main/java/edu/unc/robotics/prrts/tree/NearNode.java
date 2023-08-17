@@ -1,9 +1,15 @@
 package edu.unc.robotics.prrts.tree;
 
 public class NearNode implements Comparable<NearNode> {
-    public Link link;
-    public double linkDist;
-    public double _pathDist;
+    public final Link link;
+    public final double linkDist;
+    public final double _pathDist;
+
+    public NearNode(Link link, double linkDist) {
+        this.link = link;
+        this.linkDist = linkDist;
+        this._pathDist = link.get_pathDist() + linkDist;
+    }
 
     @Override
     public int compareTo(NearNode o) {

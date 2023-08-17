@@ -9,7 +9,8 @@ final class KDNode<V> {
     private final AtomicReference<KDNode<V>> b;
 
     KDNode(double[] c, V v) {
-        assert c != null && v != null;
+        if (c == null) throw new IllegalArgumentException("null config");
+        if (v == null) throw new IllegalArgumentException("null value");
         config = c;
         value = v;
         a = new AtomicReference<>();

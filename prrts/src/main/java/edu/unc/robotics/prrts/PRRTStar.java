@@ -84,9 +84,18 @@ public class PRRTStar {
         }
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = link.get_pathDist();
+
         for (; link != null; link = link.get_parent()) {
             configs.add(link.get_node().get_config());
         }
+
+//         // traverse through nodes instead of links
+//         Node node = link.get_node();
+//         while (node != null) {
+//             configs.add(node.get_config());
+// //            node = node.get_link().get().get_parent_node();
+//             node = node.get_parent_node();
+//         }
         Collections.reverse(configs);
         return new Path(pathDist, configs);
     }

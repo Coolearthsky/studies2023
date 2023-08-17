@@ -15,7 +15,7 @@ public class TestBestPath {
     @Test
     public void testTime() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        double[] init = { 7.0, 1.0};
 
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 4);
 
@@ -41,7 +41,7 @@ public class TestBestPath {
     @Test
     public void testSteps() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0, 8, 8, 9, 1, 1, 9 };
+        double[] init = { 7.0, 1.0 };
 
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init, 6.0, 4);
 

@@ -20,7 +20,6 @@ import javax.swing.SwingUtilities;
 import edu.unc.robotics.prrts.PRRTStar;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
 
 /**
@@ -120,8 +119,7 @@ public class ArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
 
         for (Node node : _rrtStar.getNodes()) {
-            Link parent1 = node.get_link().get().get_parent();
-            Node parent = parent1 == null ? null : parent1.get_node();
+            Node parent = node.get_parent_node();
             if (parent != null) {
                 double[] n = node.get_config();
                 double[] p = parent.get_config();
