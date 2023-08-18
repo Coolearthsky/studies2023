@@ -54,26 +54,34 @@ public class PendulumArena implements RobotModel, KDModel {
 
     /** goal is straight up, motionless. */
     private final double[] _goal;
-    /** guessing on the velocity limit */
-    private static final double[] _min = { -2 * Math.PI, -2 * Math.PI };
-    private static final double[] _max = { 2 * Math.PI, 2 * Math.PI };
+    /** same as the paper */
+    private static final double[] _min = { -4, -8 };
+    private static final double[] _max = { 4, 8 };
 
     Obstacle[] _obstacles = new Obstacle[] {};
 
-    Vector<N2> qelms = VecBuilder.fill(1.0, 1.0);
-    Vector<N1> relms = VecBuilder.fill(1.0);
+    // Q is x norm coord
+    //Vector<N2> qelms = VecBuilder.fill(1, 1);
+    // R is u norm coord
+  //  Vector<N1> relms = VecBuilder.fill(50);
 
-    Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
-    Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
+    //Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
+//    Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
 
-    Matrix<N2, N1> B = VecBuilder.fill(0, 1);
+    Matrix<N2,N2> Q = Matrix.eye(Nat.N2());
+    Matrix<N1,N1> R = VecBuilder.fill(50);
 
     double h = 0.1; // TODO: this is surely wrong. what time interval to use?
-    private final double _g;
+
+    // see pend_rrt.m
+    private final double m = 1; // mass kg
+    private final double l = 1; // length meter
+    private final double b = 0.1; // viscous drag, unit = ?
+    private final double _g; // gravity m/s/s
 
     public PendulumArena(double[] goal, double gravity) {
         _goal = goal;
-        _g=  gravity;
+        _g = gravity;
         // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
 
         // System.out.println("==============");
@@ -82,13 +90,23 @@ public class PendulumArena implements RobotModel, KDModel {
 
     }
 
+    public Matrix<N2, N2> getA(double[] x) {
+        return Matrix.mat(Nat.N2(), Nat.N2()).fill(
+                0, 1,
+                -_g * Math.cos(x[0]), -b / (m * Math.pow(l, 2)));
+
+    }
+
+    public Matrix<N2, N1> getB() {
+        return VecBuilder.fill(0, 1 / (m * Math.pow(l, 2)));
+    }
+
     /**
      * use the WPI LQR lib to calculate S.
      */
     public Matrix<N2, N2> getS(double[] x) {
-        // try without gravity first
-       // Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -_g * Math.sin(x[0]), 0);
-        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, 0, 0);
+        Matrix<N2, N2> A = getA(x);
+        Matrix<N2, N1> B = getB();
         Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
         Matrix<N2, N2> discA = discABPair.getFirst();
         Matrix<N2, N1> discB = discABPair.getSecond();
@@ -97,7 +115,8 @@ public class PendulumArena implements RobotModel, KDModel {
 
     // TODO: speed this up
     public Matrix<N1, N2> getK(double[] x) {
-        Matrix<N2, N2> A = Matrix.mat(Nat.N2(), Nat.N2()).fill(0, 1, -1 * Math.sin(x[0]), 0);
+        Matrix<N2, N2> A = getA(x);
+        Matrix<N2, N1> B = getB();
         Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
         Matrix<N2, N2> discA = discABPair.getFirst();
         Matrix<N2, N1> discB = discABPair.getSecond();
@@ -141,14 +160,19 @@ public class PendulumArena implements RobotModel, KDModel {
      */
     @Override
     public void steer(double[] nearConfig, double[] newConfig, double dist) {
+        // see pend_rrt.m
         Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
         Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
         Matrix<N2, N1> dx = x_near.minus(x_rand);
         Matrix<N1, N2> K = getK(newConfig);
         double u = K.times(-1).times(dx).get(0, 0);
-        Matrix<N2, N1> xdot = VecBuilder.fill(nearConfig[1], (5 * u - Math.sin(nearConfig[0])));
+        u = Math.max(-3, u);
+        u = Math.min(3, u);
+        Matrix<N2, N1> xdot = VecBuilder.fill(
+                nearConfig[1],
+                (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
         Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-        // System.out.println(x_new);
+        //System.out.println("near " + x_near + " rand " + x_rand + " new " + x_new);
         newConfig[0] = x_new.get(0, 0);
         newConfig[1] = x_new.get(1, 0);
     }

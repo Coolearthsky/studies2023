@@ -19,10 +19,9 @@ public class PendulumFrame extends JFrame {
 
     }
 
-
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 }, 10);
-        double[] init = { 0,0};
+        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 }, 9.81);
+        double[] init = { 0, 0 };
 
         // 2 threads works better than 4
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
@@ -40,11 +39,11 @@ public class PendulumFrame extends JFrame {
         Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
         Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
 
-        //rrtStar.runForDurationMS(2, 10, 3000);
-        rrtStar.runSamples(4, 2, 100000);
+        // rrtStar.runForDurationMS(2, 10, 3000);
+        rrtStar.runSamples(4, 2, 20000);
         Path bestPath = rrtStar.getBestPath();
-       // System.out.println(bestPath);
+        System.out.println(bestPath);
 
     }
-    
+
 }

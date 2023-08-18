@@ -25,6 +25,7 @@ import edu.unc.robotics.prrts.tree.Node;
 public class PendulumView extends JComponent {
     private final PRRTStar _rrtStar;
     private final PendulumArena _robotModel;
+    private int framecounter;
 
     private static final Color[] COLORS = new Color[] {
             Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
@@ -53,6 +54,8 @@ public class PendulumView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
+        // System.out.println("paint");
+
         PendulumArena robotModel = _robotModel;
         double[] min = new double[robotModel.dimensions()];
         double[] max = new double[robotModel.dimensions()];
@@ -60,13 +63,17 @@ public class PendulumView extends JComponent {
 
         Path bestPath = _rrtStar.getBestPath();
 
-        if (_backgroundImage == null ||
-                _backgroundImage.getWidth(null) != size.width ||
-                _backgroundImage.getHeight(null) != size.height ||
-                Path.isBetter(bestPath, _bestPath)) {
+        // if (_backgroundImage == null ||
+        // _backgroundImage.getWidth(null) != size.width ||
+        // _backgroundImage.getHeight(null) != size.height ){//||
+        // // Path.isBetter(bestPath, _bestPath)) {
+        framecounter += 1;
+        if (framecounter > 100) {
+            framecounter = 0;
             createBGImage(min, max, size, bestPath);
-            _bestPath = bestPath;
         }
+        // _bestPath = bestPath;
+        // }
 
         g.drawImage(_backgroundImage, 0, 0, null);
 
@@ -83,20 +90,20 @@ public class PendulumView extends JComponent {
     }
 
     private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
+        // System.out.println("BG");
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
         AffineTransform savedTransform = g.getTransform();
 
-        AffineTransform transform = 
-        AffineTransform.getTranslateInstance(size.width / 2, size.height / 2);
+        AffineTransform transform = AffineTransform.getTranslateInstance(size.width / 2, size.height / 2);
         transform.scale(1, -1);
         g.setTransform(transform);
 
-        double scale = setupGraphics(min, max, size, g);
+        setupGraphics(min, max, size, g);
 
         g.setColor(Color.WHITE);
-        g.fillRect(0, 0, size.width, size.height);
+        g.fillRect(-size.width / 2, -size.height / 2, size.width, size.height);
 
         // obstacles
         g.setStroke(new BasicStroke(0f));
@@ -108,66 +115,63 @@ public class PendulumView extends JComponent {
 
         renderRRTTree(g);
 
-        renderPaths(link, g, scale);
+        renderPaths(link, g);
 
         g.setTransform(savedTransform);
         g.dispose();
     }
 
     private void renderRRTTree(Graphics2D g) {
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
-
         for (Node node : _rrtStar.getNodes()) {
             Node parent = node.get_parent_node();
             if (parent != null) {
                 double[] n = node.get_config();
                 double[] p = parent.get_config();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(COLORS[i / 2]);
-                    line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
-                    g.draw(line);
-                }
+                g.setColor(Color.GRAY);
+                // System.out.println("x " + n[0] + " y " + n[1]);
+                line.setLine(n[0], n[1], p[0], p[1]);
+                g.draw(line);
             }
         }
     }
 
-    private void renderPaths(Path path, Graphics2D g, double scale) {
+    private void renderPaths(Path path, Graphics2D g) {
         if (path == null) {
             return;
         }
 
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
-        g.setStroke(new BasicStroke((float) (5 / scale)));
+        g.setStroke(new BasicStroke((float) 0.1));
 
         if (path.get_configs().size() > 1) {
             Iterator<double[]> pathIter = path.get_configs().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(brighter(COLORS[i / 2]));
-                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
+          
+                    g.setColor(brighter(Color.RED));
+                    line.setLine(prev[0], prev[1], curr[0], curr[1]);
                     g.draw(line);
-                }
+                
                 prev = curr;
             }
         }
     }
 
-    private double setupGraphics(double[] min, double[] max, Dimension size, Graphics2D g) {
+    private void setupGraphics(double[] min, double[] max, Dimension size, Graphics2D g) {
         g.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
         g.translate(min[0], min[1]);
-        double scale = Math.min(
-                size.width / (max[0] - min[0]),
-                size.height / (max[1] - min[1]));
-        g.scale(scale, scale);
-        g.setStroke(new BasicStroke((float) (0.5 / scale / _robotModel.dimensions())));
-        return scale;
+        // double scale = Math.min(
+        // size.width / (max[0] - min[0]),
+        // size.height / (max[1] - min[1]));
+        double xscale = size.width / (max[0] - min[0]);
+        double yscale = size.height / (max[1] - min[1]);
+        g.scale(xscale, yscale);
+        g.setStroke(new BasicStroke((float) 0.01));
     }
 
     static Color brighter(Color color) {
