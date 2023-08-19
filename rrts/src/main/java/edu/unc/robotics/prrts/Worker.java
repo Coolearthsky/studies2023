@@ -11,8 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
+import edu.unc.robotics.prrts.kdtree.KDNearNode;
 import edu.unc.robotics.prrts.kdtree.KDNode;
-import edu.unc.robotics.prrts.kdtree.Traversal;
 import edu.unc.robotics.prrts.kdtree.Util;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
@@ -22,7 +22,6 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
 class Worker {
     private final KDModel _kdModel;
     private final KDNode<Node> _rootNode ;
-    private final Traversal<Node> _kdTraversal;
     private final RobotModel _robotModel;
     private final double[] _sampleMin;
     private final double[] _sampleMax;
@@ -38,7 +37,6 @@ class Worker {
     public Worker(
             KDModel kdModel,
             KDNode<Node> rootNode ,
-            Traversal<Node> kdTraversal,
             RobotModel robotModel,
             double gamma,
             long timeLimit,
@@ -49,7 +47,6 @@ class Worker {
             AtomicBoolean done) {
         _kdModel = kdModel;
         _rootNode = rootNode;
-        _kdTraversal = kdTraversal;
         _robotModel = robotModel;
         _gamma = gamma;
         _timeLimit = timeLimit;
@@ -91,14 +88,15 @@ class Worker {
                 1.0 / _kdModel.dimensions());
 
         List<NearNode> nearNodes = new ArrayList<>();
-        _kdTraversal.near(newConfig, radius, (v, d) -> {
+        Util.near(_kdModel, _rootNode, newConfig, radius, (v, d) -> {
             nearNodes.add(new NearNode(v.get_link().get(), d));
         });
 
         if (nearNodes.isEmpty()) {
 
-            Node nearest = _kdTraversal.nearest(newConfig);
-            double distToNearest = _kdTraversal.distToLastNearest();
+            KDNearNode<Node> nearResult = Util.nearest(_kdModel, _rootNode, newConfig);
+            Node nearest = nearResult._nearest;
+            double distToNearest =  nearResult._dist;
 
             if (distToNearest > radius) {
                 // usually the "nearest" node is outside the radius, so bring it closer

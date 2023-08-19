@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
 import edu.unc.robotics.prrts.kdtree.KDNode;
-import edu.unc.robotics.prrts.kdtree.Traversal;
 import edu.unc.robotics.prrts.kdtree.Util;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
@@ -94,7 +93,6 @@ public class PRRTStar {
         Worker worker  = new Worker(
                     _kdModel,
                     _rootNode,
-                     new Traversal<Node>(_kdModel, _rootNode),
                     _robotModel,
                     gamma,
                     timeLimitNS,
