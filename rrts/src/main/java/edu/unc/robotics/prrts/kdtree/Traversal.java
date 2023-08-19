@@ -4,7 +4,7 @@ import java.util.function.BiConsumer;
 
 public class Traversal<V> {
     private final KDModel _model;
-    private final KDNode<V> _root;
+    public final KDNode<V> _root;
     private final int _dimensions;
     final double[] _min;
     final double[] _max;
@@ -22,43 +22,6 @@ public class Traversal<V> {
 
     public double distToLastNearest() {
         return _dist;
-    }
-
-    public void insert(double[] config, V value) {
-        double[] min = _min;
-        double[] max = _max;
-
-        _model.getBounds(min, max);
-
-        KDNode<V> newNode = new KDNode<V>(config, value);
-        KDNode<V> n = _root;
-        int depth = 0;
-
-        for (;; ++depth) {
-            int axis = depth % _dimensions;
-            double mp = (min[axis] + max[axis]) / 2;
-            double v = config[axis];
-
-            if (v < mp) {
-                // a-side
-                if (n.getA() == null) {
-                    if (n.setA(null, newNode)) {
-                        break;
-                    }
-                }
-                _max[axis] = mp;
-                n = n.getA();
-            } else {
-                // b-side
-                if (n.getB() == null) {
-                    if (n.setB(null, newNode)) {
-                        break;
-                    }
-                }
-                _min[axis] = mp;
-                n = n.getB();
-            }
-        }
     }
 
     public V nearest(double[] target) {

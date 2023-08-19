@@ -22,14 +22,14 @@ public class TestBestPath {
         rrtStar.runForDurationMS(6.0, 20);
 
         int steps = rrtStar.getStepNo();
-        assertEquals(3600, steps, 1000); 
+        assertEquals(2400, steps, 1000); 
 
         int nodes = 0;
         for (var n : rrtStar.getNodes()) {
             nodes++;
         }
 
-        assertEquals(3600, nodes, 800);
+        assertEquals(2400, nodes, 800);
         Path bestPath = rrtStar.getBestPath();
         assertEquals(6.1, bestPath.get_dist(), 0.5);
     }

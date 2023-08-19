@@ -93,6 +93,7 @@ public class PRRTStar {
 
         Worker worker  = new Worker(
                     _kdModel,
+                    _rootNode,
                      new Traversal<Node>(_kdModel, _rootNode),
                     _robotModel,
                     gamma,

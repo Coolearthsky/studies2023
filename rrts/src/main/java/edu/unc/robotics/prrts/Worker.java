@@ -11,7 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
+import edu.unc.robotics.prrts.kdtree.KDNode;
 import edu.unc.robotics.prrts.kdtree.Traversal;
+import edu.unc.robotics.prrts.kdtree.Util;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
@@ -19,6 +21,7 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
 
 class Worker {
     private final KDModel _kdModel;
+    private final KDNode<Node> _rootNode ;
     private final Traversal<Node> _kdTraversal;
     private final RobotModel _robotModel;
     private final double[] _sampleMin;
@@ -34,6 +37,7 @@ class Worker {
 
     public Worker(
             KDModel kdModel,
+            KDNode<Node> rootNode ,
             Traversal<Node> kdTraversal,
             RobotModel robotModel,
             double gamma,
@@ -44,6 +48,7 @@ class Worker {
             AtomicReference<Link> bestPath,
             AtomicBoolean done) {
         _kdModel = kdModel;
+        _rootNode = rootNode;
         _kdTraversal = kdTraversal;
         _robotModel = robotModel;
         _gamma = gamma;
@@ -123,7 +128,7 @@ class Worker {
 
             Operations.updateBestPath(_bestPath, newNode.get_link().get());
 
-            _kdTraversal.insert(newConfig, newNode);
+            Util.insert(_kdModel, _rootNode, newConfig, newNode);
             return true;
         }
 
@@ -155,7 +160,7 @@ class Worker {
 
             Operations.updateBestPath(_bestPath, newNode.get_link().get());
 
-            _kdTraversal.insert(newConfig, newNode);
+            Util.insert(_kdModel, _rootNode, newConfig, newNode);
 
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node
