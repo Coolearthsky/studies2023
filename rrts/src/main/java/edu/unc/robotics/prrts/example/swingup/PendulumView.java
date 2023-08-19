@@ -27,9 +27,6 @@ public class PendulumView extends JComponent {
     private final PendulumArena _robotModel;
     private int framecounter;
 
-    private static final Color[] COLORS = new Color[] {
-            Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
-    };
 
     private Image _backgroundImage;
     private Path _bestPath = null;

@@ -2,7 +2,7 @@ package edu.unc.robotics.prrts.kdtree;
 
 import java.util.function.BiConsumer;
 
-class Traversal<V> implements KDTraversal<V> {
+public class Traversal<V> {
     private final KDModel _model;
     private final KDNode<V> _root;
     private final int _dimensions;
@@ -12,20 +12,18 @@ class Traversal<V> implements KDTraversal<V> {
     private double _dist;
     private V _nearest;
 
-    public Traversal(KDModel model, KDNode<V> root, int dimensions) {
+    public Traversal(KDModel model, KDNode<V> root) {
         _model = model;
         _root = root;
-        _dimensions = dimensions;
+        _dimensions = model.dimensions();
         _min = new double[_dimensions];
         _max = new double[_dimensions];
     }
 
-    @Override
     public double distToLastNearest() {
         return _dist;
     }
 
-    @Override
     public void insert(double[] config, V value) {
         double[] min = _min;
         double[] max = _max;
@@ -129,7 +127,6 @@ class Traversal<V> implements KDTraversal<V> {
         }
     }
 
-    @Override
     public void near(double[] target, double radius, BiConsumer<V, Double> consumer) {
         _model.getBounds(_min, _max);
         near(consumer, _root, target, radius, 0);

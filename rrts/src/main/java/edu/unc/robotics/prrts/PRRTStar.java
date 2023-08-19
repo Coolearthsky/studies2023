@@ -6,10 +6,11 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
-import edu.unc.robotics.prrts.kdtree.KDTree;
+import edu.unc.robotics.prrts.kdtree.KDNode;
+import edu.unc.robotics.prrts.kdtree.Traversal;
+import edu.unc.robotics.prrts.kdtree.Util;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
 
@@ -19,14 +20,13 @@ import edu.unc.robotics.prrts.tree.Node;
  * @author jeffi
  */
 public class PRRTStar {
-    private static final Logger _log = Logger.getLogger(PRRTStar.class.getName());
 
     private final KDModel _kdModel;
     private final RobotModel _robotModel;
-    private final KDTree<Node> _kdTree;
     private final AtomicInteger _stepNo;
     private final AtomicBoolean _done;
     private final AtomicReference<Link> _bestPath;
+    private final KDNode<Node> _rootNode ;
 
     public PRRTStar(
             KDModel kdModel,
@@ -34,7 +34,7 @@ public class PRRTStar {
             double[] init) {
         _kdModel = kdModel;
         _robotModel = robotModel;
-        _kdTree = new KDTree<Node>(kdModel, init, new Node(init, false));
+        _rootNode =new KDNode<Node>(init, new Node(init, false));
         _stepNo = new AtomicInteger(0);
         _done = new AtomicBoolean(false);
         _bestPath = new AtomicReference<Link>();
@@ -46,7 +46,7 @@ public class PRRTStar {
     }
 
     public Iterable<Node> getNodes() {
-        return _kdTree.values();
+        return Util.values(_rootNode);
     }
 
     /**
@@ -93,7 +93,7 @@ public class PRRTStar {
 
         Worker worker  = new Worker(
                     _kdModel,
-                    _kdTree.newTraversal(),
+                     new Traversal<Node>(_kdModel, _rootNode),
                     _robotModel,
                     gamma,
                     timeLimitNS,

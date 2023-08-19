@@ -38,8 +38,8 @@ public class TestTrees {
     void treeTest() {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDTree<String> tree = new KDTree<String>(m, init, "root");
-        Traversal<String> trav = (Traversal<String>) tree.newTraversal();
+        KDNode<String> rootNode = new KDNode<String>(init, "root");
+        Traversal<String> trav = new Traversal<String>(m, rootNode);
         assertArrayEquals(new double[] { 0, 0 }, trav._min);
         assertArrayEquals(new double[] { 0, 0 }, trav._max);
         trav.insert(new double[] { 0.5, 0.5 }, "child1");
@@ -71,8 +71,8 @@ public class TestTrees {
     void treeTest2() {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDTree<String> tree = new KDTree<String>(m, init, "root");
-        Traversal<String> trav = (Traversal<String>) tree.newTraversal();
+        KDNode<String> rootNode = new KDNode<String>(init, "root");
+        Traversal<String> trav =  new Traversal<String>(m, rootNode);
         trav.insert(new double[] { 0.5, 0.5 }, "child1");
         trav.insert(new double[] { 0.5, 075 }, "child2");
         trav.insert(new double[] { 0.5, 0.25 }, "child3");
@@ -97,14 +97,14 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDTree<String> tree = new KDTree<String>(m, init, "root");
+        KDNode<String> rootNode = new KDNode<String>(init, "root");
 
-        Traversal<String> trav1 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
         trav1.insert(new double[] { 0.5, 0.5 }, "child1");
         trav1.insert(new double[] { 0.5, 075 }, "child2");
 
         // if the other view does the insert, the child is still found
-        Traversal<String> trav2 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
         trav2.insert(new double[] { 0.5, 0.25 }, "child3");
 
         List<String> nearList = new ArrayList<String>();
@@ -127,14 +127,14 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDTree<String> tree = new KDTree<String>(m, init, "root");
+        KDNode<String> rootNode = new KDNode<String>(init, "root");
 
-        Traversal<String> trav1 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
         trav1.insert(new double[] { 0.5, 0.5 }, "child1");
         trav1.insert(new double[] { 0.5, 075 }, "child2");
 
         // if the other view does the insert, the child is still found
-        Traversal<String> trav2 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
         trav2.insert(new double[] { 0.5, 0.25 }, "child3");
 
         List<String> nearList = new ArrayList<String>();
@@ -160,9 +160,9 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDTree<String> tree = new KDTree<String>(m, init, "root");
+        KDNode<String> rootNode = new KDNode<String>(init, "root");
 
-        Traversal<String> trav1 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
         trav1.insert(new double[] { 0.5, 0.5 }, "child1");
         trav1.insert(new double[] { 0.5, 075 }, "child2");
 
@@ -176,7 +176,7 @@ public class TestTrees {
         assertEquals(0, nearList.size());
 
         // do the insert *after* it would have been found...
-        Traversal<String> trav2 = (Traversal<String>) tree.newTraversal();
+        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
         trav2.insert(new double[] { 0.5, 0.25 }, "child3");
 
         // and it should still find it

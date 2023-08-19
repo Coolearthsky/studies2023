@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
-import edu.unc.robotics.prrts.kdtree.KDTraversal;
+import edu.unc.robotics.prrts.kdtree.Traversal;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
@@ -19,7 +19,7 @@ import edu.unc.robotics.prrts.util.MersenneTwister;
 
 class Worker {
     private final KDModel _kdModel;
-    private final KDTraversal<Node> _kdTraversal;
+    private final Traversal<Node> _kdTraversal;
     private final RobotModel _robotModel;
     private final double[] _sampleMin;
     private final double[] _sampleMax;
@@ -34,7 +34,7 @@ class Worker {
 
     public Worker(
             KDModel kdModel,
-            KDTraversal<Node> kdTraversal,
+            Traversal<Node> kdTraversal,
             RobotModel robotModel,
             double gamma,
             long timeLimit,
