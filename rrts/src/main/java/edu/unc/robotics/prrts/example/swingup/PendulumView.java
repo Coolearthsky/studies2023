@@ -29,7 +29,7 @@ public class PendulumView extends JComponent {
 
 
     private Image _backgroundImage;
-    private Path _bestPath = null;
+    //private Path _bestPath = null;
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 

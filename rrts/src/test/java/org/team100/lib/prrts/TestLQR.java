@@ -50,7 +50,7 @@ public class TestLQR {
                     .times(discB)
                     .plus(R)
                     .solve(discB.transpose().times(S).times(discA));
-            // System.out.println(K);
+            System.out.println(K);
 
         }
 
