@@ -12,7 +12,7 @@ public class TestNode {
         Node root = new Node(new double[] { 0, 0 }, false);
         assertArrayEquals(new double[] { 0, 0 }, root.get_config());
         assertNull(root.get_link().get_parent_node());
-        assertNull(root.get_link()._firstChild.get());
+        assertNull(root.get_link()._firstChild);
         assertNull(root.get_link()._nextSibling.get());
 
         Node node1 = new Node(new double[] { 1, 0 }, false, 1.0, root.get_link());
@@ -21,16 +21,16 @@ public class TestNode {
         // assertEquals(root.get_link().get(), node1.get_link().get().get_parent());
         assertEquals(root, node1.get_link().get_parent_node());
         // the parent should now have this node as the first child
-        assertEquals(node1, root.get_link()._firstChild.get().get_node());
-        assertNull(node1.get_link()._firstChild.get());
+        assertEquals(node1, root.get_link()._firstChild.get_node());
+        assertNull(node1.get_link()._firstChild);
         assertNull(node1.get_link()._nextSibling.get());
 
         Node node2 = new Node(new double[] { 2, 0 }, false, 1.0, node1.get_link());
         assertArrayEquals(new double[] { 2, 0 }, node2.get_config());
         // assertEquals(node1.get_link().get(), node2.get_link().get().get_parent());
         assertEquals(node1, node2.get_link().get_parent_node());
-        assertEquals(node2, node1.get_link()._firstChild.get().get_node());
-        assertNull(node2.get_link()._firstChild.get());
+        assertEquals(node2, node1.get_link()._firstChild.get_node());
+        assertNull(node2.get_link()._firstChild);
         assertNull(node2.get_link()._nextSibling.get());
 
         // now add a second child to the root. what happens?
@@ -40,7 +40,7 @@ public class TestNode {
         // assertEquals(root.get_link().get(), node3.get_link().get().get_parent());
         assertEquals(root, node3.get_link().get_parent_node());
         // we bump the first child
-        assertEquals(node3, root.get_link()._firstChild.get().get_node());
+        assertEquals(node3, root.get_link()._firstChild.get_node());
         // the previous first child is now our sibling
         assertEquals(node1, node3.get_link()._nextSibling.get().get_node());
 
@@ -51,7 +51,7 @@ public class TestNode {
         // assertEquals(root.get_link().get(), node4.get_link().get().get_parent());
         assertEquals(root, node4.get_link().get_parent_node());
         // bump the first child again
-        assertEquals(node4, root.get_link()._firstChild.get().get_node());
+        assertEquals(node4, root.get_link()._firstChild.get_node());
         // previous first child is now my sibling
         assertEquals(node3, node4.get_link()._nextSibling.get().get_node());
         // one before that is another sibling

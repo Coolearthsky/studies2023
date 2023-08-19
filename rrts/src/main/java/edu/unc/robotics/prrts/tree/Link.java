@@ -38,7 +38,7 @@ public class Link {
      * 
      * @Nullable
      */
-    final AtomicReference<Link> _firstChild;
+    Link _firstChild;
     /**
      * link to a node with the same parent as this node
      * 
@@ -61,21 +61,24 @@ public class Link {
         this(node, linkDist, parent._pathDist + linkDist, parent);
     }
 
-    /** make the child the first child, make the current first child into the sibling. */
+    /**
+     * make the child the first child, make the current first child into the
+     * sibling.
+     */
     public void addChild(Link child) {
         Link expected = null;
         Link nextSibling;
 
-        do {
-            nextSibling = _firstChild.get();
+        nextSibling = _firstChild;
 
-            if (!child._nextSibling.compareAndSet(expected, nextSibling)) {
-                _log.log(Level.WARNING, "nextSibling initialized to unexpected value");
-                // return;
-            }
+        if (!child._nextSibling.compareAndSet(expected, nextSibling)) {
+            _log.log(Level.WARNING, "nextSibling initialized to unexpected value");
+            // return;
+        }
 
-            expected = nextSibling;
-        } while (!_firstChild.compareAndSet(nextSibling, child));
+        expected = nextSibling;
+        _firstChild = child;
+
     }
 
     public boolean isExpired() {
@@ -86,13 +89,12 @@ public class Link {
         Link child;
         Link sibling;
 
-        do {
-            child = _firstChild.get();
-            if (child == null) {
-                return null;
-            }
-            sibling = child._nextSibling.get();
-        } while (!_firstChild.compareAndSet(child, sibling));
+        child = _firstChild;
+        if (child == null) {
+            return null;
+        }
+        sibling = child._nextSibling.get();
+        _firstChild = sibling;
 
         Link witness = child._nextSibling.compareAndExchange(sibling, null);
         if (witness != null && witness != sibling) {
@@ -119,12 +121,12 @@ public class Link {
         Link p;
 
         outer: for (;;) {
-            n = _firstChild.get();
+            n = _firstChild;
 
             if (n == child) {
                 sibling = child._nextSibling.get();
-
-                if (_firstChild.compareAndSet(child, sibling)) {
+                if (_firstChild == child) {
+                    _firstChild = sibling;
                     break;
                 } else {
                     continue;
@@ -221,7 +223,7 @@ public class Link {
         _linkDist = linkDist;
         _pathDist = pathDist;
         _parent = parent;
-        _firstChild = new AtomicReference<>(null);
+        _firstChild = null;
         _nextSibling = new AtomicReference<>(null);
     }
 
