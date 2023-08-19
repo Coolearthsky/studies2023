@@ -39,7 +39,7 @@ public class ArenaFrame extends JFrame {
             }
         });
 
-        rrtStar.runForDurationMS(6.0, 30);
+        rrtStar.runForDurationMS(6.0, 50);
         //rrtStar.runSamples(2, 6.0, 500);
     }
 }

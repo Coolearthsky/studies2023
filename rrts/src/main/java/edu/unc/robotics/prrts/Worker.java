@@ -172,7 +172,7 @@ class Worker {
                 NearNode jn = li.previous();
 
                 // rewiring needs to be informed by the dynamics; turn it off for now
-//                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
+                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
             }
 
             return true;
