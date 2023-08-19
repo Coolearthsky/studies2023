@@ -1,0 +1,41 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "type": "java",
+        "name": "ArenaFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.arena.ArenaFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "PendulumFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.swingup.PendulumFrame",
+        "projectName": "prrts"
+    },
+    {
+        "type": "java",
+        "name": "ArenaFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.arena.ArenaFrame",
+        "projectName": "prrts"
+    },
+    {
+        "type": "wpilib",
+        "name": "WPILib Desktop Debug",
+        "request": "launch",
+        "desktop": true
+    },
+    {
+        "type": "wpilib",
+        "name": "WPILib roboRIO Debug",
+        "request": "launch",
+        "desktop": false
+    }
+]
+}
