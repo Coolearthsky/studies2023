@@ -174,7 +174,9 @@ class Worker implements Runnable {
             ListIterator<NearNode> li = nearNodes.listIterator(nearNodes.size());
             while (li.hasPrevious()) {
                 NearNode jn = li.previous();
-                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
+
+                // rewiring needs to be informed by the dynamics; turn it off for now
+//                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
             }
 
             return true;
