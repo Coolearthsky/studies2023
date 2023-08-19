@@ -1,7 +1,5 @@
 package edu.unc.robotics.prrts;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
 
@@ -14,31 +12,28 @@ public class Operations {
 
     /**
      * If link is a shorter solution than bestPath, set bestPath to link.
+     * 
+     * @return best path (whichever is better)
      */
-    public static void updateBestPath(AtomicReference<Link> bestPath, Link link) {
+    public static Link updateBestPath(final Link bestPath, final Link link) {
         if (!link.get_node().is_inGoal()) {
-            return;
+            return bestPath;
         }
 
-        final double distToGoal = link.get_pathDist();
-
-        Link currentBestPath;
-        do {
-            currentBestPath = bestPath.get();
-            if (currentBestPath != null) {
-                double bestDist = currentBestPath.get_pathDist();
-                if (distToGoal >= bestDist) {
-                    return;
-                }
+        if (bestPath != null) {
+            double bestDist = bestPath.get_pathDist();
+            if (link.get_pathDist() >= bestDist) {
+                return bestPath;
             }
-        } while (!bestPath.compareAndSet(currentBestPath, link));
+        }
+        return link;
     }
 
     /**
      * Move all the children of oldParent to newParent.
      */
     public static void updateChildren(
-            AtomicReference<Link> bestPath,
+            final Link bestPath,
             Link newParent,
             Link oldParent) {
         if (newParent.get_node() != oldParent.get_node()) {
@@ -92,20 +87,24 @@ public class Operations {
         }
     }
 
-    /** Rewire oldLink to newParent */
-    public static void rewire(
-            AtomicReference<Link> _bestPath,
+    /**
+     * Rewire oldLink to newParent
+     * 
+     * @return updated best path
+     */
+    public static Link rewire(
+            final Link _bestPath,
             RobotModel _robotModel,
             Link oldLink,
             double linkDist,
             Node newParent) {
         if (oldLink.get_parent_node() == null) {
             _log.log(Level.WARNING, "attempted to rewire the root");
-            return;
+            return _bestPath;
         }
         if (oldLink.get_parent_node() == newParent) {
             _log.log(Level.WARNING, "attempted to rewire to current parent");
-            return;
+            return _bestPath;
         }
 
         Node node = oldLink.get_node();
@@ -116,28 +115,29 @@ public class Operations {
 
         // check if rewiring would create a shorter path
         if (pathDist >= oldLink.get_pathDist()) {
-            return;
+            return _bestPath;
         }
 
         // check if rewiring is possible
         if (!_robotModel.link(oldLink.get_node().get_config(), newParent.get_config())) {
-            return;
+            return _bestPath;
         }
 
         // rewire the node. this loop continues to attempt atomic
         // updates until either the update succeeds or the pathDist
         // of the oldLink is found to be better than what we're trying
         // to put in
+        Link newBestPath = _bestPath;
         do {
 
             Link newLink = node.setLink(oldLink, linkDist, parentLink);
 
             if (newLink != null) {
-                Operations.updateChildren(_bestPath, newLink, oldLink);
-                Operations.updateBestPath(_bestPath, newLink);
+                Operations.updateChildren(newBestPath, newLink, oldLink);
+                newBestPath = Operations.updateBestPath(newBestPath, newLink);
 
                 if (parentLink.isExpired()) {
-                    Operations.updateChildren(_bestPath, parentLink.get_node().get_link(), parentLink);
+                    Operations.updateChildren(newBestPath, parentLink.get_node().get_link(), parentLink);
                 }
 
                 // Setting newLink expires oldLink but doesn not remove
@@ -146,7 +146,7 @@ public class Operations {
                 // will likely have already cleaned this up, and this call
                 // will be O(1) instead of O(n)
                 oldLink.get_parent().removeChild(oldLink);
-                return;
+                return newBestPath;
             }
 
             Link updatedOldLink = node.get_link();
@@ -158,6 +158,8 @@ public class Operations {
             oldLink = updatedOldLink;
 
         } while (pathDist < oldLink.get_pathDist());
+        
+        return newBestPath;
     }
 
 }

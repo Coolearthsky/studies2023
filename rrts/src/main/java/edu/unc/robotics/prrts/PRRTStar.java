@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
 import edu.unc.robotics.prrts.kdtree.KDNode;
@@ -24,8 +23,8 @@ public class PRRTStar {
     private final RobotModel _robotModel;
     private final AtomicInteger _stepNo;
     private final AtomicBoolean _done;
-    private final AtomicReference<Link> _bestPath;
     private final KDNode<Node> _rootNode ;
+    private Worker _worker;
 
     public PRRTStar(
             KDModel kdModel,
@@ -36,7 +35,6 @@ public class PRRTStar {
         _rootNode =new KDNode<Node>(init, new Node(init, false));
         _stepNo = new AtomicInteger(0);
         _done = new AtomicBoolean(false);
-        _bestPath = new AtomicReference<Link>();
     }
 
 
@@ -55,7 +53,7 @@ public class PRRTStar {
      * @return the best path, or null if none found so far.
      */
     public Path getBestPath() {
-        Link link = _bestPath.get();
+        Link link = _worker._bestPath;
         if (link == null) {
             return null;
         }
@@ -90,7 +88,7 @@ public class PRRTStar {
 
         long startTime = System.nanoTime();
 
-        Worker worker  = new Worker(
+        _worker  = new Worker(
                     _kdModel,
                     _rootNode,
                     _robotModel,
@@ -100,11 +98,10 @@ public class PRRTStar {
                     startTime,
                     sampleLimit,
                     _stepNo,
-                    _bestPath,
                     _done);
 
    
-        worker.run();
+        _worker.run();
 
         return getBestPath();
     }

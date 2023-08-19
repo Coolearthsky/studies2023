@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
 import edu.unc.robotics.prrts.kdtree.KDNearNode;
@@ -27,7 +26,7 @@ class Worker {
     private final long _startTime;
     private final int _sampleLimit;
     private final AtomicInteger _stepNo;
-    private final AtomicReference<Link> _bestPath;
+    public Link _bestPath;
     private final AtomicBoolean _done;
 
     public Worker(
@@ -40,7 +39,6 @@ class Worker {
             long startTime,
             int sampleLimit,
             AtomicInteger stepNo,
-            AtomicReference<Link> bestPath,
             AtomicBoolean done) {
         _kdModel = kdModel;
         _rootNode = rootNode;
@@ -51,7 +49,7 @@ class Worker {
         _startTime = startTime;
         _sampleLimit = sampleLimit;
         _stepNo = stepNo;
-        _bestPath = bestPath;
+        _bestPath = null;
         _done = done;
     }
 
@@ -108,7 +106,7 @@ class Worker {
                     distToNearest,
                     nearest.get_link());
 
-            Operations.updateBestPath(_bestPath, newNode.get_link());
+            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
             Util.insert(_kdModel, _rootNode, newConfig, newNode);
             return true;
@@ -140,7 +138,7 @@ class Worker {
                     nn.linkDist,
                     link);
 
-            Operations.updateBestPath(_bestPath, newNode.get_link());
+           _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
             Util.insert(_kdModel, _rootNode, newConfig, newNode);
 
@@ -159,7 +157,7 @@ class Worker {
                 NearNode jn = li.previous();
 
                 // rewiring needs to be informed by the dynamics; turn it off for now
-                Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
+               _bestPath = Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
             }
 
             return true;
