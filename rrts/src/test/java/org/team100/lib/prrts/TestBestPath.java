@@ -19,10 +19,7 @@ public class TestBestPath {
 
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
-        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-        Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
-
-        rrtStar.runForDurationMS(4, 6.0, 20);
+        rrtStar.runForDurationMS(6.0, 20);
 
         int steps = rrtStar.getStepNo();
         assertEquals(3600, steps, 1000); 
@@ -44,10 +41,7 @@ public class TestBestPath {
 
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
-        Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-        Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
-
-        rrtStar.runSamples(4, 6.0, 500);
+        rrtStar.runSamples(6.0, 500);
 
         int steps = rrtStar.getStepNo();
         assertEquals(504, steps, 10);

@@ -17,7 +17,7 @@ import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
 import edu.unc.robotics.prrts.util.MersenneTwister;
 
-class Worker implements Runnable {
+class Worker {
     private final KDModel _kdModel;
     private final KDTraversal<Node> _kdTraversal;
     private final RobotModel _robotModel;
@@ -154,10 +154,6 @@ class Worker implements Runnable {
                     link);
 
             Operations.updateBestPath(_bestPath, newNode.get_link().get());
-
-            // Put the node in the KD-Tree. After insertion,
-            // other threads will "see" the new node and may start
-            // rewiring it.
 
             _kdTraversal.insert(newConfig, newNode);
 

@@ -3,25 +3,18 @@ package org.team100.lib.prrts;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-
 import org.junit.jupiter.api.Test;
 
-import edu.unc.robotics.prrts.RobotModel;
-import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.unc.robotics.prrts.kdtree.KDModel;
+import edu.wpi.first.math.DARE;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.WPIMathJNI;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.Discretization;
-
-import edu.wpi.first.math.DARE;
 
 /**
  * Look at S matrices from linearized LQR.
@@ -48,8 +41,8 @@ public class TestLQR {
 
             Matrix<N2, N2> S = DARE.dare(discA, discB, Q, R);
 
-            System.out.println("============== x1 = " + String.format("%5.3f", x1));
-            System.out.println(S);
+            // System.out.println("============== x1 = " + String.format("%5.3f", x1));
+            // System.out.println(S);
 
             Matrix<N1, N2> K = discB
                     .transpose()
@@ -57,7 +50,7 @@ public class TestLQR {
                     .times(discB)
                     .plus(R)
                     .solve(discB.transpose().times(S).times(discA));
-            System.out.println(K);
+            // System.out.println(K);
 
         }
 

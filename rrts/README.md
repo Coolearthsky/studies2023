@@ -10,7 +10,6 @@ One thread should be fine at a slightly lower frame rate.
 
 <img src="prrts_example.png" width=600 />
 
-This is an example of 4 threads in 20ms, not terrible.
 To run it, find the ArenaFrame class and run its main method.
 Vscode should put a little "run" button nearby.
 

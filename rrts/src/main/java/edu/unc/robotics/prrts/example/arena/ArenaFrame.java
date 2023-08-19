@@ -26,7 +26,7 @@ public class ArenaFrame extends JFrame {
         final HolonomicArena arena = new HolonomicArena();
         double[] init = { 15.5, 6.75 };
 
-        // 2 threads works better than 4
+
         final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
 
         SwingUtilities.invokeAndWait(new Runnable() {
@@ -39,10 +39,7 @@ public class ArenaFrame extends JFrame {
             }
         });
 
-        Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-        Thread.currentThread().getThreadGroup().setMaxPriority(Thread.MIN_PRIORITY);
-
-        rrtStar.runForDurationMS(2, 6.0, 30);
+        rrtStar.runForDurationMS(6.0, 30);
         //rrtStar.runSamples(2, 6.0, 500);
     }
 }

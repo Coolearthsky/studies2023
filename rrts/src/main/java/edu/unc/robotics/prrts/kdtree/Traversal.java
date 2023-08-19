@@ -2,7 +2,6 @@ package edu.unc.robotics.prrts.kdtree;
 
 import java.util.function.BiConsumer;
 
-/** This is like a thread-local view of the tree. */
 class Traversal<V> implements KDTraversal<V> {
     private final KDModel _model;
     private final KDNode<V> _root;

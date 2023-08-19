@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "ArenaFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.arena.ArenaFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
         "name": "PendulumFrame",
         "request": "launch",
         "mainClass": "edu.unc.robotics.prrts.example.swingup.PendulumFrame",

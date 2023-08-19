@@ -1,23 +1,16 @@
 package edu.unc.robotics.prrts.example.swingup;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.kdtree.KDModel;
+import edu.wpi.first.math.DARE;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Pair;
-import edu.wpi.first.math.StateSpaceUtil;
 import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
-import edu.wpi.first.math.WPIMathJNI;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.Discretization;
-
-import edu.wpi.first.math.DARE;
 
 /**
  * Single jointed pendulum
@@ -49,8 +42,8 @@ public class PendulumArena implements RobotModel, KDModel {
      */
     private static final int DIMENSIONS = 2;
 
-    private static final double POSITION_TOLERANCE = 0.1;
-    private static final double VELOCITY_TOLERANCE = 0.1;
+    private static final double POSITION_TOLERANCE = 0.25;
+    private static final double VELOCITY_TOLERANCE = 0.25;
 
     /** goal is straight up, motionless. */
     private final double[] _goal;
