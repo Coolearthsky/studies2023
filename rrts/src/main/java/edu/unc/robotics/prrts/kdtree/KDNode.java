@@ -1,36 +1,33 @@
 package edu.unc.robotics.prrts.kdtree;
 
-import java.util.concurrent.atomic.AtomicReference;
 
 public final class KDNode<V> {
     private final double[] config;
     private final V value;
-    private final AtomicReference<KDNode<V>> a;
-    private final AtomicReference<KDNode<V>> b;
+    private  KDNode<V> a;
+    private  KDNode<V> b;
 
     public KDNode(double[] c, V v) {
         if (c == null) throw new IllegalArgumentException("null config");
         if (v == null) throw new IllegalArgumentException("null value");
         config = c;
         value = v;
-        a = new AtomicReference<>();
-        b = new AtomicReference<>();
     }
 
-    boolean setA(KDNode<V> old, KDNode<V> n) {
-        return a.compareAndSet(old, n);
+    void setA(KDNode<V> n) {
+        a = n;
     }
 
-    boolean setB(KDNode<V> old, KDNode<V> n) {
-        return b.compareAndSet(old, n);
+    void setB(KDNode<V> n) {
+        b = n;
     }
 
     public KDNode<V> getA() {
-        return a.get();
+        return a;
     }
 
     public KDNode<V> getB() {
-        return b.get();
+        return b;
     }
 
     public double[] getConfig() {

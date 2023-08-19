@@ -12,43 +12,41 @@ public class Util {
         return list;
     }
 
-	static <VV> void buildList(List<VV> list, KDNode<VV> node) {
-	    if (node == null)
-	        return;
-	
-	    list.add(node.getValue());
-	    buildList(list, node.getA());
-	    buildList(list, node.getB());
-	}
+    static <VV> void buildList(List<VV> list, KDNode<VV> node) {
+        if (node == null)
+            return;
+
+        list.add(node.getValue());
+        buildList(list, node.getA());
+        buildList(list, node.getB());
+    }
 
     public static <V> void insert(KDModel model, KDNode<V> root, double[] config, V value) {
         double[] min = model.getMin();
         double[] max = model.getMax();
-    
+
         KDNode<V> newNode = new KDNode<V>(config, value);
         KDNode<V> n = root;
         int depth = 0;
-    
+
         for (;; ++depth) {
             int axis = depth % model.dimensions();
             double mp = (min[axis] + max[axis]) / 2;
             double v = config[axis];
-    
+
             if (v < mp) {
                 // a-side
                 if (n.getA() == null) {
-                    if (n.setA(null, newNode)) {
-                        break;
-                    }
+                    n.setA(newNode);
+                    break;
                 }
                 max[axis] = mp;
                 n = n.getA();
             } else {
                 // b-side
                 if (n.getB() == null) {
-                    if (n.setB(null, newNode)) {
-                        break;
-                    }
+                    n.setB(newNode);
+                    break;
                 }
                 min[axis] = mp;
                 n = n.getB();
@@ -56,13 +54,15 @@ public class Util {
         }
     }
 
-    public static <V> void near(KDModel model, KDNode<V> root, double[] target, double radius, BiConsumer<V, Double> consumer) {
+    public static <V> void near(KDModel model, KDNode<V> root, double[] target, double radius,
+            BiConsumer<V, Double> consumer) {
         double[] min = model.getMin();
         double[] max = model.getMax();
         Util.near(model, min, max, consumer, root, target, radius, 0);
     }
 
-    public static <V> void near(KDModel model, double[] min, double[] max, BiConsumer<V, Double> consumer, KDNode<V> n, double[] target, double radius, int depth) {
+    public static <V> void near(KDModel model, double[] min, double[] max, BiConsumer<V, Double> consumer, KDNode<V> n,
+            double[] target, double radius, int depth) {
         final double d = model.dist(n.getConfig(), target);
         if (d < radius) {
             consumer.accept(n.getValue(), d);
@@ -97,7 +97,6 @@ public class Util {
         double[] max = model.getMax();
         return Util.nearest(new KDNearNode<V>(Double.MAX_VALUE, null), model, root, min, max, target, 0);
     }
-
 
     public static <V> KDNearNode<V> nearest(KDNearNode<V> best, KDModel model, KDNode<V> n,
             double[] min, double[] max,
@@ -154,5 +153,5 @@ public class Util {
         }
         return best;
     }
-    
+
 }
