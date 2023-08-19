@@ -79,7 +79,7 @@ public class Link {
     }
 
     public boolean isExpired() {
-        return _node.get_link().get() != this;
+        return _node.get_link() != this;
     }
 
     public Link removeFirstChild() {

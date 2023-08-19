@@ -1,6 +1,5 @@
 package edu.unc.robotics.prrts.tree;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,12 +20,12 @@ public class Node {
     private final double[] _config;
     private final boolean _inGoal;
     /** the parent. maybe call it the parent? */
-    private final AtomicReference<Link> _link;
+    private Link _link;
 
     public Node(double[] config, boolean inGoal) {
         _config = config;
         _inGoal = inGoal;
-        _link = new AtomicReference<>(new Link(this));
+        _link = new Link(this);
     }
 
     /**
@@ -42,7 +41,7 @@ public class Node {
         _inGoal = inGoal;
         // link from parent to this node
         Link link = new Link(this, linkDist, parent);
-        _link = new AtomicReference<>(link);
+        _link = link;
         parent.addChild(link);
     }
 
@@ -53,9 +52,8 @@ public class Node {
      */
     public Link setLink(Link oldLink, double linkDist, Link parent) {
         Link newLink = new Link(this, linkDist, parent);
-        if (!_link.compareAndSet(oldLink, newLink)) {
-            return null;
-        }
+        _link = newLink;
+            
         if (newLink.get_pathDist() > oldLink.get_pathDist()) {
             _log.log(Level.WARNING, "attempted to set worse parent");
             return null;
@@ -72,11 +70,11 @@ public class Node {
         return _inGoal;
     }
 
-    public AtomicReference<Link> get_link() {
+    public Link get_link() {
         return _link;
     }
 
     public Node get_parent_node() {
-        return _link.get().get_parent_node();
+        return _link.get_parent_node();
     }
 }

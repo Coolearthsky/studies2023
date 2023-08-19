@@ -73,7 +73,7 @@ class Worker {
 
         List<NearNode> nearNodes = new ArrayList<>();
         Util.near(_kdModel, _rootNode, newConfig, radius, (v, d) -> {
-            nearNodes.add(new NearNode(v.get_link().get(), d));
+            nearNodes.add(new NearNode(v.get_link(), d));
         });
 
         if (nearNodes.isEmpty()) {
@@ -106,9 +106,9 @@ class Worker {
                     newConfig,
                     _robotModel.goal(newConfig),
                     distToNearest,
-                    nearest.get_link().get());
+                    nearest.get_link());
 
-            Operations.updateBestPath(_bestPath, newNode.get_link().get());
+            Operations.updateBestPath(_bestPath, newNode.get_link());
 
             Util.insert(_kdModel, _rootNode, newConfig, newNode);
             return true;
@@ -140,7 +140,7 @@ class Worker {
                     nn.linkDist,
                     link);
 
-            Operations.updateBestPath(_bestPath, newNode.get_link().get());
+            Operations.updateBestPath(_bestPath, newNode.get_link());
 
             Util.insert(_kdModel, _rootNode, newConfig, newNode);
 

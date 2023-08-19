@@ -61,7 +61,7 @@ public class Operations {
 
                 if (newParent.isExpired()) {
                     oldParent = newParent;
-                    newParent = oldParent.get_node().get_link().get();
+                    newParent = oldParent.get_node().get_link();
                     continue;
                 }
 
@@ -75,7 +75,7 @@ public class Operations {
             Node node = oldChild.get_node();
 
             // if (node.get_link().get().get_parent().get_node() != oldParent.get_node()) {
-            if (node.get_link().get().get_parent_node() != oldParent.get_node()) {
+            if (node.get_link().get_parent_node() != oldParent.get_node()) {
                 continue;
             }
 
@@ -85,7 +85,7 @@ public class Operations {
                 updateChildren(bestPath, newChild, oldChild);
                 updateBestPath(bestPath, newChild);
             } else {
-                if (node.get_link().get() == oldChild) {
+                if (node.get_link() == oldChild) {
                     _log.log(Level.WARNING, "weird child situation");
                 }
             }
@@ -110,7 +110,7 @@ public class Operations {
 
         Node node = oldLink.get_node();
 
-        Link parentLink = newParent.get_link().get();
+        Link parentLink = newParent.get_link();
 
         double pathDist = parentLink.get_pathDist() + linkDist;
 
@@ -137,7 +137,7 @@ public class Operations {
                 Operations.updateBestPath(_bestPath, newLink);
 
                 if (parentLink.isExpired()) {
-                    Operations.updateChildren(_bestPath, parentLink.get_node().get_link().get(), parentLink);
+                    Operations.updateChildren(_bestPath, parentLink.get_node().get_link(), parentLink);
                 }
 
                 // Setting newLink expires oldLink but doesn not remove
@@ -149,7 +149,7 @@ public class Operations {
                 return;
             }
 
-            Link updatedOldLink = node.get_link().get();
+            Link updatedOldLink = node.get_link();
 
             if (updatedOldLink == oldLink) {
                 _log.log(Level.WARNING, "update isn't different");
