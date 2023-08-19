@@ -3,7 +3,6 @@ package edu.unc.robotics.prrts.tree;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,7 +43,7 @@ public class Link {
      * 
      * @Nullable
      */
-    final AtomicReference<Link> _nextSibling;
+    Link _nextSibling;
 
     public Link(Node root) {
         this(root, 0, 0, null);
@@ -66,19 +65,8 @@ public class Link {
      * sibling.
      */
     public void addChild(Link child) {
-        Link expected = null;
-        Link nextSibling;
-
-        nextSibling = _firstChild;
-
-        if (!child._nextSibling.compareAndSet(expected, nextSibling)) {
-            _log.log(Level.WARNING, "nextSibling initialized to unexpected value");
-            // return;
-        }
-
-        expected = nextSibling;
+        child._nextSibling = _firstChild;
         _firstChild = child;
-
     }
 
     public boolean isExpired() {
@@ -93,14 +81,10 @@ public class Link {
         if (child == null) {
             return null;
         }
-        sibling = child._nextSibling.get();
+        sibling = child._nextSibling;
         _firstChild = sibling;
 
-        Link witness = child._nextSibling.compareAndExchange(sibling, null);
-        if (witness != null && witness != sibling) {
-            // this doesn't seem to hurt anything
-            _log.log(Level.WARNING, "child removal conflict, pressing on");
-        }
+        child._nextSibling = null;
 
         return child;
     }
@@ -124,7 +108,7 @@ public class Link {
             n = _firstChild;
 
             if (n == child) {
-                sibling = child._nextSibling.get();
+                sibling = child._nextSibling;
                 if (_firstChild == child) {
                     _firstChild = sibling;
                     break;
@@ -141,19 +125,20 @@ public class Link {
                 p = n;
 
                 if (n != null)
-                    n = n._nextSibling.get();
+                    n = n._nextSibling;
 
                 if (n == null) {
                     return false;
                 }
 
                 if (n == child) {
-                    sibling = child._nextSibling.get();
+                    sibling = child._nextSibling;
 
                     // TODO: double check this logic. could the child
                     // now be the first element in the list?
 
-                    if (p._nextSibling.compareAndSet(child, sibling)) {
+                    if (p._nextSibling == child) {
+                        p._nextSibling = sibling;
                         break outer;
                     } else {
                         break;
@@ -162,7 +147,7 @@ public class Link {
             }
         }
 
-        child._nextSibling.compareAndSet(sibling, null);
+        child._nextSibling = null;
 
         return true;
     }
@@ -224,7 +209,7 @@ public class Link {
         _pathDist = pathDist;
         _parent = parent;
         _firstChild = null;
-        _nextSibling = new AtomicReference<>(null);
+        _nextSibling = null;
     }
 
 }
