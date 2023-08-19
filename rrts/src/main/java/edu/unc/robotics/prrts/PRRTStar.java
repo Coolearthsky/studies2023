@@ -94,6 +94,7 @@ public class PRRTStar {
                     _kdModel,
                     _rootNode,
                     _robotModel,
+                    new Sample(_kdModel),
                     gamma,
                     timeLimitNS,
                     startTime,

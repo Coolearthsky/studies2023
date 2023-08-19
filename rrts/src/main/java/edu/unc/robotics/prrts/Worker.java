@@ -26,6 +26,7 @@ class Worker {
     private final double[] _sampleMin;
     private final double[] _sampleMax;
     private final Random _random;
+    private final Sample _sample;
     private final double _gamma;
     private final long _timeLimit;
     private final long _startTime;
@@ -38,6 +39,7 @@ class Worker {
             KDModel kdModel,
             KDNode<Node> rootNode ,
             RobotModel robotModel,
+            Sample sample,
             double gamma,
             long timeLimit,
             long startTime,
@@ -48,6 +50,7 @@ class Worker {
         _kdModel = kdModel;
         _rootNode = rootNode;
         _robotModel = robotModel;
+        _sample = sample;
         _gamma = gamma;
         _timeLimit = timeLimit;
         _startTime = startTime;
@@ -61,23 +64,12 @@ class Worker {
     }
 
     /**
-     * write random doubles into config
-     * 
-     * @param config OUTVAR result
-     */
-    private void randomize(double[] config) {
-        for (int i = _kdModel.dimensions(); --i >= 0;) {
-            config[i] = _random.nextDouble() * (_sampleMax[i] - _sampleMin[i])
-                    + _sampleMin[i];
-        }
-    }
-
-    /**
      * @return true if a new sample was added.
      */
-    private boolean step(int stepNo, double[] newConfig) {
-        // generate a new random sample
-        randomize(newConfig);
+    private boolean step(int stepNo) {
+        _kdModel.getBounds(_sampleMin, _sampleMax);
+
+        double[] newConfig = _sample.get();
 
         if (!_robotModel.clear(newConfig)) {
             return false;
@@ -187,24 +179,21 @@ class Worker {
         return false;
     }
 
-    private void generateSamples() {
-        double[] newConfig = new double[_kdModel.dimensions()];
+    public void run() {
         int stepNo = _stepNo.get();
-
+        
         while (!_done.get()) {
-            if (step(stepNo, newConfig)) {
+            if (step(stepNo)) {
                 stepNo = _stepNo.incrementAndGet();
                 if (stepNo > _sampleLimit) {
                     _done.set(true);
                 }
-                // sample was added, create a new one
-                newConfig = new double[_kdModel.dimensions()];
             } else {
                 // failed add a sample, refresh the step no
                 // and try again
                 stepNo = _stepNo.get();
             }
-
+        
             if (_timeLimit > 0) {
                 long now = System.nanoTime();
                 if (now - _startTime > _timeLimit) {
@@ -212,10 +201,5 @@ class Worker {
                 }
             }
         }
-    }
-
-    public void run() {
-        _kdModel.getBounds(_sampleMin, _sampleMax);
-        generateSamples();
     }
 }
