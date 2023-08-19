@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
@@ -27,7 +26,6 @@ class Worker {
     private final int _sampleLimit;
     private final AtomicInteger _stepNo;
     public Link _bestPath;
-    private final AtomicBoolean _done;
 
     public Worker(
             KDModel kdModel,
@@ -38,8 +36,7 @@ class Worker {
             long timeLimit,
             long startTime,
             int sampleLimit,
-            AtomicInteger stepNo,
-            AtomicBoolean done) {
+            AtomicInteger stepNo) {
         _kdModel = kdModel;
         _rootNode = rootNode;
         _robotModel = robotModel;
@@ -50,7 +47,6 @@ class Worker {
         _sampleLimit = sampleLimit;
         _stepNo = stepNo;
         _bestPath = null;
-        _done = done;
     }
 
     /**
@@ -172,11 +168,11 @@ class Worker {
     public void run() {
         int stepNo = _stepNo.get();
         
-        while (!_done.get()) {
+        while (true) {
             if (step(stepNo)) {
                 stepNo = _stepNo.incrementAndGet();
                 if (stepNo > _sampleLimit) {
-                    _done.set(true);
+                    return;
                 }
             } else {
                 // failed add a sample, refresh the step no
@@ -187,7 +183,7 @@ class Worker {
             if (_timeLimit > 0) {
                 long now = System.nanoTime();
                 if (now - _startTime > _timeLimit) {
-                    _done.set(true);
+                    return;
                 }
             }
         }

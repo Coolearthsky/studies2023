@@ -3,7 +3,6 @@ package edu.unc.robotics.prrts;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import edu.unc.robotics.prrts.kdtree.KDModel;
@@ -22,7 +21,6 @@ public class PRRTStar {
     private final KDModel _kdModel;
     private final RobotModel _robotModel;
     private final AtomicInteger _stepNo;
-    private final AtomicBoolean _done;
     private final KDNode<Node> _rootNode ;
     private Worker _worker;
 
@@ -34,7 +32,6 @@ public class PRRTStar {
         _robotModel = robotModel;
         _rootNode =new KDNode<Node>(init, new Node(init, false));
         _stepNo = new AtomicInteger(0);
-        _done = new AtomicBoolean(false);
     }
 
 
@@ -97,8 +94,7 @@ public class PRRTStar {
                     timeLimitNS,
                     startTime,
                     sampleLimit,
-                    _stepNo,
-                    _done);
+                    _stepNo);
 
    
         _worker.run();
