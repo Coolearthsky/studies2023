@@ -59,9 +59,8 @@ public class ArenaView extends JComponent {
 
     public void doPaint(Graphics2D g, Dimension size) {
         HolonomicArena robotModel = _robotModel;
-        double[] min = new double[robotModel.dimensions()];
-        double[] max = new double[robotModel.dimensions()];
-        robotModel.getBounds(min, max);
+        double[] min = robotModel.getMin();
+        double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 

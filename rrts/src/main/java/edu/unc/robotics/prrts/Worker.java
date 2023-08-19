@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,15 +16,11 @@ import edu.unc.robotics.prrts.kdtree.Util;
 import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
-import edu.unc.robotics.prrts.util.MersenneTwister;
 
 class Worker {
     private final KDModel _kdModel;
     private final KDNode<Node> _rootNode ;
     private final RobotModel _robotModel;
-    private final double[] _sampleMin;
-    private final double[] _sampleMax;
-    private final Random _random;
     private final Sample _sample;
     private final double _gamma;
     private final long _timeLimit;
@@ -55,9 +50,6 @@ class Worker {
         _timeLimit = timeLimit;
         _startTime = startTime;
         _sampleLimit = sampleLimit;
-        _random = new MersenneTwister();
-        _sampleMin = new double[_kdModel.dimensions()];
-        _sampleMax = new double[_kdModel.dimensions()];
         _stepNo = stepNo;
         _bestPath = bestPath;
         _done = done;
@@ -67,10 +59,10 @@ class Worker {
      * @return true if a new sample was added.
      */
     private boolean step(int stepNo) {
-        _kdModel.getBounds(_sampleMin, _sampleMax);
 
         double[] newConfig = _sample.get();
 
+        // this is wrong, we want to check the steered sample.
         if (!_robotModel.clear(newConfig)) {
             return false;
         }

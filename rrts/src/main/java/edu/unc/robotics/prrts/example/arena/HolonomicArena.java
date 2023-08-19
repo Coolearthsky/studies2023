@@ -53,9 +53,13 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public void getBounds(double[] min, double[] max) {
-        System.arraycopy(_min, 0, min, 0, DIMENSIONS);
-        System.arraycopy(_max, 0, max, 0, DIMENSIONS);
+    public double[] getMin() {
+        return _min.clone();        
+    }
+
+    @Override
+    public double[] getMax() {
+        return _max.clone();        
     }
 
     @Override

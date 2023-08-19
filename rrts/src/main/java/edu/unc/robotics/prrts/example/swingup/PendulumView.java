@@ -54,9 +54,8 @@ public class PendulumView extends JComponent {
         // System.out.println("paint");
 
         PendulumArena robotModel = _robotModel;
-        double[] min = new double[robotModel.dimensions()];
-        double[] max = new double[robotModel.dimensions()];
-        robotModel.getBounds(min, max);
+        double[] min = robotModel.getMin();
+        double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 

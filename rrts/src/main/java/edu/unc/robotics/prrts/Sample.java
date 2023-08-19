@@ -16,10 +16,9 @@ public class Sample {
 
     public Sample(KDModel kdModel) {
         _kdModel = kdModel;
-        _sampleMin = new double[_kdModel.dimensions()];
-        _sampleMax = new double[_kdModel.dimensions()];
         _random = new MersenneTwister();
-        _kdModel.getBounds(_sampleMin, _sampleMax);
+        _sampleMin = _kdModel.getMin();
+        _sampleMax = _kdModel.getMax();
     }
 
     public double[] get() {

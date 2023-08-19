@@ -15,11 +15,13 @@ public class TestTrees {
         }
 
         @Override
-        public void getBounds(double[] min, double[] max) {
-            min[0] = 0;
-            min[1] = 0;
-            max[0] = 1;
-            max[1] = 1;
+        public double[] getMin() {
+            return new double[]{0,0};
+        }
+
+        @Override
+        public double[] getMax() {
+            return new double[]{1,1};
         }
 
         @Override

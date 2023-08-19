@@ -22,11 +22,8 @@ public class Util {
 	}
 
     public static <V> void insert(KDModel model, KDNode<V> root, double[] config, V value) {
-        // double[] min = _min;
-        // double[] max = _max;
-        double[] min = new double[model.dimensions()];
-        double[] max = new double[model.dimensions()];
-        model.getBounds(min, max);
+        double[] min = model.getMin();
+        double[] max = model.getMax();
     
         KDNode<V> newNode = new KDNode<V>(config, value);
         KDNode<V> n = root;
@@ -60,9 +57,8 @@ public class Util {
     }
 
     public static <V> void near(KDModel model, KDNode<V> root, double[] target, double radius, BiConsumer<V, Double> consumer) {
-        double[] min = new double[model.dimensions()];
-        double[] max = new double[model.dimensions()];
-        model.getBounds(min, max);
+        double[] min = model.getMin();
+        double[] max = model.getMax();
         Util.near(model, min, max, consumer, root, target, radius, 0);
     }
 
@@ -97,9 +93,8 @@ public class Util {
     }
 
     public static <V> KDNearNode<V> nearest(KDModel model, KDNode<V> root, double[] target) {
-        double[] min = new double[model.dimensions()];
-        double[] max = new double[model.dimensions()];
-        model.getBounds(min, max);
+        double[] min = model.getMin();
+        double[] max = model.getMax();
         return Util.nearest(new KDNearNode<V>(Double.MAX_VALUE, null), model, root, min, max, target, 0);
     }
 
