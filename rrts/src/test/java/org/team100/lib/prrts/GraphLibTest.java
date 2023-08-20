@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.Set;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.util.NeighborCache;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,11 @@ public class GraphLibTest {
         g.removeEdge(e2);
         g.addEdge("one","two");
         assertEquals("one", g.getEdgeSource(g.incomingEdgesOf("two").iterator().next()));
+
+        // listens to updates on g?
+        NeighborCache<String, DefaultEdge> n = new NeighborCache<>(g);
+        Set<String> s = n.predecessorsOf("two");
+        assertArrayEquals(new String[] {"one"}, s.toArray(new String[0]));
     }
 
 }

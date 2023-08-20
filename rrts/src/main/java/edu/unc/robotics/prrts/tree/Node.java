@@ -14,7 +14,7 @@ import java.util.logging.Logger;
  * efficiency, the config member is exposed as a direct reference an array.
  * It should NOT be modified by the caller.
  */
-public class Node {
+public class Node implements Point {
     private static final Logger _log = Logger.getLogger(Node.class.getName());
 
     private final double[] _config;
@@ -62,6 +62,7 @@ public class Node {
         return newLink;
     }
 
+    @Override
     public double[] get_config() {
         return _config;
     }
@@ -70,7 +71,7 @@ public class Node {
         return _inGoal;
     }
 
-    public Link get_link() {
+    public Link get_link() { 
         return _link;
     }
 

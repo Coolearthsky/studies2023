@@ -2,6 +2,7 @@ package edu.unc.robotics.prrts.kdtree;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import  edu.unc.robotics.prrts.tree.Point;
 
 import java.util.List;
 
@@ -40,16 +41,35 @@ public class TestTraversal {
 
     };
 
+    static class StringPoint implements Point {
+        private final String v;
+        private final double[] _config;
+        
+        public StringPoint(String v, double[] _config) {
+            this.v = v;
+            this._config = _config;
+        }
+
+        @Override
+        public double[] get_config() {
+            return _config;
+        }
+        public String get_v() {
+            return v;
+
+        }
+    }
+
     @Test
     void testInsert() {
-        KDNode<String> n = new KDNode<String>(new double[] { 0, 0 }, "n");
-        Util.insert(myModel, n, new double[] { 0.5, 0 }, "one");
-        List<String> s = Util.values(n);
+        KDNode<StringPoint> n = new KDNode<>(new StringPoint( "n", new double[] { 0, 0 }));
+        Util.insert(myModel, n, new StringPoint("one",new double[] { 0.5, 0 }));
+        List<StringPoint> s = Util.values(n);
         assertEquals(2, s.size());
-        KDNode<String> a = n.getA();
-        KDNode<String> b = n.getB();
+        KDNode<StringPoint> a = n.getA();
+        KDNode<StringPoint> b = n.getB();
         assertNull(a);
-        assertEquals("one", b.getValue());
+        assertEquals("one", b.getValue().get_v());
 
     }
 

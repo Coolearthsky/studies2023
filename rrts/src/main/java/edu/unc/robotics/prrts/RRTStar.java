@@ -27,7 +27,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _rootNode = new KDNode<Node>(model.initial(), new Node(model.initial(), false));
+        _rootNode = new KDNode<Node>(new Node(model.initial(), false));
         _sample = sample;
         _gamma = gamma;
         _bestPath = null;
@@ -88,7 +88,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
             _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
-            Util.insert(_model, _rootNode, newConfig, newNode);
+            Util.insert(_model, _rootNode, newNode);
             return true;
         }
 
@@ -120,7 +120,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
             _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
-            Util.insert(_model, _rootNode, newConfig, newNode);
+            Util.insert(_model, _rootNode, newNode);
 
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node

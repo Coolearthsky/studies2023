@@ -1,17 +1,15 @@
 package edu.unc.robotics.prrts.kdtree;
 
-public final class KDNode<V> {
-    private final double[] config;
+import edu.unc.robotics.prrts.tree.Point;
+
+public final class KDNode<V extends Point> {
     private final V value;
     private KDNode<V> a;
     private KDNode<V> b;
 
-    public KDNode(double[] c, V v) {
-        if (c == null)
-            throw new IllegalArgumentException("null config");
+    public KDNode(V v) {
         if (v == null)
             throw new IllegalArgumentException("null value");
-        config = c;
         value = v;
     }
 
@@ -32,7 +30,7 @@ public final class KDNode<V> {
     }
 
     public double[] getConfig() {
-        return config;
+        return value.get_config();
     }
 
     public V getValue() {
