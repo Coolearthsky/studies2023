@@ -24,14 +24,12 @@ public class Node implements Point {
      * @param config   state of this node
      * @param inGoal   true if the state is within the goal
      * @param linkDist distance to the parent
-     * @param parent   link pointing to this node (node is head of the link)
+     * @param parent   parent Node
      */
-    public Node(double[] config, boolean inGoal, double linkDist, Link parent) {
+    public Node(double[] config, boolean inGoal, double linkDist, Node parent) {
         _config = config;
         _inGoal = inGoal;
-        // link from parent to this node
-        Link link = new Link(parent.get_target(), this, linkDist);
-        _incoming = link;
+        _incoming = new Link(parent, this, linkDist);
     }
 
     /**
@@ -39,10 +37,9 @@ public class Node implements Point {
      * 
      * @return the new parent link
      */
-    public Link setLink(double linkDist, Link parent) {
-        Link newLink = new Link(parent.get_target(), this, linkDist);
-        _incoming = newLink;
-        return newLink;
+    public Link setLink(double linkDist, Node parent) {
+        _incoming = new Link(parent, this, linkDist);
+        return _incoming;
     }
 
     @Override
@@ -56,9 +53,5 @@ public class Node implements Point {
 
     public Link get_incoming() {
         return _incoming;
-    }
-
-    public Node get_parent_node() {
-        return _incoming.get_source();
     }
 }

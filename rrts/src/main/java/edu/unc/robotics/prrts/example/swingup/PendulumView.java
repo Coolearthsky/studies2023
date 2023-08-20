@@ -120,7 +120,7 @@ public class PendulumView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         Line2D.Double line = new Line2D.Double();
         for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.get_parent_node();
+            Node parent = node.get_incoming().get_source();
             if (parent != null) {
                 double[] n = node.get_config();
                 double[] p = parent.get_config();

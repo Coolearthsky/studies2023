@@ -63,7 +63,7 @@ public class Operations {
             return _bestPath;
         }
 
-        Link newLink = oldLink.get_target().setLink(linkDist, newParentLink);
+        Link newLink = oldLink.get_target().setLink(linkDist, newParent);
         return Operations.updateBestPath(_bestPath, newLink);
     }
 }

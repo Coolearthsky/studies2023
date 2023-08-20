@@ -84,7 +84,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     newConfig,
                     _model.goal(newConfig),
                     distToNearest,
-                    nearest.get_incoming());
+                    nearest);
 
             _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
 
@@ -116,7 +116,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     newConfig,
                     _model.goal(newConfig),
                     nn.linkDist,
-                    link);
+                    link.get_target());
 
             _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
 
@@ -166,7 +166,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         Node node = link.get_target();
         while (node != null) {
             configs.add(node.get_config());
-            node = node.get_parent_node();
+            node = node.get_incoming().get_source();
         }
         Collections.reverse(configs);
         return new Path(pathDist, configs);

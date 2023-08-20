@@ -6,13 +6,10 @@ import java.util.List;
 
 import edu.unc.robotics.prrts.Path;
 
-/**
- * A doubly-connected directed graph which also has a linked list of siblings.
- */
 public class Link {
-    // nullable for root
+    /** nullable for root */
     private final Node _source;
-    // nonnull
+    /** nonnull */
     private final Node _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
@@ -44,7 +41,7 @@ public class Link {
         double pathDist = get_pathDist();
         while (node != null) {
             configs.add(node.get_config());
-            node = node.get_parent_node();
+            node = node.get_incoming().get_source();
         }
         Collections.reverse(configs);
         return new Path(pathDist, configs);
