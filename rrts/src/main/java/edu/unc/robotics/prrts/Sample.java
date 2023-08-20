@@ -2,8 +2,8 @@ package edu.unc.robotics.prrts;
 
 import java.util.Random;
 
-import edu.unc.robotics.prrts.kdtree.KDModel;
-import edu.unc.robotics.prrts.util.MersenneTwister;
+import org.team100.lib.index.KDModel;
+import org.team100.lib.random.MersenneTwister;
 
 /**
  * Supplies samples drawn from a uniform distribution across the model bounds.
@@ -16,7 +16,7 @@ public class Sample {
 
     public Sample(KDModel kdModel) {
         _kdModel = kdModel;
-        _random = new MersenneTwister();
+        _random = new MersenneTwister(0);
         _sampleMin = _kdModel.getMin();
         _sampleMax = _kdModel.getMax();
     }

@@ -1,10 +1,6 @@
-package edu.unc.robotics.prrts.kdtree;
+package org.team100.lib.index;
 
-/**
- * KDModel
- *
- * @author jeffi
- */
+
 public interface KDModel {
     int dimensions();
 

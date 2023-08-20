@@ -1,5 +1,7 @@
 package edu.unc.robotics.prrts.tree;
 
+import org.team100.lib.graph.Node;
+
 public class NearNode implements Comparable<NearNode> {
     public final Node node;
     public final double linkDist;

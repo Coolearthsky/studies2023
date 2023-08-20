@@ -6,9 +6,10 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.rrt.RRTStar;
+
 import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.Sample;
-import edu.unc.robotics.prrts.RRTStar;
 
 /**
  * ArenaFrame
@@ -39,7 +40,7 @@ public class ArenaFrame extends JFrame {
             }
         });
 
-        runner.runForDurationMS(50);
+        runner.runForDurationMS(5000);
         //runner.runSamples(500);
     }
 }

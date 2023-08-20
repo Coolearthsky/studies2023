@@ -1,10 +1,10 @@
-package edu.unc.robotics.prrts.tree;
+package org.team100.lib.graph;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import edu.unc.robotics.prrts.Path;
+import org.team100.lib.space.Path;
 
 public class Link {
     /** nullable for root */
@@ -13,7 +13,7 @@ public class Link {
     private final Node _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
-    /** Total path length, i.e. cost, so far.  This is updated by rewiring. */
+    /** Total path length, i.e. cost, so far. This is updated by rewiring. */
     private double _pathDist;
 
     /**
@@ -24,25 +24,19 @@ public class Link {
      * @param linkDist distance to the parent
      */
     public Link(Node source, Node target, double linkDist) {
-        if (source == null) throw new IllegalArgumentException();
-        Link incoming = source.getIncoming();
-        double pathDist;
-        if (incoming == null) { // parent is root
-            pathDist = linkDist;
-        } else {
-            pathDist = incoming.get_pathDist() + linkDist;
-        }
+        if (source == null)
+            throw new IllegalArgumentException();
         if (target == null)
             throw new IllegalArgumentException();
         if (linkDist < 0)
             throw new IllegalArgumentException();
-        if (pathDist < 0)
-            throw new IllegalArgumentException();
+
+        double pathDist = source.getPathDist() + linkDist;
+
         _target = target;
         _linkDist = linkDist;
         _pathDist = pathDist;
         _source = source;
-
     }
 
     public Path path() {
@@ -52,7 +46,8 @@ public class Link {
         while (true) {
             configs.add(node.getState());
             Link incoming = node.getIncoming();
-            if (incoming == null) break;
+            if (incoming == null)
+                break;
             node = incoming.get_source();
         }
         Collections.reverse(configs);

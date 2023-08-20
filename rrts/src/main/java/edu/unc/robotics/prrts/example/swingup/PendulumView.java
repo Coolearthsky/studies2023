@@ -17,11 +17,12 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
+import org.team100.lib.space.Path;
+
 import edu.unc.robotics.prrts.Runner;
-import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.unc.robotics.prrts.tree.Link;
-import edu.unc.robotics.prrts.tree.Node;
 
 public class PendulumView extends JComponent {
     private final Runner _rrtStar;
@@ -139,8 +140,8 @@ public class PendulumView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) 0.1));
 
-        if (path.get_configs().size() > 1) {
-            Iterator<double[]> pathIter = path.get_configs().iterator();
+        if (path.getStates().size() > 1) {
+            Iterator<double[]> pathIter = path.getStates().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();

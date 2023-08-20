@@ -1,4 +1,4 @@
-package edu.unc.robotics.prrts;
+package org.team100.lib.rrt;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,13 +7,19 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
-import edu.unc.robotics.prrts.kdtree.KDModel;
+import org.team100.lib.graph.Graph;
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
+import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.Util;
+import org.team100.lib.planner.Solver;
+import org.team100.lib.space.Path;
+
+import edu.unc.robotics.prrts.RobotModel;
+import edu.unc.robotics.prrts.Sample;
 import edu.unc.robotics.prrts.kdtree.KDNearNode;
-import edu.unc.robotics.prrts.kdtree.KDNode;
-import edu.unc.robotics.prrts.kdtree.Util;
-import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
-import edu.unc.robotics.prrts.tree.Node;
 
 public class RRTStar<T extends KDModel & RobotModel> implements Solver {
     private final T _model;
@@ -84,8 +90,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             Node newTarget = new Node(newConfig);
             Link newLink = Graph.newLink(nearest, newTarget, distToNearest);
 
-
-            _bestPath = Operations.updateBestPath(_model, _bestPath, newLink);
+            _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
 
             Util.insert(_model, _rootNode, newTarget);
             return true;
@@ -113,8 +118,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             Node newTarget = new Node(newConfig);
             Link newLink = Graph.newLink(nn.node, newTarget, nn.linkDist);
 
-
-            _bestPath = Operations.updateBestPath(_model, _bestPath, newLink);
+            _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
 
             Util.insert(_model, _rootNode, newTarget);
 
@@ -133,7 +137,10 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                 NearNode jn = li.previous();
 
                 // rewiring needs to be informed by the dynamics; turn it off for now
-                _bestPath = Operations.rewire(_bestPath, _model, jn.node, jn.linkDist, newTarget);
+
+                if (Graph.rewire(_model, newTarget, jn.node, jn.linkDist)) {
+                    _bestPath = Graph.chooseBestPath(_model, _bestPath, newTarget.getIncoming());
+                }
             }
 
             return true;
@@ -156,24 +163,23 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         if (link == null) {
             return null;
         }
-        List<double[]> configs = new LinkedList<double[]>();
-        double pathDist = link.get_pathDist();
-
         Node node = link.get_target();
 
-        double pathDistAgain = 0;
-
+        // Collect the states along the path (backwards)
+        List<double[]> configs = new LinkedList<double[]>();
+        // Since we're visiting all the nodes it's very cheap to verify the total distance
+        double totalDistance = 0;
         while (true) {
             configs.add(node.getState());
             Link incoming = node.getIncoming();
             if (incoming == null)
                 break;
-            pathDistAgain += incoming.get_linkDist();
+            totalDistance += incoming.get_linkDist();
             node = incoming.get_source();
         }
+        // now we have the forwards list of states
         Collections.reverse(configs);
-        // return new Path(pathDist, configs);
 
-        return new Path(pathDistAgain, configs);
+        return new Path(totalDistance, configs);
     }
 }

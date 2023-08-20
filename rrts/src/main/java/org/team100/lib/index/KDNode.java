@@ -1,6 +1,6 @@
-package edu.unc.robotics.prrts.kdtree;
+package org.team100.lib.index;
 
-import edu.unc.robotics.prrts.tree.Point;
+import org.team100.lib.space.Point;
 
 public final class KDNode<V extends Point> {
     private final V value;

@@ -6,8 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.Util;
+import org.team100.lib.space.Point;
 
-import edu.unc.robotics.prrts.tree.Point;
 
 public class TestTrees {
     private static class MyKDModel implements KDModel {

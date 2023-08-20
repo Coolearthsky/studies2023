@@ -2,10 +2,11 @@ package edu.unc.robotics.prrts.example.arena;
 
 import java.awt.Color;
 
+import org.team100.lib.index.KDModel;
+
 import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
-import edu.unc.robotics.prrts.kdtree.KDModel;
 
 /**
  * HolonomicArena2D

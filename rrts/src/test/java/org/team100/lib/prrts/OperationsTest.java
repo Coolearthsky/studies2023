@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.graph.Graph;
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
 
-import edu.unc.robotics.prrts.Graph;
-import edu.unc.robotics.prrts.Operations;
 import edu.unc.robotics.prrts.RobotModel;
-import edu.unc.robotics.prrts.tree.Link;
-import edu.unc.robotics.prrts.tree.Node;
 
 public class OperationsTest {
 
@@ -77,7 +76,7 @@ public class OperationsTest {
         assertEquals(5, link5.get_pathDist(), 0.1);
 
         // rewire an inside node
-        Operations.rewire(null, myRobot, node4, 1, node2);
+        Graph.rewire(myRobot, node2, node4, 1);
 
         // the pathdist of that node is updated
         Link newLink4 = node4.getIncoming();

@@ -1,4 +1,4 @@
-package edu.unc.robotics.prrts.tree;
+package org.team100.lib.space;
 
 /**
  * A point in some metric space, not necessarily Euclidean; the KD Tree assumes

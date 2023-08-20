@@ -2,11 +2,14 @@ package edu.unc.robotics.prrts.kdtree;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import  edu.unc.robotics.prrts.tree.Point;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.Util;
+import org.team100.lib.space.Point;
 
 public class TestTraversal {
 

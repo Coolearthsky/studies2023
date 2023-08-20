@@ -3,11 +3,11 @@ package org.team100.lib.prrts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.rrt.RRTStar;
+import org.team100.lib.space.Path;
 
 import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.Sample;
-import edu.unc.robotics.prrts.RRTStar;
-import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.arena.HolonomicArena;
 
 @SuppressWarnings("unused")
@@ -32,7 +32,7 @@ public class TestBestPath {
 
         assertEquals(2400, nodes, 800);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(16, bestPath.get_dist(), 1);
+        assertEquals(16, bestPath.getDistance(), 1);
     }
 
     @Test
@@ -51,7 +51,7 @@ public class TestBestPath {
         }
         assertEquals(500, nodes, 10);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(17.5, bestPath.get_dist(), 2);
+        assertEquals(17.5, bestPath.getDistance(), 2);
     }
 
 }

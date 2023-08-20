@@ -1,10 +1,12 @@
-package edu.unc.robotics.prrts.kdtree;
+package org.team100.lib.index;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import edu.unc.robotics.prrts.tree.Point;
+import org.team100.lib.space.Point;
+
+import edu.unc.robotics.prrts.kdtree.KDNearNode;
 
 public class Util {
 

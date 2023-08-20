@@ -8,5 +8,4 @@ public class KDNearNode<V> {
         _dist = dist;
         _nearest = nearest;
     }
-
 }

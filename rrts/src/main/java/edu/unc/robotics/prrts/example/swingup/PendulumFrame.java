@@ -5,12 +5,13 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.rrt.RRTStar;
+import org.team100.lib.space.Path;
+
 import java.awt.BorderLayout;
 
 import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.Sample;
-import edu.unc.robotics.prrts.RRTStar;
-import edu.unc.robotics.prrts.Path;
 
 public class PendulumFrame extends JFrame {
     public PendulumFrame(PendulumArena arena, Runner rrtStar) {

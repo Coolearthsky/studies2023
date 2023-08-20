@@ -1,6 +1,7 @@
-package edu.unc.robotics.prrts;
+package org.team100.lib.planner;
 
-import edu.unc.robotics.prrts.tree.Node;
+import org.team100.lib.graph.Node;
+import org.team100.lib.space.Path;
 
 /**
  * Interface for solvers, can be stepped and listeners can see incremental
