@@ -16,10 +16,6 @@ public class Link {
     /** total path length, i.e. cost, so far */
     private final double _pathDist;
 
-    public Link(Node root) {
-        this(null, root, 0, 0);
-    }
-
     /**
      * Create a new link pointing at the node, linkDist away from parent.
      * 
@@ -31,8 +27,17 @@ public class Link {
         this(source, target, linkDist, source.get_incoming().get_pathDist() + linkDist);
     }
 
-    public boolean isExpired() {
-        return _target.get_incoming() != this;
+    public Link(Node source, Node target, double linkDist, double pathDist) {
+        if (target == null)
+            throw new IllegalArgumentException();
+        if (linkDist < 0)
+            throw new IllegalArgumentException();
+        if (pathDist < 0)
+            throw new IllegalArgumentException();
+        _target = target;
+        _linkDist = linkDist;
+        _pathDist = pathDist;
+        _source = source;
     }
 
     public Path path() {
@@ -63,23 +68,4 @@ public class Link {
     public double get_pathDist() {
         return _pathDist;
     }
-
-    //////////////////////////////////////////////////////////////////
-
-    private Link(Node source,
-            Node target,
-            double linkDist,
-            double pathDist) {
-        if (target == null)
-            throw new IllegalArgumentException();
-        if (linkDist < 0)
-            throw new IllegalArgumentException();
-        if (pathDist < 0)
-            throw new IllegalArgumentException();
-        _target = target;
-        _linkDist = linkDist;
-        _pathDist = pathDist;
-        _source = source;
-    }
-
 }

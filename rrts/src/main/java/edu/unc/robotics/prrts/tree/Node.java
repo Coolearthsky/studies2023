@@ -7,28 +7,24 @@ package edu.unc.robotics.prrts.tree;
  */
 public class Node implements Point {
     private final double[] _config;
-    private final boolean _inGoal;
 
     /** link from the parent node */
     private Link _incoming;
 
-    public Node(double[] config, boolean inGoal) {
+    public Node(double[] config) {
         _config = config;
-        _inGoal = inGoal;
-        _incoming = new Link(this);
+        _incoming = new Link(null, this, 0, 0);
     }
 
     /**
-     * Create a new node and
+     * Create a new node
      * 
      * @param config   state of this node
-     * @param inGoal   true if the state is within the goal
      * @param linkDist distance to the parent
      * @param parent   parent Node
      */
-    public Node(double[] config, boolean inGoal, double linkDist, Node parent) {
+    public Node(double[] config, double linkDist, Node parent) {
         _config = config;
-        _inGoal = inGoal;
         _incoming = new Link(parent, this, linkDist);
     }
 
@@ -45,10 +41,6 @@ public class Node implements Point {
     @Override
     public double[] get_config() {
         return _config;
-    }
-
-    public boolean is_inGoal() {
-        return _inGoal;
     }
 
     public Link get_incoming() {

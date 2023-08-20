@@ -15,8 +15,9 @@ public class Operations {
      * 
      * @return best path (whichever is better)
      */
-    public static Link updateBestPath(final Link bestPath, final Link link) {
-        if (!link.get_target().is_inGoal()) {
+    public static Link updateBestPath(RobotModel model, final Link bestPath, final Link link) {
+        boolean isInGoal = model.goal(link.get_target().get_config());
+        if (!isInGoal) {
             return bestPath;
         }
 
@@ -64,6 +65,6 @@ public class Operations {
         }
 
         Link newLink = oldLink.get_target().setLink(linkDist, newParent);
-        return Operations.updateBestPath(_bestPath, newLink);
+        return Operations.updateBestPath(_robotModel, _bestPath, newLink);
     }
 }

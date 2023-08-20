@@ -27,7 +27,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _rootNode = new KDNode<Node>(new Node(model.initial(), false));
+        _rootNode = new KDNode<Node>(new Node(model.initial()));
         _sample = sample;
         _gamma = gamma;
         _bestPath = null;
@@ -80,13 +80,9 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"
             // from that nearest node.
-            Node newNode = new Node(
-                    newConfig,
-                    _model.goal(newConfig),
-                    distToNearest,
-                    nearest);
+            Node newNode = new Node(newConfig, distToNearest, nearest);
 
-            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
+            _bestPath = Operations.updateBestPath(_model, _bestPath, newNode.get_incoming());
 
             Util.insert(_model, _rootNode, newNode);
             return true;
@@ -112,13 +108,9 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             // Found a linkable configuration. Create the node
             // and link it in here.
 
-            Node newNode = new Node(
-                    newConfig,
-                    _model.goal(newConfig),
-                    nn.linkDist,
-                    link.get_target());
+            Node newNode = new Node(newConfig, nn.linkDist, link.get_target());
 
-            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
+            _bestPath = Operations.updateBestPath(_model, _bestPath, newNode.get_incoming());
 
             Util.insert(_model, _rootNode, newNode);
 
