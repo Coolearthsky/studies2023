@@ -17,7 +17,7 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import edu.unc.robotics.prrts.PRRTStar;
+import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.tree.Node;
@@ -28,7 +28,7 @@ import edu.unc.robotics.prrts.tree.Node;
  * @author jeffi
  */
 public class ArenaView extends JComponent {
-    private final PRRTStar _rrtStar;
+    private final Runner _rrtStar;
     private final HolonomicArena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
@@ -40,7 +40,7 @@ public class ArenaView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public ArenaView(HolonomicArena arena, PRRTStar rrtStar) {
+    public ArenaView(HolonomicArena arena, Runner rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }

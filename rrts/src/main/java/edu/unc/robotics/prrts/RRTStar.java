@@ -3,6 +3,7 @@ package edu.unc.robotics.prrts;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -14,99 +15,80 @@ import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.NearNode;
 import edu.unc.robotics.prrts.tree.Node;
 
-class Worker {
-    private final KDModel _kdModel;
-    private final KDNode<Node> _rootNode ;
-    private final RobotModel _robotModel;
+public class RRTStar<T extends KDModel & RobotModel> implements Solver {
+    private final T _model;
+    private final KDNode<Node> _rootNode;
     private final Sample _sample;
     private final double _gamma;
-    private final long _timeLimit;
-    private final long _startTime;
-    private final int _sampleLimit;
-    private  int _stepNo;
-    public Link _bestPath;
+    private Link _bestPath;
 
-    public Worker(
-            KDModel kdModel,
-            KDNode<Node> rootNode ,
-            RobotModel robotModel,
-            Sample sample,
-            double gamma,
-            long timeLimit,
-            long startTime,
-            int sampleLimit) {
-        _kdModel = kdModel;
-        _rootNode = rootNode;
-        _robotModel = robotModel;
+    public RRTStar(T model, Sample sample, double gamma) {
+        if (gamma < 1.0) {
+            throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
+        }
+        _model = model;
+        _rootNode = new KDNode<Node>(model.initial(), new Node(model.initial(), false));
         _sample = sample;
         _gamma = gamma;
-        _timeLimit = timeLimit;
-        _startTime = startTime;
-        _sampleLimit = sampleLimit;
-        _stepNo = 0;
         _bestPath = null;
-    }
-    
-    public int getStepNo() {
-        return _stepNo;
     }
 
     /**
      * @return true if a new sample was added.
      */
-    private boolean step(int stepNo) {
-
+    @Override
+    public boolean step(int stepNo) {
         double[] newConfig = _sample.get();
 
         // this is wrong, we want to check the steered sample.
-        if (!_robotModel.clear(newConfig)) {
+        if (!_model.clear(newConfig)) {
             return false;
         }
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _kdModel.dimensions());
+                1.0 / _model.dimensions());
 
         List<NearNode> nearNodes = new ArrayList<>();
-        Util.near(_kdModel, _rootNode, newConfig, radius, (v, d) -> {
+        Util.near(_model, _rootNode, newConfig, radius, (v, d) -> {
             nearNodes.add(new NearNode(v.get_link(), d));
         });
 
         if (nearNodes.isEmpty()) {
 
-            KDNearNode<Node> nearResult = Util.nearest(_kdModel, _rootNode, newConfig);
+            KDNearNode<Node> nearResult = Util.nearest(_model, _rootNode, newConfig);
             Node nearest = nearResult._nearest;
-            double distToNearest =  nearResult._dist;
+            double distToNearest = nearResult._dist;
 
             if (distToNearest > radius) {
                 // usually the "nearest" node is outside the radius, so bring it closer
-                _kdModel.steer(nearest.get_config(), newConfig, radius / distToNearest);
+                _model.steer(nearest.get_config(), newConfig, radius / distToNearest);
             }
 
-            if (!_robotModel.clear(newConfig)) {
+            if (!_model.clear(newConfig)) {
                 return false;
             }
 
-            if (!_robotModel.link(nearest.get_config(), newConfig)) {
+            if (!_model.link(nearest.get_config(), newConfig)) {
                 return false;
             }
 
             // This should be radius, but might be off slightly so we
             // recalculate just to be safe.
-            distToNearest = _kdModel.dist(newConfig, nearest.get_config());
+            distToNearest = _model.dist(newConfig, nearest.get_config());
 
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"
             // from that nearest node.
             Node newNode = new Node(
                     newConfig,
-                    _robotModel.goal(newConfig),
+                    _model.goal(newConfig),
                     distToNearest,
                     nearest.get_link());
 
             _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
-            Util.insert(_kdModel, _rootNode, newConfig, newNode);
+            Util.insert(_model, _rootNode, newConfig, newNode);
             return true;
         }
 
@@ -123,7 +105,7 @@ class Worker {
             ni.remove();
             Link link = nn.link;
 
-            if (!_robotModel.link(link.get_node().get_config(), newConfig)) {
+            if (!_model.link(link.get_node().get_config(), newConfig)) {
                 continue;
             }
 
@@ -132,13 +114,13 @@ class Worker {
 
             Node newNode = new Node(
                     newConfig,
-                    _robotModel.goal(newConfig),
+                    _model.goal(newConfig),
                     nn.linkDist,
                     link);
 
-           _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
+            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
 
-            Util.insert(_kdModel, _rootNode, newConfig, newNode);
+            Util.insert(_model, _rootNode, newConfig, newNode);
 
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node
@@ -155,7 +137,7 @@ class Worker {
                 NearNode jn = li.previous();
 
                 // rewiring needs to be informed by the dynamics; turn it off for now
-               _bestPath = Operations.rewire(_bestPath, _robotModel, jn.link, jn.linkDist, newNode);
+                _bestPath = Operations.rewire(_bestPath, _model, jn.link, jn.linkDist, newNode);
             }
 
             return true;
@@ -167,21 +149,26 @@ class Worker {
         return false;
     }
 
-    public void run() {        
-        while (true) {
-            if (step(_stepNo)) {
-                _stepNo++;
-                if (_stepNo > _sampleLimit) {
-                    return;
-                }
-            }
-        
-            if (_timeLimit > 0) {
-                long now = System.nanoTime();
-                if (now - _startTime > _timeLimit) {
-                    return;
-                }
-            }
+    @Override
+    public Iterable<Node> getNodes() {
+        return Util.values(_rootNode);
+    }
+
+    @Override
+    public Path getBestPath() {
+        Link link = _bestPath;
+        if (link == null) {
+            return null;
         }
+        List<double[]> configs = new LinkedList<double[]>();
+        double pathDist = link.get_pathDist();
+
+        Node node = link.get_node();
+        while (node != null) {
+            configs.add(node.get_config());
+            node = node.get_parent_node();
+        }
+        Collections.reverse(configs);
+        return new Path(pathDist, configs);
     }
 }

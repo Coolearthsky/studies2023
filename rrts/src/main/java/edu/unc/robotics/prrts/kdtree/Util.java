@@ -6,16 +6,15 @@ import java.util.function.BiConsumer;
 
 public class Util {
 
-    public static <VVV> List<VVV> values(KDNode<VVV> root) {
-        List<VVV> list = new ArrayList<VVV>();
+    public static <V> List<V> values(KDNode<V> root) {
+        List<V> list = new ArrayList<V>();
         buildList(list, root);
         return list;
     }
 
-    static <VV> void buildList(List<VV> list, KDNode<VV> node) {
+    static <V> void buildList(List<V> list, KDNode<V> node) {
         if (node == null)
             return;
-
         list.add(node.getValue());
         buildList(list, node.getA());
         buildList(list, node.getB());

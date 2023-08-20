@@ -45,7 +45,7 @@ public class PendulumArena implements RobotModel, KDModel {
     private static final double POSITION_TOLERANCE = 0.25;
     private static final double VELOCITY_TOLERANCE = 0.25;
 
-    /** goal is straight up, motionless. */
+    private final double[] _init;
     private final double[] _goal;
     /** same as the paper */
     private static final double[] _min = { -4, -8 };
@@ -72,7 +72,8 @@ public class PendulumArena implements RobotModel, KDModel {
     private final double b = 0.1; // viscous drag, unit = ?
     private final double _g; // gravity m/s/s
 
-    public PendulumArena(double[] goal, double gravity) {
+    public PendulumArena(double[] init, double[] goal, double gravity) {
+        _init = init;
         _goal = goal;
         _g = gravity;
         // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
@@ -172,6 +173,11 @@ public class PendulumArena implements RobotModel, KDModel {
         //System.out.println("near " + x_near + " rand " + x_rand + " new " + x_new);
         newConfig[0] = x_new.get(0, 0);
         newConfig[1] = x_new.get(1, 0);
+    }
+
+    @Override
+    public double[] initial() {
+        return _init;
     }
 
     @Override

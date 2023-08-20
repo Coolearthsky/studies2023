@@ -7,11 +7,13 @@ import javax.swing.SwingUtilities;
 
 import java.awt.BorderLayout;
 
-import edu.unc.robotics.prrts.PRRTStar;
+import edu.unc.robotics.prrts.Runner;
+import edu.unc.robotics.prrts.Sample;
+import edu.unc.robotics.prrts.RRTStar;
 import edu.unc.robotics.prrts.Path;
 
 public class PendulumFrame extends JFrame {
-    public PendulumFrame(PendulumArena arena, PRRTStar rrtStar) {
+    public PendulumFrame(PendulumArena arena, Runner rrtStar) {
         super("Pendulum RRT*");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout());
@@ -20,10 +22,9 @@ public class PendulumFrame extends JFrame {
     }
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final PendulumArena arena = new PendulumArena(new double[] { Math.PI, 0 }, 9.81);
-        double[] init = { 0, 0 };
-
-        final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
+        final PendulumArena arena = new PendulumArena(new double[] { 0, 0 }, new double[] { Math.PI, 0 }, 9.81);
+        final RRTStar<PendulumArena> worker = new RRTStar<>(arena, new Sample(arena), 2);
+        final Runner rrtStar = new Runner(worker);
 
         SwingUtilities.invokeAndWait(new Runnable() {
             @Override
@@ -35,8 +36,8 @@ public class PendulumFrame extends JFrame {
             }
         });
 
-        // rrtStar.runForDurationMS(2, 10, 3000);
-        rrtStar.runSamples(2, 20000);
+        // rrtStar.runForDurationMS(3000);
+        rrtStar.runSamples(20000);
         Path bestPath = rrtStar.getBestPath();
         System.out.println(bestPath);
 

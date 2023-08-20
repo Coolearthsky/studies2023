@@ -18,6 +18,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double GOAL_RADIUS = 0.4;
     private static final int DIMENSIONS = 2;
 
+    private static final double[] _init = { 15.5, 6.75 };
     private static final double[] _goal = { 1.93, 2.748 };
     private static final double[] _min = { 0, 0 };
     private static final double[] _max = { 16, 8 };
@@ -120,6 +121,11 @@ public class HolonomicArena implements RobotModel, KDModel {
         return true;
     }
 
+    @Override
+    public double[] initial() {
+        return _init;
+    }
+    
     @Override
     public boolean goal(double[] conf) {
         return dist(conf, _goal) < GOAL_RADIUS;

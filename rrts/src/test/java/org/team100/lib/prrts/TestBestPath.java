@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-import edu.unc.robotics.prrts.PRRTStar;
+import edu.unc.robotics.prrts.Runner;
+import edu.unc.robotics.prrts.Sample;
+import edu.unc.robotics.prrts.RRTStar;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.arena.HolonomicArena;
 
@@ -15,11 +17,10 @@ public class TestBestPath {
     @Test
     public void testTime() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0};
+        final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
+        final Runner rrtStar = new Runner(worker);
 
-        final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
-
-        rrtStar.runForDurationMS(6.0, 20);
+        rrtStar.runForDurationMS(20);
 
         int steps = rrtStar.getStepNo();
         assertEquals(2400, steps, 1000); 
@@ -31,17 +32,16 @@ public class TestBestPath {
 
         assertEquals(2400, nodes, 800);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(6.5, bestPath.get_dist(), 1);
+        assertEquals(16, bestPath.get_dist(), 1);
     }
 
     @Test
     public void testSteps() {
         final HolonomicArena arena = new HolonomicArena();
-        double[] init = { 7.0, 1.0 };
+        final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
+        final Runner rrtStar = new Runner(worker);
 
-        final PRRTStar rrtStar = new PRRTStar(arena, arena, init);
-
-        rrtStar.runSamples(6.0, 500);
+        rrtStar.runSamples(500);
 
         int steps = rrtStar.getStepNo();
         assertEquals(504, steps, 10);
@@ -51,7 +51,7 @@ public class TestBestPath {
         }
         assertEquals(500, nodes, 10);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(6, bestPath.get_dist(), 2);
+        assertEquals(17.5, bestPath.get_dist(), 2);
     }
 
 }

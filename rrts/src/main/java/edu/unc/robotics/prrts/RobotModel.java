@@ -6,6 +6,10 @@ package edu.unc.robotics.prrts;
  * @author jeffi
  */
 public interface RobotModel {
+
+    /** Initial state. */
+    double[] initial();
+
     /**
      * Checks if a configuration is a goal configuration. If we are
      * searching for a path to a target goal configuration, this method
