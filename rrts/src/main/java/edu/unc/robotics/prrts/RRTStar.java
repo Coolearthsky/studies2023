@@ -51,7 +51,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
         List<NearNode> nearNodes = new ArrayList<>();
         Util.near(_model, _rootNode, newConfig, radius, (v, d) -> {
-            nearNodes.add(new NearNode(v.get_link(), d));
+            nearNodes.add(new NearNode(v.get_incoming(), d));
         });
 
         if (nearNodes.isEmpty()) {
@@ -84,9 +84,9 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     newConfig,
                     _model.goal(newConfig),
                     distToNearest,
-                    nearest.get_link());
+                    nearest.get_incoming());
 
-            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
+            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
 
             Util.insert(_model, _rootNode, newNode);
             return true;
@@ -105,7 +105,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             ni.remove();
             Link link = nn.link;
 
-            if (!_model.link(link.get_node().get_config(), newConfig)) {
+            if (!_model.link(link.get_target().get_config(), newConfig)) {
                 continue;
             }
 
@@ -118,7 +118,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     nn.linkDist,
                     link);
 
-            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_link());
+            _bestPath = Operations.updateBestPath(_bestPath, newNode.get_incoming());
 
             Util.insert(_model, _rootNode, newNode);
 
@@ -163,7 +163,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = link.get_pathDist();
 
-        Node node = link.get_node();
+        Node node = link.get_target();
         while (node != null) {
             configs.add(node.get_config());
             node = node.get_parent_node();
