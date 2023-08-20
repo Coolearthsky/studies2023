@@ -20,7 +20,7 @@ public class GraphLibTest {
         g.addVertex("root");
         g.addVertex("one");
         g.addVertex("two");
-        // DefaultEdge e1 = g.addEdge("root", "one");
+        g.addEdge("root", "one");
         DefaultEdge e2 = g.addEdge("root", "two");
         Set<DefaultEdge> parent_edges = g.incomingEdgesOf("two");
         assertArrayEquals(new DefaultEdge[] {e2}, parent_edges.toArray(new DefaultEdge[0]));
