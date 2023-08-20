@@ -31,24 +31,27 @@ public class Operations {
 
     /**
      * Move all the children of oldParent to newParent.
+     * 
+     * @return new best path
      */
-    public static void updateChildren(
+    public static Link updateChildren(
             final Link bestPath,
             Link newParent,
             Link oldParent) {
         if (newParent.get_node() != oldParent.get_node()) {
             _log.log(Level.WARNING, "updating links of different nodes");
-            return;
+            return bestPath;
         }
         if (!oldParent.isExpired()) {
             _log.log(Level.WARNING, "updating non-expired link");
-            return;
+            return bestPath;
         }
         if (newParent.get_pathDist() > oldParent.get_pathDist()) {
             _log.log(Level.WARNING, "attempted to update to longer path");
-            return;
+            return bestPath;
         }
-        for (;;) {
+        Link newBestPath = bestPath;
+        while (true) {
             Link oldChild = oldParent.removeFirstChild();
 
             if (oldChild == null) {
@@ -60,7 +63,7 @@ public class Operations {
                     continue;
                 }
 
-                return;
+                return newBestPath;
             }
 
             if (oldChild.isExpired()) {
@@ -69,16 +72,15 @@ public class Operations {
 
             Node node = oldChild.get_node();
 
-            // if (node.get_link().get().get_parent().get_node() != oldParent.get_node()) {
             if (node.get_link().get_parent_node() != oldParent.get_node()) {
                 continue;
             }
 
-            Link newChild = node.setLink(oldChild, oldChild.get_linkDist(), newParent);
+            Link newChild = node.setLink(oldChild.get_linkDist(), newParent);
 
             if (newChild != null) {
-                updateChildren(bestPath, newChild, oldChild);
-                updateBestPath(bestPath, newChild);
+                updateChildren(newBestPath, newChild, oldChild);
+                newBestPath = updateBestPath(newBestPath, newChild);
             } else {
                 if (node.get_link() == oldChild) {
                     _log.log(Level.WARNING, "weird child situation");
@@ -107,58 +109,32 @@ public class Operations {
             return _bestPath;
         }
 
-        Node node = oldLink.get_node();
+        Link newParentLink = newParent.get_link();
 
-        Link parentLink = newParent.get_link();
+        double newPathDist = newParentLink.get_pathDist() + linkDist;
 
-        double pathDist = parentLink.get_pathDist() + linkDist;
-
-        // check if rewiring would create a shorter path
-        if (pathDist >= oldLink.get_pathDist()) {
+        // if the new path is not better, then return the old path
+        if (newPathDist >= oldLink.get_pathDist()) {
             return _bestPath;
         }
 
-        // check if rewiring is possible
+        // if the new link is not feasible, return the old path
         if (!_robotModel.link(oldLink.get_node().get_config(), newParent.get_config())) {
             return _bestPath;
         }
 
-        // rewire the node. this loop continues to attempt atomic
-        // updates until either the update succeeds or the pathDist
-        // of the oldLink is found to be better than what we're trying
-        // to put in
         Link newBestPath = _bestPath;
-        do {
 
-            Link newLink = node.setLink(oldLink, linkDist, parentLink);
+        Link newLink = oldLink.get_node().setLink(linkDist, newParentLink);
 
-            if (newLink != null) {
-                Operations.updateChildren(newBestPath, newLink, oldLink);
-                newBestPath = Operations.updateBestPath(newBestPath, newLink);
+        Operations.updateChildren(newBestPath, newLink, oldLink);
+        newBestPath = Operations.updateBestPath(newBestPath, newLink);
 
-                if (parentLink.isExpired()) {
-                    Operations.updateChildren(newBestPath, parentLink.get_node().get_link(), parentLink);
-                }
+        if (newParentLink.isExpired()) {
+            Operations.updateChildren(newBestPath, newParentLink.get_node().get_link(), newParentLink);
+        }
 
-                // Setting newLink expires oldLink but doesn not remove
-                // it from its parent. Here we do a little cleanup.
-                // We do it after the expired parent check since the parent
-                // will likely have already cleaned this up, and this call
-                // will be O(1) instead of O(n)
-                oldLink.get_parent().removeChild(oldLink);
-                return newBestPath;
-            }
-
-            Link updatedOldLink = node.get_link();
-
-            if (updatedOldLink == oldLink) {
-                _log.log(Level.WARNING, "update isn't different");
-            }
-
-            oldLink = updatedOldLink;
-
-        } while (pathDist < oldLink.get_pathDist());
-        
+        oldLink.get_parent().removeChild(oldLink);
         return newBestPath;
     }
 

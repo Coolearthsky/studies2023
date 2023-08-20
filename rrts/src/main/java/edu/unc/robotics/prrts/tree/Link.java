@@ -173,6 +173,7 @@ public class Link {
         return _linkDist;
     }
 
+    /** Total path length from start to here */
     public double get_pathDist() {
         return _pathDist;
     }

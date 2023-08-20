@@ -1,8 +1,5 @@
 package edu.unc.robotics.prrts.tree;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Represents a single configuration in the RRT* tree. The path to the
  * node can be computed by following the parents until null, and then
@@ -15,7 +12,6 @@ import java.util.logging.Logger;
  * It should NOT be modified by the caller.
  */
 public class Node implements Point {
-    private static final Logger _log = Logger.getLogger(Node.class.getName());
 
     private final double[] _config;
     private final boolean _inGoal;
@@ -48,16 +44,11 @@ public class Node implements Point {
     /**
      * Change the parent of this node.
      * 
-     * @return the new parent link, or null if oldLink is not the current value
+     * @return the new parent link
      */
-    public Link setLink(Link oldLink, double linkDist, Link parent) {
+    public Link setLink(double linkDist, Link parent) {
         Link newLink = new Link(this, linkDist, parent);
         _link = newLink;
-            
-        if (newLink.get_pathDist() > oldLink.get_pathDist()) {
-            _log.log(Level.WARNING, "attempted to set worse parent");
-            return null;
-        }
         parent.addChild(newLink);
         return newLink;
     }
