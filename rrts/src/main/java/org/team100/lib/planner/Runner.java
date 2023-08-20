@@ -1,7 +1,6 @@
-package edu.unc.robotics.prrts;
+package org.team100.lib.planner;
 
 import org.team100.lib.graph.Node;
-import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 
 /**

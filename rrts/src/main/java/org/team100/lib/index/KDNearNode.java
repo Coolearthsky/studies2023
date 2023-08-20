@@ -1,4 +1,4 @@
-package edu.unc.robotics.prrts.kdtree;
+package org.team100.lib.index;
 
 public class KDNearNode<V> {
     public final double _dist;

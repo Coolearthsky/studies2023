@@ -6,16 +6,11 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.planner.Runner;
 import org.team100.lib.rrt.RRTStar;
+import org.team100.lib.space.Sample;
 
-import edu.unc.robotics.prrts.Runner;
-import edu.unc.robotics.prrts.Sample;
 
-/**
- * ArenaFrame
- *
- * @author jeffi
- */
 public class ArenaFrame extends JFrame {
 
     public ArenaFrame(HolonomicArena arena, Runner rrtStar) {

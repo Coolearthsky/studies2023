@@ -2,7 +2,7 @@ package org.team100.lib.graph;
 
 import java.util.Iterator;
 
-import edu.unc.robotics.prrts.RobotModel;
+import org.team100.lib.planner.RobotModel;
 
 public class Graph {
     /**

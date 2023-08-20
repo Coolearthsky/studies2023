@@ -3,11 +3,7 @@ package edu.unc.robotics.prrts.example.geom;
 import java.awt.Color;
 import java.awt.Shape;
 
-/**
- * Obstacle
- *
- * @author jeffi
- */
+
 public interface Obstacle {
     Shape shape();
     Color color();

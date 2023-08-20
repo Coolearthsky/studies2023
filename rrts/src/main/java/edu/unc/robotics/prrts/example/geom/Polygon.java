@@ -6,11 +6,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.util.Arrays;
 
-/**
- * Polygon
- *
- * @author jeffi
- */
+
 public class Polygon implements Obstacle {
     private final Path2D.Double _shape;
     private final Color _color;

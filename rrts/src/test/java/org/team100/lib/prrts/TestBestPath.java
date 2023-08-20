@@ -3,11 +3,11 @@ package org.team100.lib.prrts;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.planner.Runner;
 import org.team100.lib.rrt.RRTStar;
 import org.team100.lib.space.Path;
+import org.team100.lib.space.Sample;
 
-import edu.unc.robotics.prrts.Runner;
-import edu.unc.robotics.prrts.Sample;
 import edu.unc.robotics.prrts.example.arena.HolonomicArena;
 
 @SuppressWarnings("unused")

@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.index.KDModel;
 import org.team100.lib.index.KDNode;
-import org.team100.lib.index.Util;
+import org.team100.lib.index.KDTree;
 import org.team100.lib.space.Point;
 
 public class TestTraversal {
@@ -66,8 +66,8 @@ public class TestTraversal {
     @Test
     void testInsert() {
         KDNode<StringPoint> n = new KDNode<>(new StringPoint( "n", new double[] { 0, 0 }));
-        Util.insert(myModel, n, new StringPoint("one",new double[] { 0.5, 0 }));
-        List<StringPoint> s = Util.values(n);
+        KDTree.insert(myModel, n, new StringPoint("one",new double[] { 0.5, 0 }));
+        List<StringPoint> s = KDTree.values(n);
         assertEquals(2, s.size());
         KDNode<StringPoint> a = n.getA();
         KDNode<StringPoint> b = n.getB();

@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.team100.lib.index.KDModel;
 import org.team100.lib.index.KDNode;
-import org.team100.lib.index.Util;
+import org.team100.lib.index.KDTree;
 import org.team100.lib.space.Point;
 
 
@@ -65,13 +65,13 @@ public class TestTrees {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
-        Util.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
-        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
-        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
+        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
@@ -89,20 +89,20 @@ public class TestTrees {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
-        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        Util.insert(m, rootNode, new StringPoint("child2", new double[] { 0.5, 0.75 }));
-        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        KDTree.insert(m, rootNode, new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // small radius
-        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -114,22 +114,22 @@ public class TestTrees {
         double[] init = new double[] { 0, 0 };
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
 
         // if the other view does the insert, the child is still found
-        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // small radius
-        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -141,16 +141,16 @@ public class TestTrees {
         double[] init = new double[] { 0, 0 };
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
+        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
 
         // if the other view does the insert, the child is still found
-        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // now it should find it
-        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
@@ -159,7 +159,7 @@ public class TestTrees {
         assertEquals(0.25, distList.get(0), 0.001);
 
         // and it should still find it
-        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -171,23 +171,23 @@ public class TestTrees {
         double[] init = new double[] { 0, 0 };
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Util.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // now it should find it
-        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
         // do the insert *after* it would have been found...
-        Util.insert(m, rootNode, new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode, new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         // and it should still find it
-        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }

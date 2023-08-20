@@ -1,8 +1,8 @@
 package edu.unc.robotics.prrts.example.swingup;
 
 import org.team100.lib.index.KDModel;
+import org.team100.lib.planner.RobotModel;
 
-import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.wpi.first.math.DARE;
 import edu.wpi.first.math.Matrix;

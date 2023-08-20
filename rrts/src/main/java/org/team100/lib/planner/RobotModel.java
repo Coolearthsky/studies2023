@@ -1,10 +1,5 @@
-package edu.unc.robotics.prrts;
+package org.team100.lib.planner;
 
-/**
- * RobotModel
- *
- * @author jeffi
- */
 public interface RobotModel {
 
     /** Initial state. */

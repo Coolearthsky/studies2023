@@ -3,16 +3,12 @@ package edu.unc.robotics.prrts.example.arena;
 import java.awt.Color;
 
 import org.team100.lib.index.KDModel;
+import org.team100.lib.planner.RobotModel;
 
-import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
 
-/**
- * HolonomicArena2D
- *
- * @author jeffi
- */
+
 public class HolonomicArena implements RobotModel, KDModel {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
