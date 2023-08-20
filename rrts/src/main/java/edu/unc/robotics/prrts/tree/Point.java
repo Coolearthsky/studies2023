@@ -6,5 +6,5 @@ package edu.unc.robotics.prrts.tree;
  */
 public interface Point {
     /** The vector that describes this point. */
-    double[] get_config();
+    double[] getState();
 }

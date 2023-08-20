@@ -13,8 +13,8 @@ public class Link {
     private final Node _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
-    /** total path length, i.e. cost, so far */
-    private final double _pathDist;
+    /** Total path length, i.e. cost, so far.  This is updated by rewiring. */
+    private double _pathDist;
 
     /**
      * Create a new link pointing at the node, linkDist away from parent.
@@ -24,10 +24,14 @@ public class Link {
      * @param linkDist distance to the parent
      */
     public Link(Node source, Node target, double linkDist) {
-        this(source, target, linkDist, source.get_incoming().get_pathDist() + linkDist);
-    }
-
-    public Link(Node source, Node target, double linkDist, double pathDist) {
+        if (source == null) throw new IllegalArgumentException();
+        Link incoming = source.getIncoming();
+        double pathDist;
+        if (incoming == null) { // parent is root
+            pathDist = linkDist;
+        } else {
+            pathDist = incoming.get_pathDist() + linkDist;
+        }
         if (target == null)
             throw new IllegalArgumentException();
         if (linkDist < 0)
@@ -38,15 +42,18 @@ public class Link {
         _linkDist = linkDist;
         _pathDist = pathDist;
         _source = source;
+
     }
 
     public Path path() {
         Node node = get_target();
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = get_pathDist();
-        while (node != null) {
-            configs.add(node.get_config());
-            node = node.get_incoming().get_source();
+        while (true) {
+            configs.add(node.getState());
+            Link incoming = node.getIncoming();
+            if (incoming == null) break;
+            node = incoming.get_source();
         }
         Collections.reverse(configs);
         return new Path(pathDist, configs);
@@ -56,12 +63,17 @@ public class Link {
         return _source;
     }
 
+    /** nonnull */
     public Node get_target() {
         return _target;
     }
 
     public double get_linkDist() {
         return _linkDist;
+    }
+
+    public void set_PathDist(double d) {
+        _pathDist = d;
     }
 
     /** Total path length from start to here */

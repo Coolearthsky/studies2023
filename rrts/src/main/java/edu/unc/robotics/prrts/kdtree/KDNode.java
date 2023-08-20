@@ -30,7 +30,7 @@ public final class KDNode<V extends Point> {
     }
 
     public double[] getConfig() {
-        return value.get_config();
+        return value.getState();
     }
 
     public V getValue() {

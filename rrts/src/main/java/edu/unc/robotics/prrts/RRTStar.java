@@ -50,8 +50,9 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                 1.0 / _model.dimensions());
 
         List<NearNode> nearNodes = new ArrayList<>();
-        Util.near(_model, _rootNode, newConfig, radius, (v, d) -> {
-            nearNodes.add(new NearNode(v.get_incoming(), d));
+        Util.near(_model, _rootNode, newConfig, radius, (node, dist) -> {
+            if (node.getIncoming() != null)
+                nearNodes.add(new NearNode(node, dist));
         });
 
         if (nearNodes.isEmpty()) {
@@ -62,29 +63,31 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
             if (distToNearest > radius) {
                 // usually the "nearest" node is outside the radius, so bring it closer
-                _model.steer(nearest.get_config(), newConfig, radius / distToNearest);
+                _model.steer(nearest.getState(), newConfig, radius / distToNearest);
             }
 
             if (!_model.clear(newConfig)) {
                 return false;
             }
 
-            if (!_model.link(nearest.get_config(), newConfig)) {
+            if (!_model.link(nearest.getState(), newConfig)) {
                 return false;
             }
 
             // This should be radius, but might be off slightly so we
             // recalculate just to be safe.
-            distToNearest = _model.dist(newConfig, nearest.get_config());
+            distToNearest = _model.dist(newConfig, nearest.getState());
 
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"
             // from that nearest node.
-            Node newNode = new Node(newConfig, distToNearest, nearest);
+            Node newTarget = new Node(newConfig);
+            Link newLink = Graph.newLink(nearest, newTarget, distToNearest);
 
-            _bestPath = Operations.updateBestPath(_model, _bestPath, newNode.get_incoming());
 
-            Util.insert(_model, _rootNode, newNode);
+            _bestPath = Operations.updateBestPath(_model, _bestPath, newLink);
+
+            Util.insert(_model, _rootNode, newTarget);
             return true;
         }
 
@@ -99,20 +102,21 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         while (ni.hasNext()) {
             NearNode nn = ni.next();
             ni.remove();
-            Link link = nn.link;
 
-            if (!_model.link(link.get_target().get_config(), newConfig)) {
+            if (!_model.link(nn.node.getState(), newConfig)) {
                 continue;
             }
 
             // Found a linkable configuration. Create the node
             // and link it in here.
 
-            Node newNode = new Node(newConfig, nn.linkDist, link.get_target());
+            Node newTarget = new Node(newConfig);
+            Link newLink = Graph.newLink(nn.node, newTarget, nn.linkDist);
 
-            _bestPath = Operations.updateBestPath(_model, _bestPath, newNode.get_incoming());
 
-            Util.insert(_model, _rootNode, newNode);
+            _bestPath = Operations.updateBestPath(_model, _bestPath, newLink);
+
+            Util.insert(_model, _rootNode, newTarget);
 
             // For the remaining nodes in the near list, rewire
             // their links to go through the newly inserted node
@@ -129,7 +133,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                 NearNode jn = li.previous();
 
                 // rewiring needs to be informed by the dynamics; turn it off for now
-                _bestPath = Operations.rewire(_bestPath, _model, jn.link, jn.linkDist, newNode);
+                _bestPath = Operations.rewire(_bestPath, _model, jn.node, jn.linkDist, newTarget);
             }
 
             return true;
@@ -156,11 +160,20 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         double pathDist = link.get_pathDist();
 
         Node node = link.get_target();
-        while (node != null) {
-            configs.add(node.get_config());
-            node = node.get_incoming().get_source();
+
+        double pathDistAgain = 0;
+
+        while (true) {
+            configs.add(node.getState());
+            Link incoming = node.getIncoming();
+            if (incoming == null)
+                break;
+            pathDistAgain += incoming.get_linkDist();
+            node = incoming.get_source();
         }
         Collections.reverse(configs);
-        return new Path(pathDist, configs);
+        // return new Path(pathDist, configs);
+
+        return new Path(pathDistAgain, configs);
     }
 }

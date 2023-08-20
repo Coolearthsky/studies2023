@@ -8,13 +8,14 @@ import edu.unc.robotics.prrts.tree.Point;
 
 public class Util {
 
+    /** Returns all the values in the subtree. */
     public static <V extends Point> List<V> values(KDNode<V> root) {
         List<V> list = new ArrayList<V>();
         buildList(list, root);
         return list;
     }
 
-    static <V extends Point> void buildList(List<V> list, KDNode<V> node) {
+    private static <V extends Point> void buildList(List<V> list, KDNode<V> node) {
         if (node == null)
             return;
         list.add(node.getValue());
@@ -22,6 +23,7 @@ public class Util {
         buildList(list, node.getB());
     }
 
+    /** Inserts the value into the KD Tree. */
     public static <V extends Point> void insert(KDModel model, KDNode<V> root, V value) {
         double[] min = model.getMin();
         double[] max = model.getMax();
@@ -33,7 +35,7 @@ public class Util {
         for (;; ++depth) {
             int axis = depth % model.dimensions();
             double mp = (min[axis] + max[axis]) / 2;
-            double v = value.get_config()[axis];
+            double v = value.getState()[axis];
 
             if (v < mp) {
                 // a-side
@@ -55,24 +57,41 @@ public class Util {
         }
     }
 
-    public static <V extends Point> void near(KDModel model, KDNode<V> root, double[] target, double radius,
+    /**
+     * @param consumer Consumes possible parents for target.
+     */
+    public static <V extends Point> void near(
+            KDModel model,
+            KDNode<V> root,
+            double[] target,
+            double radius,
             BiConsumer<V, Double> consumer) {
         double[] min = model.getMin();
         double[] max = model.getMax();
         Util.near(model, min, max, consumer, root, target, radius, 0);
     }
 
-    public static <V extends Point> void near(KDModel model, double[] min, double[] max, BiConsumer<V, Double> consumer, KDNode<V> n,
-            double[] target, double radius, int depth) {
-        final double d = model.dist(n.getConfig(), target);
-        if (d < radius) {
-            consumer.accept(n.getValue(), d);
+    /**
+     * @param consumer Consumes possible parents for target.
+     */
+    private static <V extends Point> void near(
+            KDModel model,
+            double[] min,
+            double[] max,
+            BiConsumer<V, Double> consumer,
+            KDNode<V> kdNode,
+            double[] target,
+            double radius,
+            int depth) {
+        final double dist = model.dist(kdNode.getConfig(), target);
+        if (dist < radius) {
+            consumer.accept(kdNode.getValue(), dist);
         }
         final int axis = depth % model.dimensions();
         final double mp = (min[axis] + max[axis]) / 2;
         final double dm = Math.abs(mp - target[axis]);
 
-        KDNode<V> a = n.getA();
+        KDNode<V> a = kdNode.getA();
 
         if (a != null && (target[axis] < mp || dm < radius)) {
             // in or near a-side
@@ -82,7 +101,7 @@ public class Util {
             max[axis] = tmp;
         }
 
-        KDNode<V> b = n.getB();
+        KDNode<V> b = kdNode.getB();
 
         if (b != null && (mp <= target[axis] || dm < radius)) {
             // in or near b-side

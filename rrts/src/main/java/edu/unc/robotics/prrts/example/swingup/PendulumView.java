@@ -20,6 +20,7 @@ import javax.swing.SwingUtilities;
 import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
+import edu.unc.robotics.prrts.tree.Link;
 import edu.unc.robotics.prrts.tree.Node;
 
 public class PendulumView extends JComponent {
@@ -51,7 +52,6 @@ public class PendulumView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
-        // System.out.println("paint");
 
         PendulumArena robotModel = _robotModel;
         double[] min = robotModel.getMin();
@@ -86,7 +86,6 @@ public class PendulumView extends JComponent {
     }
 
     private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
-        // System.out.println("BG");
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
@@ -120,12 +119,12 @@ public class PendulumView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         Line2D.Double line = new Line2D.Double();
         for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.get_incoming().get_source();
-            if (parent != null) {
-                double[] n = node.get_config();
-                double[] p = parent.get_config();
+            Link incoming = node.getIncoming();
+            if (incoming != null) {
+                Node parent = incoming.get_source();
+                double[] n = node.getState();
+                double[] p = parent.getState();
                 g.setColor(Color.GRAY);
-                // System.out.println("x " + n[0] + " y " + n[1]);
                 line.setLine(n[0], n[1], p[0], p[1]);
                 g.draw(line);
             }
@@ -161,9 +160,6 @@ public class PendulumView extends JComponent {
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
         g.translate(min[0], min[1]);
-        // double scale = Math.min(
-        // size.width / (max[0] - min[0]),
-        // size.height / (max[1] - min[1]));
         double xscale = size.width / (max[0] - min[0]);
         double yscale = size.height / (max[1] - min[1]);
         g.scale(xscale, yscale);

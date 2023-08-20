@@ -41,19 +41,15 @@ public class TestLQR {
 
             Matrix<N2, N2> S = DARE.dare(discA, discB, Q, R);
 
-            // System.out.println("============== x1 = " + String.format("%5.3f", x1));
-            // System.out.println(S);
-
             Matrix<N1, N2> K = discB
                     .transpose()
                     .times(S)
                     .times(discB)
                     .plus(R)
                     .solve(discB.transpose().times(S).times(discA));
-            System.out.println(K);
-
+            // TODO: a better test, or delete it
+            assertArrayEquals(new double[] { 0, 0 }, K.getData(), 10);
         }
-
     }
 
     @Test

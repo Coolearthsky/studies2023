@@ -47,7 +47,7 @@ public class TestTrees {
         }
 
         @Override
-        public double[] get_config() {
+        public double[] getState() {
             return _config;
         }
 

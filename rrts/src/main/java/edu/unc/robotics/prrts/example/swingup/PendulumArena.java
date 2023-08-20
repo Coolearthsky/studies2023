@@ -78,10 +78,6 @@ public class PendulumArena implements RobotModel, KDModel {
         _g = gravity;
         // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
 
-        // System.out.println("==============");
-        // System.out.println(S);
-        // System.out.println("==============");
-
     }
 
     public Matrix<N2, N2> getA(double[] x) {
@@ -145,7 +141,6 @@ public class PendulumArena implements RobotModel, KDModel {
      */
     @Override
     public double dist(double[] start, double[] end) {
-        // System.out.println(Arrays.toString(start) + Arrays.toString(end));
         Matrix<N2, N2> S = getS(start);
         Matrix<N2, N1> dx = VecBuilder.fill(end[0] - start[0], end[1] - start[1]);
         return dx.transpose().times(S).times(dx).get(0, 0);
@@ -170,7 +165,6 @@ public class PendulumArena implements RobotModel, KDModel {
                 nearConfig[1],
                 (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
         Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-        //System.out.println("near " + x_near + " rand " + x_rand + " new " + x_new);
         newConfig[0] = x_new.get(0, 0);
         newConfig[1] = x_new.get(1, 0);
     }

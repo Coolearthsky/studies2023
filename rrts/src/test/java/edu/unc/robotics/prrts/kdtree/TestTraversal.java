@@ -51,7 +51,7 @@ public class TestTraversal {
         }
 
         @Override
-        public double[] get_config() {
+        public double[] getState() {
             return _config;
         }
         public String get_v() {

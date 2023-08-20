@@ -1,49 +1,45 @@
 package edu.unc.robotics.prrts.tree;
 
-/**
- * Represents a single configuration in the RRT* tree. The path to the
- * node can be computed by following the parents until null, and then
- * reversing the order.
- */
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 public class Node implements Point {
-    private final double[] _config;
+    private final double[] state;
 
-    /** link from the parent node */
-    private Link _incoming;
+    /** Nullable for root, can be updated. */
+    private Link incoming;
 
-    public Node(double[] config) {
-        _config = config;
-        _incoming = new Link(null, this, 0, 0);
-    }
+    private Set<Link> outgoing;
 
-    /**
-     * Create a new node
-     * 
-     * @param config   state of this node
-     * @param linkDist distance to the parent
-     * @param parent   parent Node
-     */
-    public Node(double[] config, double linkDist, Node parent) {
-        _config = config;
-        _incoming = new Link(parent, this, linkDist);
-    }
-
-    /**
-     * Change the parent of this node.
-     * 
-     * @return the new parent link
-     */
-    public Link setLink(double linkDist, Node parent) {
-        _incoming = new Link(parent, this, linkDist);
-        return _incoming;
+    public Node(double[] state) {
+        this.state = state;
+        this.outgoing = new HashSet<Link>();
     }
 
     @Override
-    public double[] get_config() {
-        return _config;
+    public double[] getState() {
+        return state;
     }
 
-    public Link get_incoming() {
-        return _incoming;
+    public void setIncoming(Link link) {
+        incoming = link;
+    }
+
+    /** Nullable for root (i.e. start). */
+    public Link getIncoming() {
+        return incoming;
+    }
+
+    public void addOutgoing(Link link) {
+        outgoing.add(link);
+    }
+
+    public void removeOutgoing(Link link) {
+        outgoing.remove(link);
+    }
+
+    public Iterator<Link> getOutgoing() {
+        return outgoing.iterator();
     }
 }
