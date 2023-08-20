@@ -1,20 +1,12 @@
-package edu.unc.robotics.prrts.kdtree;
+package org.team100.lib.index;
 
-/**
- * KDModel
- *
- * @author jeffi
- */
+
 public interface KDModel {
     int dimensions();
 
-    /**
-     * Write model min and max
-     * 
-     * @param min OUTVAR model minimum
-     * @param max OUTVAR model maximum
-     */
-    void getBounds(double[] min, double[] max);
+    double[] getMin();
+
+    double[] getMax();
 
     /**
      * Distance, i.e. cost, between states. Note that this function is not, in

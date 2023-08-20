@@ -1,12 +1,16 @@
 package edu.unc.robotics.prrts.kdtree;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.Util;
+import org.team100.lib.space.Point;
+
 
 public class TestTrees {
     private static class MyKDModel implements KDModel {
@@ -16,11 +20,13 @@ public class TestTrees {
         }
 
         @Override
-        public void getBounds(double[] min, double[] max) {
-            min[0] = 0;
-            min[1] = 0;
-            max[0] = 1;
-            max[1] = 1;
+        public double[] getMin() {
+            return new double[] { 0, 0 };
+        }
+
+        @Override
+        public double[] getMax() {
+            return new double[] { 1, 1 };
         }
 
         @Override
@@ -34,34 +40,45 @@ public class TestTrees {
         }
     }
 
+    static class StringPoint implements Point {
+        private final String v;
+        private final double[] _config;
+
+        public StringPoint(String v, double[] _config) {
+            this.v = v;
+            this._config = _config;
+        }
+
+        @Override
+        public double[] getState() {
+            return _config;
+        }
+
+        public String get_v() {
+            return v;
+
+        }
+    }
+
     @Test
     void treeTest() {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDNode<String> rootNode = new KDNode<String>(init, "root");
-        Traversal<String> trav = new Traversal<String>(m, rootNode);
-        assertArrayEquals(new double[] { 0, 0 }, trav._min);
-        assertArrayEquals(new double[] { 0, 0 }, trav._max);
-        trav.insert(new double[] { 0.5, 0.5 }, "child1");
-        assertArrayEquals(new double[] { 0, 0 }, trav._min);
-        assertArrayEquals(new double[] { 1, 1 }, trav._max);
-        trav.insert(new double[] { 0.5, 075 }, "child2");
-        assertArrayEquals(new double[] { 0.5, 0 }, trav._min);
-        assertArrayEquals(new double[] { 1, 1 }, trav._max);
-        trav.insert(new double[] { 0.5, 0.25 }, "child3");
-        assertArrayEquals(new double[] { 0.5, 0 }, trav._min);
-        assertArrayEquals(new double[] { 1, 1 }, trav._max);
+        KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
+        Util.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
-        List<String> nearList = new ArrayList<String>();
-        List<Double> distList = new ArrayList<Double>();
-        trav.near(new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
-                nearList.add(value);
-                distList.add(dist);
+        List<StringPoint> nearList = new ArrayList<>();
+        List<Double> distList = new ArrayList<>();
+        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
+            nearList.add(value);
+            distList.add(dist);
         });
         assertEquals(3, nearList.size());
-        assertEquals("root", nearList.get(0));
-        assertEquals("child1", nearList.get(1));
-        assertEquals("child3", nearList.get(2));
+        assertEquals("root", nearList.get(0).get_v());
+        assertEquals("child1", nearList.get(1).get_v());
+        assertEquals("child3", nearList.get(2).get_v());
         assertEquals(0.353, distList.get(0), 0.001);
         assertEquals(0.353, distList.get(1), 0.001);
         assertEquals(0.25, distList.get(2), 0.001);
@@ -71,25 +88,23 @@ public class TestTrees {
     void treeTest2() {
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDNode<String> rootNode = new KDNode<String>(init, "root");
-        Traversal<String> trav =  new Traversal<String>(m, rootNode);
-        trav.insert(new double[] { 0.5, 0.5 }, "child1");
-        trav.insert(new double[] { 0.5, 075 }, "child2");
-        trav.insert(new double[] { 0.5, 0.25 }, "child3");
+        KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
+        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        Util.insert(m, rootNode, new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
-        List<String> nearList = new ArrayList<String>();
-        List<Double> distList = new ArrayList<Double>();
+        List<StringPoint> nearList = new ArrayList<>();
+        List<Double> distList = new ArrayList<>();
         // small radius
-        trav.near(new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
-                nearList.add(value);
-                distList.add(dist);
+        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+            nearList.add(value);
+            distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        String nearest = trav.nearest(new double[] { 0.25, 0.25 });
-        assertEquals("child3", nearest);
-        double dist = trav.distToLastNearest();
-        assertEquals(0.25, dist, 0.001);
+        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        assertEquals("child3", nearest._nearest.get_v());
+        assertEquals(0.25, nearest._dist, 0.001);
     }
 
     @Test
@@ -97,29 +112,26 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDNode<String> rootNode = new KDNode<String>(init, "root");
+        KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
-        trav1.insert(new double[] { 0.5, 0.5 }, "child1");
-        trav1.insert(new double[] { 0.5, 075 }, "child2");
+        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
 
         // if the other view does the insert, the child is still found
-        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
-        trav2.insert(new double[] { 0.5, 0.25 }, "child3");
+        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
-        List<String> nearList = new ArrayList<String>();
-        List<Double> distList = new ArrayList<Double>();
+        List<StringPoint> nearList = new ArrayList<>();
+        List<Double> distList = new ArrayList<>();
         // small radius
-        trav1.near(new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
-                nearList.add(value);
-                distList.add(dist);
+        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+            nearList.add(value);
+            distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        String nearest = trav1.nearest(new double[] { 0.25, 0.25 });
-        assertEquals("child3", nearest);
-        double dist = trav1.distToLastNearest();
-        assertEquals(0.25, dist, 0.001);
+        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        assertEquals("child3", nearest._nearest.get_v());
+        assertEquals(0.25, nearest._dist, 0.001);
     }
 
     @Test
@@ -127,32 +139,29 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDNode<String> rootNode = new KDNode<String>(init, "root");
+        KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
-        trav1.insert(new double[] { 0.5, 0.5 }, "child1");
-        trav1.insert(new double[] { 0.5, 075 }, "child2");
+        Util.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
 
         // if the other view does the insert, the child is still found
-        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
-        trav2.insert(new double[] { 0.5, 0.25 }, "child3");
+        Util.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
-        List<String> nearList = new ArrayList<String>();
-        List<Double> distList = new ArrayList<Double>();
+        List<StringPoint> nearList = new ArrayList<>();
+        List<Double> distList = new ArrayList<>();
         // now it should find it
-        trav1.near(new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
-                nearList.add(value);
-                distList.add(dist);
+        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+            nearList.add(value);
+            distList.add(dist);
         });
         assertEquals(1, nearList.size());
-        assertEquals("child3", nearList.get(0));
+        assertEquals("child3", nearList.get(0).get_v());
         assertEquals(0.25, distList.get(0), 0.001);
 
         // and it should still find it
-        String nearest = trav1.nearest(new double[] { 0.25, 0.25 });
-        assertEquals("child3", nearest);
-        double dist = trav1.distToLastNearest();
-        assertEquals(0.25, dist, 0.001);
+        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        assertEquals("child3", nearest._nearest.get_v());
+        assertEquals(0.25, nearest._dist, 0.001);
     }
 
     @Test
@@ -160,29 +169,26 @@ public class TestTrees {
         // are these asserts actually valid?
         KDModel m = new MyKDModel();
         double[] init = new double[] { 0, 0 };
-        KDNode<String> rootNode = new KDNode<String>(init, "root");
+        KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        Traversal<String> trav1 =  new Traversal<String>(m, rootNode);
-        trav1.insert(new double[] { 0.5, 0.5 }, "child1");
-        trav1.insert(new double[] { 0.5, 075 }, "child2");
+        Util.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
+        Util.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
 
-        List<String> nearList = new ArrayList<String>();
-        List<Double> distList = new ArrayList<Double>();
+        List<StringPoint> nearList = new ArrayList<>();
+        List<Double> distList = new ArrayList<>();
         // now it should find it
-        trav1.near(new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
-                nearList.add(value);
-                distList.add(dist);
+        Util.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+            nearList.add(value);
+            distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
         // do the insert *after* it would have been found...
-        Traversal<String> trav2 =  new Traversal<String>(m, rootNode);
-        trav2.insert(new double[] { 0.5, 0.25 }, "child3");
+        Util.insert(m, rootNode, new StringPoint("child3", new double[] { 0.5, 0.25 }));
 
         // and it should still find it
-        String nearest = trav1.nearest(new double[] { 0.25, 0.25 });
-        assertEquals("child3", nearest);
-        double dist = trav1.distToLastNearest();
-        assertEquals(0.25, dist, 0.001);
+        KDNearNode<StringPoint> nearest = Util.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        assertEquals("child3", nearest._nearest.get_v());
+        assertEquals(0.25, nearest._dist, 0.001);
     }
 }

@@ -1,31 +1,23 @@
-package edu.unc.robotics.prrts;
-
-import edu.unc.robotics.prrts.kdtree.KDModel;
+package org.team100.lib.space;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Represent a computed path, the result of an PRRTStar run.
- *
- * @author jeffi
- */
+import org.team100.lib.index.KDModel;
+
+
 public class Path implements Comparable<Path> {
 
-    /**
-     * The distance of the computed path
-     */
-    private final double _dist;
+    /** The total length of the computed path     */
+    private final double distance;
 
-    /**
-     * The configurations of the path.
-     */
-    private final List<double[]> _configs;
+    /** The states along the path.   */
+    private final List<double[]> states;
 
-    public Path(double dist, List<double[]> configs) {
-        _dist = dist;
-        _configs = configs;
+    public Path(double distance, List<double[]> states) {
+        this.distance = distance;
+        this.states = states;
     }
 
     /**
@@ -37,11 +29,11 @@ public class Path implements Comparable<Path> {
      */
     @Override
     public int compareTo(Path that) {
-        return Double.compare(_dist, that._dist);
+        return Double.compare(distance, that.distance);
     }
 
     public void interpolate(double[] outConfig, double offset, KDModel kdModel) {
-        Iterator<double[]> pathIter = _configs.iterator();
+        Iterator<double[]> pathIter = states.iterator();
         double[] from = pathIter.next();
         double[] dest = pathIter.next();
         double distToFrom = 0;
@@ -72,7 +64,7 @@ public class Path implements Comparable<Path> {
         if (b == null) {
             return true;
         }
-        return a._dist < b._dist;
+        return a.distance < b.distance;
     }
 
     @Override
@@ -82,10 +74,10 @@ public class Path implements Comparable<Path> {
 
         Path path = (Path) o;
 
-        if (Double.compare(path._dist, _dist) != 0) return false;
-        if (_configs.size() != path._configs.size()) return false;
-        Iterator<double[]> i1 = _configs.iterator();
-        Iterator<double[]> i2 = path._configs.iterator();
+        if (Double.compare(path.distance, distance) != 0) return false;
+        if (states.size() != path.states.size()) return false;
+        Iterator<double[]> i1 = states.iterator();
+        Iterator<double[]> i2 = path.states.iterator();
         while (i1.hasNext()) {
             if (!Arrays.equals(i1.next(), i2.next())) {
                  return false;
@@ -98,24 +90,24 @@ public class Path implements Comparable<Path> {
     public int hashCode() {
         int result;
         long temp;
-        temp = _dist != +0.0d ? Double.doubleToLongBits(_dist) : 0L;
+        temp = distance != +0.0d ? Double.doubleToLongBits(distance) : 0L;
         result = (int) (temp ^ (temp >>> 32));
-        for (double[] config : _configs) {
+        for (double[] config : states) {
             result = 31 * result + Arrays.hashCode(config);
         }
         return result;
     }
 
-    public double get_dist() {
-        return _dist;
+    public double getDistance() {
+        return distance;
     }
 
-    public List<double[]> get_configs() {
-        return _configs;
+    public List<double[]> getStates() {
+        return states;
     }
 
     @Override
     public String toString() {
-        return "Path [_dist=" + String.format("%8.5f", _dist) + ", _configs=" + _configs + "]";
+        return "Path [_dist=" + String.format("%8.5f", distance) + ", _configs=" + states + "]";
     }
 }

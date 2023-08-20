@@ -2,10 +2,11 @@ package edu.unc.robotics.prrts.example.arena;
 
 import java.awt.Color;
 
+import org.team100.lib.index.KDModel;
+
 import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
-import edu.unc.robotics.prrts.kdtree.KDModel;
 
 /**
  * HolonomicArena2D
@@ -18,6 +19,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double GOAL_RADIUS = 0.4;
     private static final int DIMENSIONS = 2;
 
+    private static final double[] _init = { 15.5, 6.75 };
     private static final double[] _goal = { 1.93, 2.748 };
     private static final double[] _min = { 0, 0 };
     private static final double[] _max = { 16, 8 };
@@ -53,9 +55,13 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public void getBounds(double[] min, double[] max) {
-        System.arraycopy(_min, 0, min, 0, DIMENSIONS);
-        System.arraycopy(_max, 0, max, 0, DIMENSIONS);
+    public double[] getMin() {
+        return _min.clone();        
+    }
+
+    @Override
+    public double[] getMax() {
+        return _max.clone();        
     }
 
     @Override
@@ -116,6 +122,11 @@ public class HolonomicArena implements RobotModel, KDModel {
         return true;
     }
 
+    @Override
+    public double[] initial() {
+        return _init;
+    }
+    
     @Override
     public boolean goal(double[] conf) {
         return dist(conf, _goal) < GOAL_RADIUS;

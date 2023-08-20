@@ -17,23 +17,25 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import edu.unc.robotics.prrts.PRRTStar;
-import edu.unc.robotics.prrts.Path;
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
+import org.team100.lib.space.Path;
+
+import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.unc.robotics.prrts.tree.Node;
 
 public class PendulumView extends JComponent {
-    private final PRRTStar _rrtStar;
+    private final Runner _rrtStar;
     private final PendulumArena _robotModel;
     private int framecounter;
 
 
     private Image _backgroundImage;
-    private Path _bestPath = null;
+    //private Path _bestPath = null;
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public PendulumView(PendulumArena arena, PRRTStar rrtStar) {
+    public PendulumView(PendulumArena arena, Runner rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
@@ -51,12 +53,10 @@ public class PendulumView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
-        // System.out.println("paint");
 
         PendulumArena robotModel = _robotModel;
-        double[] min = new double[robotModel.dimensions()];
-        double[] max = new double[robotModel.dimensions()];
-        robotModel.getBounds(min, max);
+        double[] min = robotModel.getMin();
+        double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 
@@ -87,7 +87,6 @@ public class PendulumView extends JComponent {
     }
 
     private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
-        // System.out.println("BG");
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
@@ -121,12 +120,12 @@ public class PendulumView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         Line2D.Double line = new Line2D.Double();
         for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.get_parent_node();
-            if (parent != null) {
-                double[] n = node.get_config();
-                double[] p = parent.get_config();
+            Link incoming = node.getIncoming();
+            if (incoming != null) {
+                Node parent = incoming.get_source();
+                double[] n = node.getState();
+                double[] p = parent.getState();
                 g.setColor(Color.GRAY);
-                // System.out.println("x " + n[0] + " y " + n[1]);
                 line.setLine(n[0], n[1], p[0], p[1]);
                 g.draw(line);
             }
@@ -141,8 +140,8 @@ public class PendulumView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) 0.1));
 
-        if (path.get_configs().size() > 1) {
-            Iterator<double[]> pathIter = path.get_configs().iterator();
+        if (path.getStates().size() > 1) {
+            Iterator<double[]> pathIter = path.getStates().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
@@ -162,9 +161,6 @@ public class PendulumView extends JComponent {
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
         g.translate(min[0], min[1]);
-        // double scale = Math.min(
-        // size.width / (max[0] - min[0]),
-        // size.height / (max[1] - min[1]));
         double xscale = size.width / (max[0] - min[0]);
         double yscale = size.height / (max[1] - min[1]);
         g.scale(xscale, yscale);

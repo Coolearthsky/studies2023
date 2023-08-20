@@ -5,58 +5,81 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.graph.Graph;
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
+
+import edu.unc.robotics.prrts.RobotModel;
 
 public class TestNode {
+
+    RobotModel myRobot = new RobotModel() {
+
+        @Override
+        public double[] initial() {
+            return null;
+        }
+
+        @Override
+        public boolean goal(double[] config) {
+            return false;
+        }
+
+        @Override
+        public boolean clear(double[] config) {
+            return true;
+        }
+
+        @Override
+        public boolean link(double[] a, double[] b) {
+            return true;
+        }
+
+    };
+
     @Test
     void testfoo() {
-        Node root = new Node(new double[] { 0, 0 }, false);
-        assertArrayEquals(new double[] { 0, 0 }, root.get_config());
-        assertNull(root.get_link().get().get_parent_node());
-        assertNull(root.get_link().get()._firstChild.get());
-        assertNull(root.get_link().get()._nextSibling.get());
+        Node root = new Node(new double[] { 0, 0 });
+        assertArrayEquals(new double[] { 0, 0 }, root.getState());
+        assertNull(root.getIncoming());
 
-        Node node1 = new Node(new double[] { 1, 0 }, false, 1.0, root.get_link().get());
-        assertArrayEquals(new double[] { 1, 0 }, node1.get_config());
-        // we explicitly set the parent, so there it is.
-        // assertEquals(root.get_link().get(), node1.get_link().get().get_parent());
-        assertEquals(root, node1.get_link().get().get_parent_node());
-        // the parent should now have this node as the first child
-        assertEquals(node1, root.get_link().get()._firstChild.get().get_node());
-        assertNull(node1.get_link().get()._firstChild.get());
-        assertNull(node1.get_link().get()._nextSibling.get());
+        Node node1 = new Node(new double[] { 1, 0 });
+        Link link1 = Graph.newLink(root, node1, 1);
+        assertArrayEquals(new double[] { 1, 0 }, node1.getState());
+        assertEquals(root, node1.getIncoming().get_source());
+        assertEquals(1, link1.get_linkDist(), 0.1);
+        assertEquals(1, link1.get_pathDist(), 0.1);
 
-        Node node2 = new Node(new double[] { 2, 0 }, false, 1.0, node1.get_link().get());
-        assertArrayEquals(new double[] { 2, 0 }, node2.get_config());
-        // assertEquals(node1.get_link().get(), node2.get_link().get().get_parent());
-        assertEquals(node1, node2.get_link().get().get_parent_node());
-        assertEquals(node2, node1.get_link().get()._firstChild.get().get_node());
-        assertNull(node2.get_link().get()._firstChild.get());
-        assertNull(node2.get_link().get()._nextSibling.get());
+        Node node2 = new Node(new double[] { 2, 0 });
+        Link link2 = Graph.newLink(node1, node2, 1);
+        assertArrayEquals(new double[] { 2, 0 }, node2.getState());
+        assertEquals(node1, node2.getIncoming().get_source());
+        assertEquals(1, link2.get_linkDist(), 0.1);
+        assertEquals(2, link2.get_pathDist(), 0.1);
 
         // now add a second child to the root. what happens?
-        Node node3 = new Node(new double[] { 0, 1 }, false, 1.0, root.get_link().get());
-        assertArrayEquals(new double[] { 0, 1 }, node3.get_config());
-        // parent reference was set explicitly
-        // assertEquals(root.get_link().get(), node3.get_link().get().get_parent());
-        assertEquals(root, node3.get_link().get().get_parent_node());
-        // we bump the first child
-        assertEquals(node3, root.get_link().get()._firstChild.get().get_node());
-        // the previous first child is now our sibling
-        assertEquals(node1, node3.get_link().get()._nextSibling.get().get_node());
+        Node node3 = new Node(new double[] { 0, 1 });
+        Link link3 = Graph.newLink(root, node3, 1);
+        assertArrayEquals(new double[] { 0, 1 }, node3.getState());
+        assertEquals(root, node3.getIncoming().get_source());
+        assertEquals(1, link3.get_linkDist(), 0.1);
+        assertEquals(1, link3.get_pathDist(), 0.1);
 
         // where does the third child go?
-        Node node4 = new Node(new double[] { 0, -1 }, false, 1.0, root.get_link().get());
-        assertArrayEquals(new double[] { 0, -1 }, node4.get_config());
-        // parent reference was set explicitly
-        // assertEquals(root.get_link().get(), node4.get_link().get().get_parent());
-        assertEquals(root, node4.get_link().get().get_parent_node());
-        // bump the first child again
-        assertEquals(node4, root.get_link().get()._firstChild.get().get_node());
-        // previous first child is now my sibling
-        assertEquals(node3, node4.get_link().get()._nextSibling.get().get_node());
-        // one before that is another sibling
-        assertEquals(node1, node3.get_link().get()._nextSibling.get().get_node());
+        Node node4 = new Node(new double[] { 0, -1 });
+        Link link4 = Graph.newLink(root, node4, 1);
+        assertArrayEquals(new double[] { 0, -1 }, node4.getState());
+        assertEquals(root, node4.getIncoming().get_source());
+        assertEquals(1, link4.get_linkDist(), 0.1);
+        assertEquals(1, link4.get_pathDist(), 0.1);
 
+        Node node5 = new Node(new double[] {1,1});
+        Link link5 = Graph.newLink(node1, node5, 1);
+        assertArrayEquals(new double[] { 1, 1 }, node5.getState());
+        assertEquals(node1, node5.getIncoming().get_source());
+        assertEquals(1, link5.get_linkDist(), 0.1);
+        assertEquals(2, link5.get_pathDist(), 0.1);
     }
+
 
 }

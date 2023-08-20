@@ -17,10 +17,12 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import edu.unc.robotics.prrts.PRRTStar;
-import edu.unc.robotics.prrts.Path;
+import org.team100.lib.graph.Link;
+import org.team100.lib.graph.Node;
+import org.team100.lib.space.Path;
+
+import edu.unc.robotics.prrts.Runner;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.unc.robotics.prrts.tree.Node;
 
 /**
  * ArenaView
@@ -28,7 +30,7 @@ import edu.unc.robotics.prrts.tree.Node;
  * @author jeffi
  */
 public class ArenaView extends JComponent {
-    private final PRRTStar _rrtStar;
+    private final Runner _rrtStar;
     private final HolonomicArena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
@@ -40,7 +42,7 @@ public class ArenaView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public ArenaView(HolonomicArena arena, PRRTStar rrtStar) {
+    public ArenaView(HolonomicArena arena, Runner rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
@@ -59,9 +61,8 @@ public class ArenaView extends JComponent {
 
     public void doPaint(Graphics2D g, Dimension size) {
         HolonomicArena robotModel = _robotModel;
-        double[] min = new double[robotModel.dimensions()];
-        double[] max = new double[robotModel.dimensions()];
-        robotModel.getBounds(min, max);
+        double[] min = robotModel.getMin();
+        double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 
@@ -119,10 +120,11 @@ public class ArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
 
         for (Node node : _rrtStar.getNodes()) {
-            Node parent = node.get_parent_node();
-            if (parent != null) {
-                double[] n = node.get_config();
-                double[] p = parent.get_config();
+            Link incoming = node.getIncoming();
+            if (incoming != null) {
+                Node parent = incoming.get_source();
+                double[] n = node.getState();
+                double[] p = parent.getState();
                 for (int i = 0; i < dim; i += 2) {
                     g.setColor(COLORS[i / 2]);
                     line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
@@ -141,8 +143,8 @@ public class ArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        if (path.get_configs().size() > 1) {
-            Iterator<double[]> pathIter = path.get_configs().iterator();
+        if (path.getStates().size() > 1) {
+            Iterator<double[]> pathIter = path.getStates().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
