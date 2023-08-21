@@ -84,6 +84,7 @@ public class KDTree {
             double radius,
             int depth) {
         final double dist = model.dist(kdNode.getConfig(), target);
+      //  System.out.println("dist " + dist + " radius " + radius);
         if (dist < radius) {
             consumer.accept(kdNode.getValue(), dist);
         }

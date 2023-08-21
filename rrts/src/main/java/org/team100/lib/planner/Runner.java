@@ -12,7 +12,8 @@ public class Runner {
 
     public Runner(Solver solver) {
         _solver = solver;
-        _stepNo = 0;
+        // since we use stepNo for radius, it can't be zero
+        _stepNo = 1;
     }
 
     public void runForDurationMS(long milliseconds) {

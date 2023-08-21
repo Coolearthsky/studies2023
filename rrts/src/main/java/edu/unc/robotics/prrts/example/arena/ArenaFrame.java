@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.team100.lib.planner.Runner;
+import org.team100.lib.rrt.RRTStar;
 import org.team100.lib.rrt.RRTStar2;
 import org.team100.lib.space.Sample;
 
@@ -21,7 +22,8 @@ public class ArenaFrame extends JFrame {
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         final HolonomicArena arena = new HolonomicArena(6);
-        final RRTStar2<HolonomicArena> rrtstar = new RRTStar2<>(arena, new Sample(arena), 6);
+        final RRTStar<HolonomicArena> rrtstar = new RRTStar<>(arena, new Sample(arena), 6);
+        //final RRTStar2<HolonomicArena> rrtstar = new RRTStar2<>(arena, new Sample(arena), 6);
         final Runner runner = new Runner(rrtstar);
 
         SwingUtilities.invokeAndWait(new Runnable() {
@@ -34,7 +36,7 @@ public class ArenaFrame extends JFrame {
             }
         });
 
-        runner.runForDurationMS(10000);
+        runner.runForDurationMS(1000000);
         // runner.runSamples(500);
     }
 }
