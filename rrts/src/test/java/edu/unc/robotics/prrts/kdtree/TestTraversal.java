@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
 import org.team100.lib.space.Point;
@@ -37,7 +39,7 @@ public class TestTraversal {
         }
 
         @Override
-        public void steer(double[] nearConfig, double[] newConfig, double dist) {
+        public double[] steer(int stepNo,  KDNearNode<Node> x_nearest, double[] newConfig) {
             // TODO Auto-generated method stub
             throw new UnsupportedOperationException("Unimplemented method 'steer'");
         }

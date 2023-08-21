@@ -2,9 +2,16 @@ package org.team100.lib.graph;
 
 import java.util.Iterator;
 
+import org.team100.lib.index.KDModel;
 import org.team100.lib.planner.RobotModel;
 
 public class Graph {
+
+    /** Create a link from source to target, using the model distance from the source to target. */
+    public static Link newLink(KDModel model, Node source, Node target) {
+        return newLink(source, target, model.dist(source.getState(), target.getState()));
+    }
+
     /**
      * Create a link from source to target, add it to the source outgoing set, and
      * set it as the target incoming link. Also remove the target's previous

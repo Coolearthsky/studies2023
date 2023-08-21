@@ -20,14 +20,34 @@ import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
-public class RRTStar<T extends KDModel & RobotModel> implements Solver {
+/**
+ * This is an attempt to make the code below look more like the pseudocode.
+ * 
+ * There are many similar-but-not-identical variations; I've kind of mashed them together.
+ * 
+ * x_rand <- Sample() // start with a random point
+ * x_nearest <- Nearest(x_rand) // find the nearest node in the tree to x_rand
+ * x_new <- Steer(x_nearest, x_rand) // find a point feasible from x_nearest
+ * 
+ * 
+ * References:
+ * 
+ * http://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
+ * https://people.eecs.berkeley.edu/~pabbeel/cs287-fa12/slides/SamplingBasedMotionPlanning.pdf
+ * http://lavalle.pl/planning/book.pdf
+ * https://dspace.mit.edu/handle/1721.1/78449 
+ * https://dspace.mit.edu/handle/1721.1/79884
+ * https://natanaso.github.io/ece276b2018/ref/ECE276B_8_SamplingBasedPlanning.pdf
+ * 
+ */
+public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
     private final T _model;
     private final KDNode<Node> _rootNode;
     private final Sample _sample;
     private final double _gamma;
     private Link _bestPath;
 
-    public RRTStar(T model, Sample sample, double gamma) {
+    public RRTStar2(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
@@ -38,21 +58,24 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         _bestPath = null;
     }
 
-    double[] SampleFree() {
-        double[] newConfig = _sample.get();
-        if (!_model.clear(newConfig))
-            return null;
-        return newConfig;
-    }
-
     /**
      * @return true if a new sample was added.
      */
     @Override
     public boolean step(int stepNo) {
+        // start with a random point
+
         double[] x_rand = SampleFree();
         if (x_rand == null)
             return false;
+        
+        // find the nearest node in the tree to x_rand
+
+        KDNearNode<Node> x_nearest = KDTree.nearest(_model, _rootNode, x_rand);
+
+        double[] x_new = _model.steer(stepNo, x_nearest, x_rand);
+
+
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
@@ -66,29 +89,25 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
         if (nearNodes.isEmpty()) {
 
-            KDNearNode<Node> nearResult = KDTree.nearest(_model, _rootNode, x_rand);
-            Node nearest = nearResult._nearest;
-            double distToNearest = nearResult._dist;
-
-            if (distToNearest > radius) {
-                x_rand = _model.steer(stepNo, nearResult, x_rand);
+            if (x_nearest._dist > radius) {
+                x_rand = _model.steer(stepNo, x_nearest, x_rand);
             }
 
             if (!_model.clear(x_rand)) {
                 return false;
             }
 
-            if (!_model.link(nearest.getState(), x_rand)) {
+            if (!_model.link(x_nearest._nearest.getState(), x_rand)) {
                 return false;
             }
-
 
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"
             // from that nearest node.
             Node newTarget = new Node(x_rand);
+
             // recalculate dist just to be safe.
-            Link newLink = Graph.newLink(_model, nearest, newTarget);
+            Link newLink = Graph.newLink(_model, x_nearest._nearest, newTarget);
 
             _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
 
@@ -128,6 +147,13 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         }
         // no feasible link possible.
         return false;
+    }
+
+    double[] SampleFree() {
+        double[] newConfig = _sample.get();
+        if (!_model.clear(newConfig))
+            return null;
+        return newConfig;
     }
 
     @Override

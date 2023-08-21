@@ -2,12 +2,13 @@ package edu.unc.robotics.prrts.example.arena;
 
 import java.awt.Color;
 
+import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNearNode;
 import org.team100.lib.planner.RobotModel;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
-
 
 public class HolonomicArena implements RobotModel, KDModel {
     private static final double DISCRETIZATION = 0.25;
@@ -19,6 +20,9 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double[] _goal = { 1.93, 2.748 };
     private static final double[] _min = { 0, 0 };
     private static final double[] _max = { 16, 8 };
+
+    // used for steering
+    private final double _gamma;
 
     Obstacle[] _obstacles = new Obstacle[] {
             // see studies2023/glc
@@ -41,8 +45,8 @@ public class HolonomicArena implements RobotModel, KDModel {
             new Polygon(Color.BLUE, 11.63, 1.51, 13.56, 1.51, 13.56, 3.98, 11.63, 3.98)
     };
 
-    public HolonomicArena() {
-
+    public HolonomicArena(double gamma) {
+        _gamma = gamma;
     }
 
     @Override
@@ -52,12 +56,12 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     @Override
     public double[] getMin() {
-        return _min.clone();        
+        return _min.clone();
     }
 
     @Override
     public double[] getMax() {
-        return _max.clone();        
+        return _max.clone();
     }
 
     @Override
@@ -72,10 +76,24 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public void steer(double[] nearConfig, double[] newConfig, double dist) {
+    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] newConfig) {
+
+        double radius = _gamma * Math.pow(
+                Math.log(stepNo + 1) / (stepNo + 1),
+                1.0 / dimensions());
+        double dist = radius / x_nearest._dist;
+
+        // if it's close enough then just return it
+        if (x_nearest._dist < radius)
+            return newConfig;
+
+        double[] nearConfig = x_nearest._nearest.getState();
+        double[] result = new double[DIMENSIONS];
         for (int i = 0; i < DIMENSIONS; ++i) {
-            newConfig[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * dist;
+            result[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * dist;
         }
+        return result;
+
     }
 
     @Override
@@ -122,7 +140,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     public double[] initial() {
         return _init;
     }
-    
+
     @Override
     public boolean goal(double[] conf) {
         return dist(conf, _goal) < GOAL_RADIUS;

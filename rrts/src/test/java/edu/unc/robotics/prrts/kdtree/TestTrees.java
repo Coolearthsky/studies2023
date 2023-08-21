@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
 import org.team100.lib.space.Point;
@@ -35,7 +37,7 @@ public class TestTrees {
         }
 
         @Override
-        public void steer(double[] nearConfig, double[] newConfig, double dist) {
+        public double[] steer(int stepNo,  KDNearNode<Node> x_nearest, double[] newConfig) {
             throw new UnsupportedOperationException("Unimplemented method 'steer'");
         }
     }

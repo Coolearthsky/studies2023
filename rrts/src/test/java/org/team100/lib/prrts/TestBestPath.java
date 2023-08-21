@@ -16,7 +16,7 @@ public class TestBestPath {
     /** Cribbed from ArenaFrame */
     @Test
     public void testTime() {
-        final HolonomicArena arena = new HolonomicArena();
+        final HolonomicArena arena = new HolonomicArena(6);
         final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
         final Runner rrtStar = new Runner(worker);
 
@@ -37,7 +37,7 @@ public class TestBestPath {
 
     @Test
     public void testSteps() {
-        final HolonomicArena arena = new HolonomicArena();
+        final HolonomicArena arena = new HolonomicArena(6);
         final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
         final Runner rrtStar = new Runner(worker);
 
