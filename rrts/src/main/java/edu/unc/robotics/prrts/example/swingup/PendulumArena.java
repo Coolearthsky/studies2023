@@ -1,8 +1,10 @@
 package edu.unc.robotics.prrts.example.swingup;
 
+import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
+import org.team100.lib.index.KDNearNode;
+import org.team100.lib.planner.RobotModel;
 
-import edu.unc.robotics.prrts.RobotModel;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.wpi.first.math.DARE;
 import edu.wpi.first.math.Matrix;
@@ -153,7 +155,9 @@ public class PendulumArena implements RobotModel, KDModel {
      * point to the new point, and then integrate forward to find the new point.
      */
     @Override
-    public void steer(double[] nearConfig, double[] newConfig, double dist) {
+    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] newConfig) {
+        double[] nearConfig = x_nearest._nearest.getState();
+
         // see pend_rrt.m
         Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
         Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
@@ -166,8 +170,9 @@ public class PendulumArena implements RobotModel, KDModel {
                 nearConfig[1],
                 (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
         Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-        newConfig[0] = x_new.get(0, 0);
-        newConfig[1] = x_new.get(1, 0);
+        return x_new.getData();
+      //  newConfig[0] = x_new.get(0, 0);
+       // newConfig[1] = x_new.get(1, 0);
     }
 
     @Override

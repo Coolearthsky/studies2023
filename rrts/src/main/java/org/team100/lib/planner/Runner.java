@@ -1,7 +1,6 @@
-package edu.unc.robotics.prrts;
+package org.team100.lib.planner;
 
 import org.team100.lib.graph.Node;
-import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 
 /**
@@ -13,7 +12,8 @@ public class Runner {
 
     public Runner(Solver solver) {
         _solver = solver;
-        _stepNo = 0;
+        // since we use stepNo for radius, it can't be zero
+        _stepNo = 1;
     }
 
     public void runForDurationMS(long milliseconds) {

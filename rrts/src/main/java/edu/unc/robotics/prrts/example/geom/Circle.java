@@ -5,11 +5,7 @@ import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 
-/**
- * Circle
- *
- * @author jeffi
- */
+
 public class Circle implements Obstacle {
     private final double _x;
     private final double _y;

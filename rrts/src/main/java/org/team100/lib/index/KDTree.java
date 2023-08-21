@@ -6,9 +6,7 @@ import java.util.function.BiConsumer;
 
 import org.team100.lib.space.Point;
 
-import edu.unc.robotics.prrts.kdtree.KDNearNode;
-
-public class Util {
+public class KDTree {
 
     /** Returns all the values in the subtree. */
     public static <V extends Point> List<V> values(KDNode<V> root) {
@@ -70,7 +68,7 @@ public class Util {
             BiConsumer<V, Double> consumer) {
         double[] min = model.getMin();
         double[] max = model.getMax();
-        Util.near(model, min, max, consumer, root, target, radius, 0);
+        KDTree.near(model, min, max, consumer, root, target, radius, 0);
     }
 
     /**
@@ -86,6 +84,7 @@ public class Util {
             double radius,
             int depth) {
         final double dist = model.dist(kdNode.getConfig(), target);
+      //  System.out.println("dist " + dist + " radius " + radius);
         if (dist < radius) {
             consumer.accept(kdNode.getValue(), dist);
         }
@@ -117,12 +116,17 @@ public class Util {
     public static <V extends Point> KDNearNode<V> nearest(KDModel model, KDNode<V> root, double[] target) {
         double[] min = model.getMin();
         double[] max = model.getMax();
-        return Util.nearest(new KDNearNode<V>(Double.MAX_VALUE, null), model, root, min, max, target, 0);
+        return KDTree.nearest(new KDNearNode<V>(Double.MAX_VALUE, null), model, root, min, max, target, 0);
     }
 
-    public static <V extends Point> KDNearNode<V> nearest(KDNearNode<V> best, KDModel model, KDNode<V> n,
-            double[] min, double[] max,
-            double[] target, int depth) {
+    public static <V extends Point> KDNearNode<V> nearest(
+            KDNearNode<V> best,
+            KDModel model,
+            KDNode<V> n,
+            double[] min,
+            double[] max,
+            double[] target,
+            int depth) {
         final int axis = depth % model.dimensions();
         final double d = model.dist(n.getConfig(), target);
 

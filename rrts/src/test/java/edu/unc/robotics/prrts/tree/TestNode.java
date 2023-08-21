@@ -8,8 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.Link;
 import org.team100.lib.graph.Node;
-
-import edu.unc.robotics.prrts.RobotModel;
+import org.team100.lib.planner.RobotModel;
 
 public class TestNode {
 
