@@ -1,0 +1,6 @@
+Id	Description	Qty	Unit	Designators
+1	Cable, 2 wires	0	m	P1, P2, P3, P4, P5, S0, S1, S2, S3, S4
+2	Connector, 10 pins	1		PWR
+3	Connector, 12 pins	1		MUX
+4	Connector, 2 pins	1		RIO
+5	Connector, 4 pins	4		FL, FR, RL, RR
