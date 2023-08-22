@@ -10,6 +10,7 @@ import org.team100.glclib.GlcNode;
 import org.team100.glclib.GlcParameters;
 import org.team100.glclib.Planner;
 import org.team100.glclib.PlannerOutput;
+import org.team100.glclib.Renderer;
 import org.team100.glclib.glc_interface.CostFunction;
 import org.team100.glclib.glc_interface.DynamicalSystem;
 import org.team100.glclib.glc_interface.GoalRegion;
@@ -386,7 +387,7 @@ class FRCFastestPathDemo {
         alg_params.state_dim = 4;
         alg_params.depth_scale = 10;
         alg_params.dt_max = 5.0;
-        alg_params.max_iter = 500000;
+        alg_params.max_iter = 5000;
         alg_params.time_scale = 2;
         alg_params.partition_scale = 6;
         // starting point is at the substation (x, y, vx, vy)
@@ -433,12 +434,15 @@ class FRCFastestPathDemo {
             }
 
             InterpolatingPolynomial solution = planner.recoverTraj(path);
-            if (solution != null) {
-                solution.printSpline(20, "Solution");
-                GlcLogging.trajectoryToFile("frc_shortest_path_demo.txt", "./", solution, 50);
-            }
-            GlcLogging.nodesToFile("frc_shortest_path_demo_nodes.txt", "./", planner.partition_labels.keySet());
+            // if (solution != null) {
+            //     solution.printSpline(20, "Solution");
+            //     GlcLogging.trajectoryToFile("frc_shortest_path_demo.txt", "./", solution, 50);
+            // }
+            // GlcLogging.nodesToFile("frc_shortest_path_demo_nodes.txt", "./", planner.partition_labels.keySet());
+    
         }
+        Renderer.render();
+
     }
 
 }

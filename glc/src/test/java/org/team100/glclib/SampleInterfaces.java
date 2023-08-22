@@ -155,12 +155,12 @@ public class SampleInterfaces {
     ////////////////////////////////////////////////////////
     /////////////// Goal Checking Interface//////////////////
     ////////////////////////////////////////////////////////
-    public static class Sphericalgoal extends GoalRegion {
+    public static class Sphericalgoal2 extends GoalRegion {
         double radius_sqr;
         double[] center;
         int resolution;
 
-        public Sphericalgoal(double _goal_radius_sqr,
+        public Sphericalgoal2(double _goal_radius_sqr,
                 double[] _goal_center,
                 int _resolution) {
 
