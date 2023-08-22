@@ -387,7 +387,7 @@ class FRCFastestPathDemo {
         alg_params.state_dim = 4;
         alg_params.depth_scale = 10;
         alg_params.dt_max = 5.0;
-        alg_params.max_iter = 5000;
+        alg_params.max_iter = 50000;
         alg_params.time_scale = 2;
         alg_params.partition_scale = 6;
         // starting point is at the substation (x, y, vx, vy)
@@ -439,9 +439,9 @@ class FRCFastestPathDemo {
             //     GlcLogging.trajectoryToFile("frc_shortest_path_demo.txt", "./", solution, 50);
             // }
             // GlcLogging.nodesToFile("frc_shortest_path_demo_nodes.txt", "./", planner.partition_labels.keySet());
-    
+            Renderer.render(solution);
+
         }
-        Renderer.render();
 
     }
 
