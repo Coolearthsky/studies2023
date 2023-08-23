@@ -9,6 +9,9 @@ import org.team100.lib.space.Path;
 /**
  * This link type keeps a consistent "path distance" and must be
  * updated by the rewiring process to keep it consistent.
+ * 
+ * Walking the children to update the cache turns out to be faster
+ * than walking the parents on every query.
  */
 public class PathDistanceCachingLink implements LinkInterface {
     /** nullable for root */

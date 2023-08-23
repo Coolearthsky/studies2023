@@ -23,6 +23,8 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     // used for steering
     private final double _gamma;
+    private int stepNo;
+    private double radius;
 
     Obstacle[] _obstacles = new Obstacle[] {
             // see studies2023/glc
@@ -76,11 +78,17 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] x_rand) {
+    public void setStepNo(int stepNo) {
+        this.stepNo = stepNo;
+    }
 
-        double radius = _gamma * Math.pow(
-                Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / dimensions());
+    @Override
+    public void setRadius(double radius) {
+        this.radius = radius;
+    }
+
+    @Override
+    public double[] steer(KDNearNode<Node> x_nearest, double[] x_rand) {
         double dist = radius / x_nearest._dist;
 
         // if it's close enough then just return it

@@ -74,7 +74,7 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
         if (stepNo < 1)
             throw new IllegalArgumentException();
         this.stepNo = stepNo;
-        radius = _gamma * Math.pow(
+        this.radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
                 1.0 / _model.dimensions());
     }
@@ -97,44 +97,13 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
         // make a list of points near the feasible one
         List<NearNode> X_near = Near(x_new);
 
-        // double radius = _gamma * Math.pow(
-        // Math.log(stepNo + 1) / (stepNo + 1),
-        // 1.0 / _model.dimensions());
-
         // List<NearNode> X_near = new ArrayList<>();
         // KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
         // if (node.getIncoming() != null)
         // X_near.add(new NearNode(node, dist));
         // });
 
-        if (X_near.isEmpty()) {
-            throw new RuntimeException("empty");
 
-            // if (x_nearest._dist > radius) {
-            // x_rand = _model.steer(stepNo, x_nearest, x_rand);
-            // }
-
-            // if (!_model.clear(x_rand)) {
-            // return false;
-            // }
-
-            // if (!_model.link(x_nearest._nearest.getState(), x_rand)) {
-            // return false;
-            // }
-
-            // // the new node has the new sampled config, the distance(cost) to the
-            // // nearest other node we found above, and the "parent" is the "link"
-            // // from that nearest node.
-            // Node newTarget = new Node(x_rand);
-
-            // // recalculate dist just to be safe.
-            // Link newLink = Graph.newLink(_model, x_nearest._nearest, newTarget);
-
-            // _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
-
-            // KDTree.insert(_model, _rootNode, newTarget);
-            // return true;
-        }
 
         // Sort the array by total distance (including the distance to the new node).
         // We take the best (shortest) feasible node.
@@ -202,7 +171,9 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
         single_nearest = true;
         // System.out.println("x_nearest: " +
         // Arrays.toString(x_nearest._nearest.getState()));
-        double[] x_new = _model.steer(stepNo, x_nearest, x_rand);
+        _model.setStepNo(stepNo);
+        _model.setRadius(radius);
+        double[] x_new = _model.steer(x_nearest, x_rand);
         // System.out.println("x_new: " + Arrays.toString(x_new));
         return x_new;
     }

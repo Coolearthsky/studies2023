@@ -82,7 +82,9 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             double distToNearest = nearResult._dist;
 
             if (distToNearest > radius) {
-                x_rand = _model.steer(stepNo, nearResult, x_rand);
+                _model.setStepNo(stepNo);
+                _model.setRadius(radius);
+                x_rand = _model.steer(nearResult, x_rand);
             }
 
             if (!_model.clear(x_rand)) {
