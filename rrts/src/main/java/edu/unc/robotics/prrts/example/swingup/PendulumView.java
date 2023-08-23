@@ -17,7 +17,7 @@ import java.util.Iterator;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import org.team100.lib.graph.Link;
+import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.Node;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
@@ -120,7 +120,7 @@ public class PendulumView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         Line2D.Double line = new Line2D.Double();
         for (Node node : _rrtStar.getNodes()) {
-            Link incoming = node.getIncoming();
+            LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();

@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.graph.Graph;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.rrt.RRTStar;
@@ -29,13 +30,26 @@ public class ArenaFrame extends JFrame {
         double dist2 = 0;
         for (int i = 0; i < ct; ++i) {
 
-            final HolonomicArena arena = new HolonomicArena(6);
-            final RRTStar<HolonomicArena> rrtstar = new RRTStar<>(arena, new Sample(arena), 6);
+            // experiment results:
+            // 
+            // RRTStar and RRTStar2 are about the same speed;
+            // the second one actually produces better paths; there's something
+            // wrong with the first one.
+            //
+            // path distance caching is faster than recalculating the path
+            // distance every time, even though it requires walking the child
+            // tree on every update.  updates are rare compared to queries, i guess?
 
+            final HolonomicArena arena = new HolonomicArena(6);
+            final Solver rrtstar = new RRTStar2<>(arena, new Sample(arena), 6);
             final Runner runner = new Runner(rrtstar);
+            Graph.linkTypeCaching = true;
             run(arena, runner, rrtstar);
-            final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new Sample(arena), 6);
+            
+            // final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new Sample(arena), 6);
+            final Solver rrtstar2 = new RRTStar2<>(arena, new Sample(arena), 6);
             final Runner runner2 = new Runner(rrtstar2);
+            Graph.linkTypeCaching = false;
             run(arena, runner2, rrtstar2);
 
             System.out.printf("1 steps %d distance %5.2f --- 2 steps %d distance %5.2f\n",
