@@ -27,6 +27,10 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
     private final double _gamma;
     private Link _bestPath;
 
+    // mutable loop variables to make the loop code cleaner
+    int stepNo = 0;
+    double[] x_rand;
+
     public RRTStar(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
@@ -45,12 +49,19 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         return newConfig;
     }
 
+    @Override
+    public void setStepNo(int stepNo) {
+        if (stepNo < 1)
+            throw new IllegalArgumentException();
+        this.stepNo = stepNo;
+    }
+
     /**
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step(int stepNo) {
-        double[] x_rand = SampleFree();
+    public boolean step() {
+        x_rand = SampleFree();
         if (x_rand == null)
             return false;
 
@@ -81,7 +92,6 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             if (!_model.link(nearest.getState(), x_rand)) {
                 return false;
             }
-
 
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"

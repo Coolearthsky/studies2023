@@ -50,6 +50,14 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
     private final double _gamma;
     private Link _bestPath;
 
+    // mutable loop variables to make the loop code cleaner
+    int stepNo;
+    double radius;
+    double[] x_rand;
+    KDNearNode<Node> x_nearest;
+    double[] x_new;
+    boolean single_nearest;
+
     public RRTStar2(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
@@ -61,28 +69,37 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
         _bestPath = null;
     }
 
+    @Override
+    public void setStepNo(int stepNo) {
+        if (stepNo < 1)
+            throw new IllegalArgumentException();
+        this.stepNo = stepNo;
+        radius = _gamma * Math.pow(
+                Math.log(stepNo + 1) / (stepNo + 1),
+                1.0 / _model.dimensions());
+    }
+
     /**
      * @param stepNo must be greater than zero
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step(int stepNo) {
-        if (stepNo < 1) throw new IllegalArgumentException();
+    public boolean step() {
         // start with a random point
-        double[] x_rand = SampleFree();
+        x_rand = SampleFree();
 
         // find the nearest node in the tree to x_rand
-        KDNearNode<Node> x_nearest = Nearest(x_rand);
+        x_nearest = Nearest(x_rand);
 
         // find a feasible point somewhere nearby
-        double[] x_new = Steer(stepNo, x_nearest, x_rand);
+        x_new = Steer(x_nearest, x_rand);
 
         // make a list of points near the feasible one
-        List<NearNode> X_near = Near(stepNo, x_new);
+        List<NearNode> X_near = Near(x_new);
 
         // double radius = _gamma * Math.pow(
-        //         Math.log(stepNo + 1) / (stepNo + 1),
-        //         1.0 / _model.dimensions());
+        // Math.log(stepNo + 1) / (stepNo + 1),
+        // 1.0 / _model.dimensions());
 
         // List<NearNode> X_near = new ArrayList<>();
         // KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
@@ -94,15 +111,15 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
             throw new RuntimeException("empty");
 
             // if (x_nearest._dist > radius) {
-            //     x_rand = _model.steer(stepNo, x_nearest, x_rand);
+            // x_rand = _model.steer(stepNo, x_nearest, x_rand);
             // }
 
             // if (!_model.clear(x_rand)) {
-            //     return false;
+            // return false;
             // }
 
             // if (!_model.link(x_nearest._nearest.getState(), x_rand)) {
-            //     return false;
+            // return false;
             // }
 
             // // the new node has the new sampled config, the distance(cost) to the
@@ -174,11 +191,19 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
     /**
      * Return a state that tries to go from x_nearest to x_rand using a feasible
      * trajectory. For simple systems "feasible" just means "closer."
+     * 
+     * @param x_nearest containts distance to x_rand
      */
-    double[] Steer(int stepNo, KDNearNode<Node> x_nearest, double[] x_rand) {
-        //System.out.println("x_nearest: " + Arrays.toString(x_nearest._nearest.getState()));
-        double[] x_new =  _model.steer(stepNo, x_nearest, x_rand);
-        //System.out.println("x_new: " + Arrays.toString(x_new));
+    double[] Steer(KDNearNode<Node> x_nearest, double[] x_rand) {
+        if (x_nearest._dist < radius) {
+            single_nearest = false;
+            return x_rand;
+        }
+        single_nearest = true;
+        // System.out.println("x_nearest: " +
+        // Arrays.toString(x_nearest._nearest.getState()));
+        double[] x_new = _model.steer(stepNo, x_nearest, x_rand);
+        // System.out.println("x_new: " + Arrays.toString(x_new));
         return x_new;
     }
 
@@ -188,24 +213,33 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
      * the Steer function should "match" i.e. the "Near" function should always
      * return the "seed" of the "Steer" function.
      */
-    List<NearNode> Near(int stepNo, double[] x_new) {
-        //for (Node n : KDTree.values(_rootNode)) {
-        //    System.out.println("tree: " + Arrays.toString(n.getState()));
-        //}
-
-        //System.out.println("stepNo " + stepNo);
-        //System.out.println("A " + Math.log(stepNo + 1));
-        double radius = _gamma * Math.pow(
-                Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _model.dimensions());
-        // make it a bit bigger than the steering radius to be sure to catch the seed
-        radius += 0.1;
-        //System.out.println("radius " + radius);
+    List<NearNode> Near(double[] x_new) {
         List<NearNode> nearNodes = new ArrayList<>();
+        // if there's just one nearest node, return it alone
+        if (single_nearest) {
+            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
+            return nearNodes;
+        }
+        // for (Node n : KDTree.values(_rootNode)) {
+        // System.out.println("tree: " + Arrays.toString(n.getState()));
+        // }
+
+        // System.out.println("stepNo " + stepNo);
+        // System.out.println("A " + Math.log(stepNo + 1));
+        // double radius = _gamma * Math.pow(
+        // Math.log(stepNo + 1) / (stepNo + 1),
+        // 1.0 / _model.dimensions());
+        // // make it a bit bigger than the steering radius to be sure to catch the seed
+        // radius += 0.1;
+        // System.out.println("radius " + radius);
         KDTree.near(_model, _rootNode, x_new, radius, (node, dist) -> {
-           // if (node.getIncoming() != null)
-                nearNodes.add(new NearNode(node, dist));
+            // if (node.getIncoming() != null)
+            nearNodes.add(new NearNode(node, dist));
         });
+        // this should really never happen
+        if (nearNodes.isEmpty())
+            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
+
         return nearNodes;
     }
 

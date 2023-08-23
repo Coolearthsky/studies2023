@@ -76,7 +76,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     }
 
     @Override
-    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] newConfig) {
+    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] x_rand) {
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
@@ -85,12 +85,12 @@ public class HolonomicArena implements RobotModel, KDModel {
 
         // if it's close enough then just return it
         if (x_nearest._dist < radius)
-            return newConfig;
+            return x_rand;
 
         double[] nearConfig = x_nearest._nearest.getState();
         double[] result = new double[DIMENSIONS];
         for (int i = 0; i < DIMENSIONS; ++i) {
-            result[i] = nearConfig[i] + (newConfig[i] - nearConfig[i]) * dist;
+            result[i] = nearConfig[i] + (x_rand[i] - nearConfig[i]) * dist;
         }
         return result;
 
