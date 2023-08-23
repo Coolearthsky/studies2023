@@ -94,50 +94,55 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
         // find a feasible point somewhere nearby
         x_new = Steer(x_nearest, x_rand);
 
-        // make a list of points near the feasible one
-        List<NearNode> X_near = Near(x_new);
+        if (CollisionFree(x_nearest._nearest.getState(), x_new)) {
 
-        // List<NearNode> X_near = new ArrayList<>();
-        // KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
-        // if (node.getIncoming() != null)
-        // X_near.add(new NearNode(node, dist));
-        // });
+            // make a list of points near the feasible one
+            List<NearNode> X_near = Near(x_new);
 
+            // List<NearNode> X_near = new ArrayList<>();
+            // KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
+            // if (node.getIncoming() != null)
+            // X_near.add(new NearNode(node, dist));
+            // });
 
+            // Sort the array by total distance (including the distance to the new node).
+            // We take the best (shortest) feasible node.
+            Collections.sort(X_near);
 
-        // Sort the array by total distance (including the distance to the new node).
-        // We take the best (shortest) feasible node.
-        Collections.sort(X_near);
+            Iterator<NearNode> ni = X_near.iterator();
+            while (ni.hasNext()) {
+                NearNode nearNode = ni.next();
+                ni.remove();
 
-        Iterator<NearNode> ni = X_near.iterator();
-        while (ni.hasNext()) {
-            NearNode nearNode = ni.next();
-            ni.remove();
-
-            if (!_model.link(nearNode.node.getState(), x_rand)) {
-                //System.out.println("no link");
-                continue;
-            }
-
-            // Found a linkable configuration.
-            Node newNode = new Node(x_rand);
-            LinkInterface newLink = Graph.newLink(_model, nearNode.node, newNode);
-            _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
-            KDTree.insert(_model, _rootNode, newNode);
-
-            // check the remaining nearby nodes to see if they would be better
-            // as children of the new node
-            ListIterator<NearNode> li = X_near.listIterator(X_near.size());
-            while (li.hasPrevious()) {
-                NearNode jn = li.previous();
-                if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
-                    _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
+                if (!_model.link(nearNode.node.getState(), x_rand)) {
+                    // System.out.println("no link");
+                    continue;
                 }
+
+                // Found a linkable configuration.
+                Node newNode = new Node(x_rand);
+                LinkInterface newLink = Graph.newLink(_model, nearNode.node, newNode);
+                _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
+                KDTree.insert(_model, _rootNode, newNode);
+
+                // check the remaining nearby nodes to see if they would be better
+                // as children of the new node
+                ListIterator<NearNode> li = X_near.listIterator(X_near.size());
+                while (li.hasPrevious()) {
+                    NearNode jn = li.previous();
+                    if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
+                        _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
+                    }
+                }
+                return true;
             }
-            return true;
+            // no feasible link possible.
         }
-        // no feasible link possible.
         return false;
+    }
+
+    boolean CollisionFree(double[] from, double[] to) {
+        return _model.link(from, to);
     }
 
     /** Return a state not within an obstacle. */
