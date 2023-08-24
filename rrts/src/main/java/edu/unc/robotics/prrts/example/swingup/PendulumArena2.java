@@ -4,16 +4,16 @@ import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.wpi.first.math.DARE;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
-import edu.wpi.first.math.system.Discretization;
 
 /**
+ * 
+ * This version does not use LQR math.
+ * 
  * Single jointed pendulum
  * 
  * Example of non-euclidean space.
@@ -36,7 +36,7 @@ import edu.wpi.first.math.system.Discretization;
  * https://github.com/MahanFathi/LQR-RRTstar
  * http://people.csail.mit.edu/tlp/pdf/2012/ICRA12_1657_FI.pdf
  */
-public class PendulumArena implements Arena {
+public class PendulumArena2 implements Arena {
     /**
      * zeroth dimension is position (radians, down is zero).
      * first dimension is velocity (radians per second).
@@ -62,8 +62,8 @@ public class PendulumArena implements Arena {
     //Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
 //    Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
 
-    Matrix<N2,N2> Q = Matrix.eye(Nat.N2());
-    Matrix<N1,N1> R = VecBuilder.fill(50);
+    // Matrix<N2,N2> Q = Matrix.eye(Nat.N2());
+    // Matrix<N1,N1> R = VecBuilder.fill(50);
 
     double h = 0.1; // TODO: this is surely wrong. what time interval to use?
 
@@ -76,7 +76,7 @@ public class PendulumArena implements Arena {
     // private int stepNo;
     // private double radius;
 
-    public PendulumArena(double[] init, double[] goal, double gravity) {
+    public PendulumArena2(double[] init, double[] goal, double gravity) {
         _init = init;
         _goal = goal;
         _g = gravity;
@@ -95,33 +95,9 @@ public class PendulumArena implements Arena {
         return VecBuilder.fill(0, 1 / (m * Math.pow(l, 2)));
     }
 
-    /**
-     * use the WPI LQR lib to calculate S.
-     */
-    public Matrix<N2, N2> getS(double[] x) {
-        Matrix<N2, N2> A = getA(x);
-        Matrix<N2, N1> B = getB();
-        Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
-        Matrix<N2, N2> discA = discABPair.getFirst();
-        Matrix<N2, N1> discB = discABPair.getSecond();
-        return DARE.dare(discA, discB, Q, R);
-    }
 
-    // TODO: speed this up
-    public Matrix<N1, N2> getK(double[] x) {
-        Matrix<N2, N2> A = getA(x);
-        Matrix<N2, N1> B = getB();
-        Pair<Matrix<N2, N2>, Matrix<N2, N1>> discABPair = Discretization.discretizeAB(A, B, 1);
-        Matrix<N2, N2> discA = discABPair.getFirst();
-        Matrix<N2, N1> discB = discABPair.getSecond();
-        Matrix<N2, N2> S = DARE.dare(discA, discB, Q, R);
-        return discB
-                .transpose()
-                .times(S)
-                .times(discB)
-                .plus(R)
-                .solve(discB.transpose().times(S).times(discA));
-    }
+
+
 
     @Override
     public int dimensions() {
@@ -139,15 +115,13 @@ public class PendulumArena implements Arena {
     }
 
     /**
-     * the distance metric is dx S dx^T where dx is the vector difference and S is
-     * the Riccati solution. the key to this approach is linearizing the model at x
-     * for each sample.
+     * if it's possible to get from start to end, return the time it takes.
+     * 
+     * TODO: this is currently ridiculously wrong
      */
     @Override
     public double dist(double[] start, double[] end) {
-        Matrix<N2, N2> S = getS(start);
-        Matrix<N2, N1> dx = VecBuilder.fill(end[0] - start[0], end[1] - start[1]);
-        return dx.transpose().times(S).times(dx).get(0, 0);
+        return 1;
     }
 
     @Override
@@ -162,28 +136,29 @@ public class PendulumArena implements Arena {
 
     /**
      * steer from the near config towards the new config using the real dynamics and
-     * LQR full-state control, i.e. find the u value to try to go from the current
+     * bang-bang control, i.e. find the u value to try to go from the current
      * point to the new point, and then integrate forward to find the new point.
      */
     @Override
     public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
-        double[] nearConfig = x_nearest._nearest.getState();
+        // double[] nearConfig = x_nearest._nearest.getState();
 
         // see pend_rrt.m
-        Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
-        Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
-        Matrix<N2, N1> dx = x_near.minus(x_rand);
-        Matrix<N1, N2> K = getK(newConfig);
-        double u = K.times(-1).times(dx).get(0, 0);
-        u = Math.max(-3, u);
-        u = Math.min(3, u);
-        Matrix<N2, N1> xdot = VecBuilder.fill(
-                nearConfig[1],
-                (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
-        Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-        return x_new.getData();
-      //  newConfig[0] = x_new.get(0, 0);
-       // newConfig[1] = x_new.get(1, 0);
+    //     Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
+    //     Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
+    //     Matrix<N2, N1> dx = x_near.minus(x_rand);
+    //     Matrix<N1, N2> K = getK(newConfig);
+    //     double u = K.times(-1).times(dx).get(0, 0);
+    //     u = Math.max(-3, u);
+    //     u = Math.min(3, u);
+    //     Matrix<N2, N1> xdot = VecBuilder.fill(
+    //             nearConfig[1],
+    //             (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
+    //     Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
+    //     return x_new.getData();
+    //   //  newConfig[0] = x_new.get(0, 0);
+    //    // newConfig[1] = x_new.get(1, 0);
+       return new double[]{1,1};
     }
 
     @Override

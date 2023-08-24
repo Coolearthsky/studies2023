@@ -26,7 +26,7 @@ import edu.unc.robotics.prrts.example.geom.Obstacle;
 
 public class PendulumView extends JComponent {
     private final Runner _rrtStar;
-    private final PendulumArena _robotModel;
+    private final Arena _robotModel;
     private int framecounter;
 
 
@@ -35,7 +35,7 @@ public class PendulumView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public PendulumView(PendulumArena arena, Runner rrtStar) {
+    public PendulumView(Arena arena, Runner rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
@@ -54,7 +54,7 @@ public class PendulumView extends JComponent {
 
     public void doPaint(Graphics2D g, Dimension size) {
 
-        PendulumArena robotModel = _robotModel;
+        Arena robotModel = _robotModel;
         double[] min = robotModel.getMin();
         double[] max = robotModel.getMax();
 
