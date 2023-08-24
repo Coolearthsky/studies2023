@@ -1,7 +1,6 @@
 package org.team100.lib.rrt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -74,7 +73,7 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step() {
+    public int step() {
         // start with a random point
         x_rand = SampleFree();
 
@@ -124,11 +123,11 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
                         _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
                     }
                 }
-                return true;
+                return 1;
             }
             // no feasible link possible.
         }
-        return false;
+        return 0;
     }
 
     boolean CollisionFree(double[] from, double[] to) {

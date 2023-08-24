@@ -22,15 +22,22 @@ import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
 /**
+ * RRT* version 4. this is the BIDIRECTIONAL version.
+ * 
  * This is an attempt to make the code below look more like the pseudocode.
  * 
  * There are many similar-but-not-identical variations; I've kind of mashed them
  * together.
  * 
- * x_rand <- Sample() // start with a random point
- * x_nearest <- Nearest(x_rand) // find the nearest node in the tree to x_rand
- * x_new <- Steer(x_nearest, x_rand) // find a point feasible from x_nearest
- * 
+ * x_rand <- Sample() // a random point
+ * x_nearest <- Nearest(x_rand) // the nearest node in the tree
+ * x_new <- Steer(x_nearest, x_rand) // a feasible point nearby
+ * if CollisionFree then
+ * | X_near = Near(x_new) // candidate parents
+ * | x_min = ChooseParent(X_near, x_nearest, x_new) // lowest cost parent
+ * | if x_min != null then
+ * | | newNode = InsertNode(x_min, x_new)
+ * | | Rewire(X_near, newNode);
  * 
  * References:
  * 
@@ -42,69 +49,128 @@ import org.team100.lib.space.Sample;
  * https://natanaso.github.io/ece276b2018/ref/ECE276B_8_SamplingBasedPlanning.pdf
  * https://dspace.mit.edu/bitstream/handle/1721.1/79884/MIT-CSAIL-TR-2013-021.pdf
  * 
- * This version implements bidirectional search.
+ * This version implements bidirectional search, which is consisely mentioned
+ * here
+ * 
+ * https://arxiv.org/pdf/1703.08944.pdf
  */
 public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     private final T _model;
-    private final KDNode<Node> _rootNode;
+    /** Initially, tree grown from initial, but is swapped repeatedly */
+    private KDNode<Node> _T_a;
+    /** Initially, tree grown from goal, but is swapped repeatedly */
+    private KDNode<Node> _T_b;
     private final Sample _sample;
     private final double _gamma;
-    private LinkInterface _bestPath;
+    /** Lowest cost leaf leading to initial state. */
+    private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
     int stepNo;
     double radius;
-    double[] x_rand;
-    KDNearNode<Node> x_nearest;
-    double[] x_new;
-    boolean single_nearest;
+
+    Path _sigma_best;
 
     public RRTStar4(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _rootNode = new KDNode<Node>(new Node(model.initial()));
+        _T_a = new KDNode<Node>(new Node(model.initial()));
+        _T_b = new KDNode<Node>(new Node(model.goal()));
         _sample = sample;
         _gamma = gamma;
-        _bestPath = null;
+        _bestLeaf_a = null;
     }
 
     /**
-     * @param stepNo must be greater than zero
+     * Note this isn't quite the same as https://arxiv.org/pdf/1703.08944.pdf
+     * because it doesn't use Extend, so it doesn't try to connect unless
+     * a new node is actually inserted.
+     * 
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step() {
-        // Start with a random point.
-        x_rand = SampleFree();
-
-        // Find the nearest node in the tree (not necessarily feasible).
-        x_nearest = Nearest(x_rand);
-
-        // Find a feasible point somewhere nearby that node.
-        x_new = Steer(x_nearest, x_rand);
-
-        // Check the path between.
+    public int step() {
+        int edges = 0;
+        double[] x_rand = SampleFree();
+        KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
+        double[] x_new = Steer(x_nearest, x_rand);
         if (CollisionFree(x_nearest._nearest.getState(), x_new)) {
-
-            // Find some candidate parent points near the feasible one.
-            List<NearNode> X_near = Near(x_new);
-
-            // Choose the best parent node (the one with the lowest cost).
-            Node x_min = ChooseParent(X_near, x_nearest, x_new);
+            List<NearNode> X_near = Near(x_new, _T_a);
+            if (X_near.isEmpty())
+                X_near.add(new NearNode(x_nearest._nearest, x_nearest._dist));
+            Node x_min = ChooseParent(X_near, x_new);
             if (x_min != null) {
-
-                // Found a linkable configuration.
-                Node newNode = InsertNode(x_min, x_new);
-
-                // Reparent nearby nodes if that would yield shorter paths.
+                Node newNode = InsertNode(x_min, x_new, _T_a);
                 Rewire(X_near, newNode);
-                return true;
+                edges += 1;
+                KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
+                Path sigma_new = Connect(newNode, x_conn, _T_b);
+                if (sigma_new != null) {
+                    edges += 1;
+                    if (_sigma_best == null) {
+                        _sigma_best = sigma_new;
+                    } else {
+                        if (sigma_new.getDistance() < _sigma_best.getDistance()) {
+                            _sigma_best = sigma_new;
+                        }
+                    }
+                }
             }
         }
-        // no feasible link possible.
-        return false;
+        SwapTrees();
+        return edges;
+    }
+
+    void SwapTrees() {
+        KDNode<Node> tmp = _T_a;
+        _T_a = _T_b;
+        _T_b = tmp;
+    }
+
+    /**
+     * this isn't quite the same as https://arxiv.org/pdf/1703.08944.pdf
+     * because it skips the "extend," because i think it's wrong; it just
+     * picks nodes in the other tree that are actually near the new node.
+     * 
+     * @param x_1 newly inserted node
+     * @param x_2 near node in the other tree
+     */
+    Path Connect(Node x_1, KDNearNode<Node> x_2, KDNode<Node> rootNode) {
+        if (CollisionFree(x_2._nearest.getState(), x_1.getState())) {
+            List<NearNode> X_near = Near(x_1.getState(), rootNode);
+            if (X_near.isEmpty())
+                X_near.add(new NearNode(x_2._nearest, x_2._dist));
+            Node x_min = ChooseParent(X_near, x_1.getState());
+            if (x_min != null) {
+                Node newNode = InsertNode(x_min, x_1.getState(), rootNode);
+                Rewire(X_near, newNode);
+                return GeneratePath(x_1, newNode);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * the parameters describe a link between initial and goal trees, the same
+     * state in both cases.
+     */
+    Path GeneratePath(Node x_1, Node x_2) {
+        for (int i = 0; i < _model.dimensions(); ++i) {
+            if (x_1.getState()[i] != x_2.getState()[i])
+                throw new IllegalArgumentException(
+                        "x1 " + Arrays.toString(x_1.getState()) + " x2 " + Arrays.toString(x_2.getState()));
+        }
+
+        Path p_1 = walkParents(x_1);
+        Path p_2 = walkParents(x_2);
+        List<double[]> states_2 = p_2.getStates();
+        Collections.reverse(states_2);
+        List<double[]> fullStates = new ArrayList<double[]>();
+        fullStates.addAll(p_1.getStates());
+        fullStates.addAll(states_2);
+        return new Path(p_1.getDistance() + p_2.getDistance(), fullStates);
     }
 
     boolean CollisionFree(double[] from, double[] to) {
@@ -123,23 +189,26 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     /**
      * Return the nearest node in the tree, using the KDTree metric, which
      * could be very wrong but is probably useful.
+     * 
+     * @param x_rand   the random sample
+     * @param rootNode the tree to look through
      */
-    KDNearNode<Node> Nearest(double[] x_rand) {
-        return KDTree.nearest(_model, _rootNode, x_rand);
+    KDNearNode<Node> Nearest(double[] x_rand, KDNode<Node> rootNode) {
+        return KDTree.nearest(_model, rootNode, x_rand);
     }
 
     /**
      * Return a state that tries to go from x_nearest to x_rand using a feasible
      * trajectory. For simple systems "feasible" just means "closer."
      * 
+     * Returns x_rand unmodified if it's within radius.
+     * 
      * @param x_nearest containts distance to x_rand
      */
     double[] Steer(KDNearNode<Node> x_nearest, double[] x_rand) {
         if (x_nearest._dist < radius) {
-            single_nearest = false;
             return x_rand;
         }
-        single_nearest = true;
         _model.setStepNo(stepNo);
         _model.setRadius(radius);
         double[] x_new = _model.steer(x_nearest, x_rand);
@@ -152,43 +221,37 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * single
      * nearest node if there are no other near nodes.
      */
-    List<NearNode> Near(double[] x_new) {
+    List<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
         List<NearNode> nearNodes = new ArrayList<>();
-        // if there's just one nearest node, return it alone
-        if (single_nearest) {
-            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-            return nearNodes;
-        }
-
-        KDTree.near(_model, _rootNode, x_new, radius, (node, dist) -> {
+        KDTree.near(_model, rootNode, x_new, radius, (node, dist) -> {
             nearNodes.add(new NearNode(node, dist));
         });
-        // this should really never happen
-        if (nearNodes.isEmpty())
-            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-
         return nearNodes;
     }
 
-    /** Mutates X_near */
-    Node ChooseParent(List<NearNode> X_near, KDNearNode<Node> x_nearest, double[] x_new) {
+    /**
+     * Returns a member of X_near resulting in the lowest-cost path to x_new.
+     * Removes infeasible nodes from X_near so we don't look at them again later.
+     */
+    Node ChooseParent(List<NearNode> X_near, double[] x_new) {
         Collections.sort(X_near);
         Iterator<NearNode> ni = X_near.iterator();
         while (ni.hasNext()) {
             NearNode nearNode = ni.next();
             ni.remove();
-            if (CollisionFree(nearNode.node.getState(), x_rand)) {
+            if (CollisionFree(nearNode.node.getState(), x_new)) {
                 return nearNode.node;
             }
         }
         return null;
     }
 
-    Node InsertNode(Node x_min, double[] x_new) {
+    /** Add the node x_new to the tree, with an edge from x_min. */
+    Node InsertNode(Node x_min, double[] x_new, KDNode<Node> rootNode) {
         Node newNode = new Node(x_new);
         LinkInterface newLink = Graph.newLink(_model, x_min, newNode);
-        _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
-        KDTree.insert(_model, _rootNode, newNode);
+        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
+        KDTree.insert(_model, rootNode, newNode);
         return newNode;
     }
 
@@ -196,25 +259,46 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         ListIterator<NearNode> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
             NearNode jn = li.previous();
-            if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
-                _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
+            if (jn.node.getIncoming() != null) {
+                if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
+                    _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
+                }
             }
         }
     }
 
+    /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
     public Iterable<Node> getNodes() {
-        return KDTree.values(_rootNode);
+        List<Node> allNodes = new ArrayList<Node>();
+        allNodes.addAll(KDTree.values(_T_a));
+        allNodes.addAll(KDTree.values(_T_b));
+        return allNodes;
     }
 
     @Override
     public Path getBestPath() {
-        LinkInterface link = _bestPath;
-        if (link == null) {
-            return null;
-        }
-        Node node = link.get_target();
+        return _sigma_best;
+    }
 
+    // @Override
+    // public Path getBestPath() {
+    // LinkInterface link = _bestLeaf_a;
+    // if (link == null) {
+    // return null;
+    // }
+    // Node node = link.get_target();
+
+    // return walkParents(node);
+    // }
+
+    /**
+     * Starting from leaf node, walk the parent links to accumulate
+     * the full path, and reverse it, to return a path from root to node.
+     * 
+     * @param node leaf node
+     */
+    Path walkParents(Node node) {
         // Collect the states along the path (backwards)
         List<double[]> configs = new LinkedList<double[]>();
         // Since we're visiting all the nodes it's very cheap to verify the total

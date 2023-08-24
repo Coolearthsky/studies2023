@@ -19,6 +19,11 @@ public class OperationsTest {
         }
 
         @Override
+        public double[] goal() {
+            return null;
+        }
+
+        @Override
         public boolean goal(double[] config) {
             return false;
         }

@@ -11,8 +11,8 @@ public interface Solver {
     /** Used to adjust radius. */
     void setStepNo(int stepNo);
 
-    /** Try to add an edge, return true if successful. */
-    boolean step();
+    /** Try to add an edge, return number added. */
+    int step();
 
     /** Return the whole tree. */
     Iterable<Node> getNodes();

@@ -22,8 +22,8 @@ public class HolonomicArena implements RobotModel, KDModel {
     private static final double[] _max = { 16, 8 };
 
     // used for steering
-    private final double _gamma;
-    private int stepNo;
+    // private final double _gamma;
+    // private int stepNo;
     private double radius;
 
     Obstacle[] _obstacles = new Obstacle[] {
@@ -48,7 +48,7 @@ public class HolonomicArena implements RobotModel, KDModel {
     };
 
     public HolonomicArena(double gamma) {
-        _gamma = gamma;
+        // _gamma = gamma;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class HolonomicArena implements RobotModel, KDModel {
 
     @Override
     public void setStepNo(int stepNo) {
-        this.stepNo = stepNo;
+        // this.stepNo = stepNo;
     }
 
     @Override
@@ -147,6 +147,11 @@ public class HolonomicArena implements RobotModel, KDModel {
     @Override
     public double[] initial() {
         return _init;
+    }
+
+    @Override
+    public double[] goal() {
+        return _goal;
     }
 
     @Override

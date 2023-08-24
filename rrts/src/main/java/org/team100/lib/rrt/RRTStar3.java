@@ -1,7 +1,6 @@
 package org.team100.lib.rrt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -22,6 +21,8 @@ import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
 /**
+ * RRT* version 3.  this is the "good" version of single-tree.
+ * 
  * This is an attempt to make the code below look more like the pseudocode.
  * 
  * There are many similar-but-not-identical variations; I've kind of mashed them
@@ -41,6 +42,7 @@ import org.team100.lib.space.Sample;
  * https://dspace.mit.edu/handle/1721.1/79884
  * https://natanaso.github.io/ece276b2018/ref/ECE276B_8_SamplingBasedPlanning.pdf
  * https://dspace.mit.edu/bitstream/handle/1721.1/79884/MIT-CSAIL-TR-2013-021.pdf
+ * https://arxiv.org/pdf/1703.08944.pdf
  * 
  */
 public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
@@ -53,10 +55,6 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
     // mutable loop variables to make the loop code cleaner
     int stepNo;
     double radius;
-    double[] x_rand;
-    KDNearNode<Node> x_nearest;
-    double[] x_new;
-    boolean single_nearest;
 
     public RRTStar3(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
@@ -70,40 +68,25 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
     }
 
     /**
-     * @param stepNo must be greater than zero
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step() {
-        // Start with a random point.
-        x_rand = SampleFree();
-
-        // Find the nearest node in the tree (not necessarily feasible).
-        x_nearest = Nearest(x_rand);
-
-        // Find a feasible point somewhere nearby that node.
-        x_new = Steer(x_nearest, x_rand);
-
-        // Check the path between.
+    public int step() {
+        double[] x_rand = SampleFree();
+        KDNearNode<Node> x_nearest = Nearest(x_rand);
+        double[] x_new = Steer(x_nearest, x_rand);
         if (CollisionFree(x_nearest._nearest.getState(), x_new)) {
-
-            // Find some candidate parent points near the feasible one.
             List<NearNode> X_near = Near(x_new);
-
-            // Choose the best parent node (the one with the lowest cost).
-            Node x_min = ChooseParent(X_near, x_nearest, x_new);
+            if (X_near.isEmpty())
+                X_near.add(new NearNode(x_nearest._nearest, x_nearest._dist));
+            Node x_min = ChooseParent(X_near, x_new);
             if (x_min != null) {
-
-                // Found a linkable configuration.
                 Node newNode = InsertNode(x_min, x_new);
-
-                // Reparent nearby nodes if that would yield shorter paths.
                 Rewire(X_near, newNode);
-                return true;
+                return 1;
             }
         }
-        // no feasible link possible.
-        return false;
+        return 0;
     }
 
     boolean CollisionFree(double[] from, double[] to) {
@@ -135,10 +118,8 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
      */
     double[] Steer(KDNearNode<Node> x_nearest, double[] x_rand) {
         if (x_nearest._dist < radius) {
-            single_nearest = false;
             return x_rand;
         }
-        single_nearest = true;
         _model.setStepNo(stepNo);
         _model.setRadius(radius);
         double[] x_new = _model.steer(x_nearest, x_rand);
@@ -153,30 +134,20 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
      */
     List<NearNode> Near(double[] x_new) {
         List<NearNode> nearNodes = new ArrayList<>();
-        // if there's just one nearest node, return it alone
-        if (single_nearest) {
-            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-            return nearNodes;
-        }
-
         KDTree.near(_model, _rootNode, x_new, radius, (node, dist) -> {
             nearNodes.add(new NearNode(node, dist));
         });
-        // this should really never happen
-        if (nearNodes.isEmpty())
-            nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-
         return nearNodes;
     }
 
     /** Mutates X_near */
-    Node ChooseParent(List<NearNode> X_near, KDNearNode<Node> x_nearest, double[] x_new) {
+    Node ChooseParent(List<NearNode> X_near, double[] x_new) {
         Collections.sort(X_near);
         Iterator<NearNode> ni = X_near.iterator();
         while (ni.hasNext()) {
             NearNode nearNode = ni.next();
             ni.remove();
-            if (CollisionFree(nearNode.node.getState(), x_rand)) {
+            if (CollisionFree(nearNode.node.getState(), x_new)) {
                 return nearNode.node;
             }
         }

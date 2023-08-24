@@ -60,10 +60,10 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step() {
+    public int step() {
         x_rand = SampleFree();
         if (x_rand == null)
-            return false;
+            return 0;
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
@@ -88,11 +88,11 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             }
 
             if (!_model.clear(x_rand)) {
-                return false;
+                return 0;
             }
 
             if (!_model.link(nearest.getState(), x_rand)) {
-                return false;
+                return 0;
             }
 
             // the new node has the new sampled config, the distance(cost) to the
@@ -105,7 +105,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
 
             KDTree.insert(_model, _rootNode, newTarget);
-            return true;
+            return 1;
         }
 
         // Sort the array by total distance (including the distance to the new node).
@@ -136,10 +136,10 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
                 }
             }
-            return true;
+            return 1;
         }
         // no feasible link possible.
-        return false;
+        return 0;
     }
 
     @Override

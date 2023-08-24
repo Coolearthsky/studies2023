@@ -75,8 +75,8 @@ public class PendulumArena implements RobotModel, KDModel {
     private final double b = 0.1; // viscous drag, unit = ?
     private final double _g; // gravity m/s/s
 
-    private int stepNo;
-    private double radius;
+    // private int stepNo;
+    // private double radius;
 
     public PendulumArena(double[] init, double[] goal, double gravity) {
         _init = init;
@@ -154,12 +154,12 @@ public class PendulumArena implements RobotModel, KDModel {
 
     @Override
     public void setStepNo(int stepNo) {
-        this.stepNo = stepNo;
+       // this.stepNo = stepNo;
     }
 
     @Override
     public void setRadius(double radius) {
-        this.radius = radius;
+        //this.radius = radius;
     }
 
     /**
@@ -191,6 +191,11 @@ public class PendulumArena implements RobotModel, KDModel {
     @Override
     public double[] initial() {
         return _init;
+    }
+
+    @Override
+    public double[] goal() {
+        return _goal;
     }
 
     @Override

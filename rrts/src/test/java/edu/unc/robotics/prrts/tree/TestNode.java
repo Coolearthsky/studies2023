@@ -20,6 +20,11 @@ public class TestNode {
         }
 
         @Override
+        public double[] goal() {
+            return null;
+        }
+
+        @Override
         public boolean goal(double[] config) {
             return false;
         }
@@ -72,13 +77,12 @@ public class TestNode {
         assertEquals(1, link4.get_linkDist(), 0.1);
         assertEquals(1, link4.get_pathDist(), 0.1);
 
-        Node node5 = new Node(new double[] {1,1});
+        Node node5 = new Node(new double[] { 1, 1 });
         LinkInterface link5 = Graph.newLink(node1, node5, 1);
         assertArrayEquals(new double[] { 1, 1 }, node5.getState());
         assertEquals(node1, node5.getIncoming().get_source());
         assertEquals(1, link5.get_linkDist(), 0.1);
         assertEquals(2, link5.get_pathDist(), 0.1);
     }
-
 
 }
