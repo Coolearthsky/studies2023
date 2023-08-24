@@ -75,6 +75,9 @@ public class PendulumArena implements RobotModel, KDModel {
     private final double b = 0.1; // viscous drag, unit = ?
     private final double _g; // gravity m/s/s
 
+    // private int stepNo;
+    // private double radius;
+
     public PendulumArena(double[] init, double[] goal, double gravity) {
         _init = init;
         _goal = goal;
@@ -149,13 +152,23 @@ public class PendulumArena implements RobotModel, KDModel {
         return dx.transpose().times(S).times(dx).get(0, 0);
     }
 
+    @Override
+    public void setStepNo(int stepNo) {
+       // this.stepNo = stepNo;
+    }
+
+    @Override
+    public void setRadius(double radius) {
+        //this.radius = radius;
+    }
+
     /**
      * steer from the near config towards the new config using the real dynamics and
      * LQR full-state control, i.e. find the u value to try to go from the current
      * point to the new point, and then integrate forward to find the new point.
      */
     @Override
-    public double[] steer(int stepNo, KDNearNode<Node> x_nearest, double[] newConfig) {
+    public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
         double[] nearConfig = x_nearest._nearest.getState();
 
         // see pend_rrt.m
@@ -178,6 +191,11 @@ public class PendulumArena implements RobotModel, KDModel {
     @Override
     public double[] initial() {
         return _init;
+    }
+
+    @Override
+    public double[] goal() {
+        return _goal;
     }
 
     @Override

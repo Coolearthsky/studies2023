@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.ListIterator;
 
 import org.team100.lib.graph.Graph;
-import org.team100.lib.graph.Link;
+import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.NearNode;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
@@ -25,7 +25,11 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
     private final KDNode<Node> _rootNode;
     private final Sample _sample;
     private final double _gamma;
-    private Link _bestPath;
+    private LinkInterface _bestPath;
+
+    // mutable loop variables to make the loop code cleaner
+    int stepNo = 0;
+    double[] x_rand;
 
     public RRTStar(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
@@ -45,14 +49,21 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         return newConfig;
     }
 
+    @Override
+    public void setStepNo(int stepNo) {
+        if (stepNo < 1)
+            throw new IllegalArgumentException();
+        this.stepNo = stepNo;
+    }
+
     /**
      * @return true if a new sample was added.
      */
     @Override
-    public boolean step(int stepNo) {
-        double[] x_rand = SampleFree();
+    public int step() {
+        x_rand = SampleFree();
         if (x_rand == null)
-            return false;
+            return 0;
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
@@ -71,29 +82,30 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
             double distToNearest = nearResult._dist;
 
             if (distToNearest > radius) {
-                x_rand = _model.steer(stepNo, nearResult, x_rand);
+                _model.setStepNo(stepNo);
+                _model.setRadius(radius);
+                x_rand = _model.steer(nearResult, x_rand);
             }
 
             if (!_model.clear(x_rand)) {
-                return false;
+                return 0;
             }
 
             if (!_model.link(nearest.getState(), x_rand)) {
-                return false;
+                return 0;
             }
-
 
             // the new node has the new sampled config, the distance(cost) to the
             // nearest other node we found above, and the "parent" is the "link"
             // from that nearest node.
             Node newTarget = new Node(x_rand);
             // recalculate dist just to be safe.
-            Link newLink = Graph.newLink(_model, nearest, newTarget);
+            LinkInterface newLink = Graph.newLink(_model, nearest, newTarget);
 
             _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
 
             KDTree.insert(_model, _rootNode, newTarget);
-            return true;
+            return 1;
         }
 
         // Sort the array by total distance (including the distance to the new node).
@@ -111,7 +123,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
             // Found a linkable configuration.
             Node newNode = new Node(x_rand);
-            Link newLink = Graph.newLink(nearNode.node, newNode, nearNode.linkDist);
+            LinkInterface newLink = Graph.newLink(nearNode.node, newNode, nearNode.linkDist);
             _bestPath = Graph.chooseBestPath(_model, _bestPath, newLink);
             KDTree.insert(_model, _rootNode, newNode);
 
@@ -124,10 +136,10 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
                     _bestPath = Graph.chooseBestPath(_model, _bestPath, newNode.getIncoming());
                 }
             }
-            return true;
+            return 1;
         }
         // no feasible link possible.
-        return false;
+        return 0;
     }
 
     @Override
@@ -137,7 +149,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
 
     @Override
     public Path getBestPath() {
-        Link link = _bestPath;
+        LinkInterface link = _bestPath;
         if (link == null) {
             return null;
         }
@@ -150,7 +162,7 @@ public class RRTStar<T extends KDModel & RobotModel> implements Solver {
         double totalDistance = 0;
         while (true) {
             configs.add(node.getState());
-            Link incoming = node.getIncoming();
+            LinkInterface incoming = node.getIncoming();
             if (incoming == null)
                 break;
             totalDistance += incoming.get_linkDist();

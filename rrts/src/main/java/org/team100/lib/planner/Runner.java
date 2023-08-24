@@ -50,7 +50,8 @@ public class Runner {
     private void run(int sampleLimit, long timeLimitNS) {
         long startTime = System.nanoTime();
         while (true) {
-            if (_solver.step(_stepNo)) {
+            _solver.setStepNo(_stepNo);
+            if (_solver.step() > 0) {
                 _stepNo++;
                 if (_stepNo > sampleLimit) {
                     return;

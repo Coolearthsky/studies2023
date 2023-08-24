@@ -6,7 +6,12 @@ import java.util.List;
 
 import org.team100.lib.space.Path;
 
-public class Link {
+/**
+ * This link type does not keep any information about path distance,
+ * just local link distance; it calculates path distance on the fly every time
+ * and need not be updated by rewiring.
+ */
+public class LocalLink implements LinkInterface {
     /** nullable for root */
     private final Node _source;
     /** nonnull */
@@ -14,7 +19,7 @@ public class Link {
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
     /** Total path length, i.e. cost, so far. This is updated by rewiring. */
-    private double _pathDist;
+    // private double _pathDist;
 
     /**
      * Create a new link pointing at the node, linkDist away from parent.
@@ -23,7 +28,7 @@ public class Link {
      * @param target
      * @param linkDist distance to the parent
      */
-    public Link(Node source, Node target, double linkDist) {
+    public LocalLink(Node source, Node target, double linkDist) {
         if (source == null)
             throw new IllegalArgumentException();
         if (target == null)
@@ -31,21 +36,22 @@ public class Link {
         if (linkDist < 0)
             throw new IllegalArgumentException();
 
-        double pathDist = source.getPathDist() + linkDist;
+        // double pathDist = source.getPathDist() + linkDist;
 
         _target = target;
         _linkDist = linkDist;
-        _pathDist = pathDist;
+        // _pathDist = pathDist;
         _source = source;
     }
 
+    @Override
     public Path path() {
         Node node = get_target();
         List<double[]> configs = new LinkedList<double[]>();
         double pathDist = get_pathDist();
         while (true) {
             configs.add(node.getState());
-            Link incoming = node.getIncoming();
+            LinkInterface incoming = node.getIncoming();
             if (incoming == null)
                 break;
             node = incoming.get_source();
@@ -54,25 +60,35 @@ public class Link {
         return new Path(pathDist, configs);
     }
 
+    @Override
     public Node get_source() {
         return _source;
     }
 
     /** nonnull */
+    @Override
     public Node get_target() {
         return _target;
     }
 
+    @Override
     public double get_linkDist() {
         return _linkDist;
     }
 
+    @Override
     public void set_PathDist(double d) {
-        _pathDist = d;
+        // _pathDist = d;
     }
 
     /** Total path length from start to here */
+    @Override
     public double get_pathDist() {
-        return _pathDist;
+        if (_source == null) {
+            return _linkDist;
+        }
+
+        return _source.getPathDist() + _linkDist;
+        // return _pathDist;
     }
 }

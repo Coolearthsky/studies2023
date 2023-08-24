@@ -17,6 +17,9 @@ public interface KDModel {
      */
     double dist(double[] start, double[] end);
 
+    void setStepNo(int stepNo);
+    void setRadius(double radius);
+
     /**
      * return a point in the same direction as the input newConfig
      * relative to nearConfig, but only dist of the way there. Note this should
@@ -33,6 +36,6 @@ public interface KDModel {
      * @param dist       the fraction to go
      * @return steered new config
      */
-    double[] steer(int stepNo,  KDNearNode<Node> x_nearest,  double[] newConfig);
+    double[] steer(KDNearNode<Node> x_nearest,  double[] newConfig);
 
 }

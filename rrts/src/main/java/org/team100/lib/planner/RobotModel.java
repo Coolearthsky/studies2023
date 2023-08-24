@@ -5,6 +5,9 @@ public interface RobotModel {
     /** Initial state. */
     double[] initial();
 
+    /** Goal state. */
+    double[] goal();
+
     /**
      * @return true if the configuration is in the goal region
      */

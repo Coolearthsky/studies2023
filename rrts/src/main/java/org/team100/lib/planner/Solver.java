@@ -8,8 +8,11 @@ import org.team100.lib.space.Path;
  * results.
  */
 public interface Solver {
-    /** Try to add an edge, return true if successful. */
-    boolean step(int stepNo);
+    /** Used to adjust radius. */
+    void setStepNo(int stepNo);
+
+    /** Try to add an edge, return number added. */
+    int step();
 
     /** Return the whole tree. */
     Iterable<Node> getNodes();

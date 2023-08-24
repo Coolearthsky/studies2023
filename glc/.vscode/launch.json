@@ -8,6 +8,13 @@
         "type": "java",
         "name": "Launch FRCFastestPathDemo",
         "request": "launch",
+        "mainClass": "org.team100.glclib.examples.FRCFastestPathDemo",
+        "projectName": "glc"
+    },
+    {
+        "type": "java",
+        "name": "Launch FRCFastestPathDemo",
+        "request": "launch",
         "mainClass": "examples.FRCFastestPathDemo",
         "projectName": "glc"
     },

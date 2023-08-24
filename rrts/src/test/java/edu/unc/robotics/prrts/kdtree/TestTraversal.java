@@ -39,9 +39,21 @@ public class TestTraversal {
         }
 
         @Override
-        public double[] steer(int stepNo,  KDNearNode<Node> x_nearest, double[] newConfig) {
+        public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
             // TODO Auto-generated method stub
             throw new UnsupportedOperationException("Unimplemented method 'steer'");
+        }
+
+        @Override
+        public void setStepNo(int stepNo) {
+            // TODO Auto-generated method stub
+            
+        }
+
+        @Override
+        public void setRadius(double radius) {
+            // TODO Auto-generated method stub
+            
         }
 
     };

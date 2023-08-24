@@ -10,13 +10,13 @@ public class Node implements Point {
     private final double[] state;
 
     /** Nullable for root, can be updated. */
-    private Link incoming;
+    private LinkInterface incoming;
 
-    private Set<Link> outgoing;
+    private Set<LinkInterface> outgoing;
 
     public Node(double[] state) {
         this.state = state;
-        this.outgoing = new HashSet<Link>();
+        this.outgoing = new HashSet<LinkInterface>();
     }
 
     @Override
@@ -24,24 +24,24 @@ public class Node implements Point {
         return state;
     }
 
-    public void setIncoming(Link link) {
+    public void setIncoming(LinkInterface link) {
         incoming = link;
     }
 
     /** Nullable for root (i.e. start). */
-    public Link getIncoming() {
+    public LinkInterface getIncoming() {
         return incoming;
     }
 
-    public void addOutgoing(Link link) {
+    public void addOutgoing(LinkInterface link) {
         outgoing.add(link);
     }
 
-    public void removeOutgoing(Link link) {
+    public void removeOutgoing(LinkInterface link) {
         outgoing.remove(link);
     }
 
-    public Iterator<Link> getOutgoing() {
+    public Iterator<LinkInterface> getOutgoing() {
         return outgoing.iterator();
     }
 
