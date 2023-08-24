@@ -11,6 +11,7 @@ import org.team100.lib.planner.Runner;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.rrt.RRTStar;
 import org.team100.lib.rrt.RRTStar2;
+import org.team100.lib.rrt.RRTStar3;
 import org.team100.lib.space.Sample;
 
 public class ArenaFrame extends JFrame {
@@ -47,10 +48,10 @@ public class ArenaFrame extends JFrame {
             run(arena, runner, rrtstar);
             
             // final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new Sample(arena), 6);
-            final Solver rrtstar2 = new RRTStar2<>(arena, new Sample(arena), 6);
-            final Runner runner2 = new Runner(rrtstar2);
-            Graph.linkTypeCaching = false;
-            run(arena, runner2, rrtstar2);
+            final Solver rrtstar3 = new RRTStar3<>(arena, new Sample(arena), 6);
+            final Runner runner2 = new Runner(rrtstar3);
+            Graph.linkTypeCaching = true;
+            run(arena, runner2, rrtstar3);
 
             System.out.printf("1 steps %d distance %5.2f --- 2 steps %d distance %5.2f\n",
                     runner.getStepNo(), runner.getBestPath().getDistance(),
