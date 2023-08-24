@@ -3,10 +3,12 @@ package org.team100.lib.rrt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
@@ -63,6 +65,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     private final Sample _sample;
     private final double _gamma;
     /** Lowest cost leaf leading to initial state. */
+    // TODO: remove this
     private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
@@ -70,6 +73,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     double radius;
 
     Path _sigma_best;
+    Map<Node, Node> connections = new HashMap<Node, Node>();
 
     public RRTStar4(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
@@ -145,6 +149,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
             Node x_min = ChooseParent(X_near, x_1.getState());
             if (x_min != null) {
                 Node newNode = InsertNode(x_min, x_1.getState(), rootNode);
+                connections.put(x_1, newNode);
                 Rewire(X_near, newNode);
                 return GeneratePath(x_1, newNode);
             }
@@ -255,6 +260,10 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         return newNode;
     }
 
+    /**
+     * look through the nodes in X_near to see if any should be new children of
+     * newNode.
+     */
     void Rewire(List<NearNode> X_near, Node newNode) {
         ListIterator<NearNode> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
@@ -276,6 +285,25 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         return allNodes;
     }
 
+    /**
+     * the path distance may have been changed by rewiring. does this actually
+     * matter? experiment says no.
+     * TODO: remove this
+     */
+    public Path getFullBestPath() {
+        Path bestPath = null;
+        for (Map.Entry<Node, Node> entry : connections.entrySet()) {
+            Path aPath = GeneratePath(entry.getKey(), entry.getValue());
+            if (bestPath == null) {
+                bestPath = aPath;
+            } else {
+                if (aPath.getDistance() < bestPath.getDistance())
+                    bestPath = aPath;
+            }
+        }
+        return bestPath;
+    }
+
     @Override
     public Path getBestPath() {
         return _sigma_best;
@@ -288,9 +316,6 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     // return null;
     // }
     // Node node = link.get_target();
-
-    // return walkParents(node);
-    // }
 
     /**
      * Starting from leaf node, walk the parent links to accumulate
