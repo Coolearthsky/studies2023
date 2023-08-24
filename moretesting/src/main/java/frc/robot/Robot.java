@@ -27,25 +27,28 @@ public class Robot extends TimedRobot {
         m_motor.configSelectedFeedbackSensor(FeedbackDevice.IntegratedSensor);
         m_motor.setNeutralMode(NeutralMode.Brake);
         m_motor.setInverted(InvertType.InvertMotorOutput);
-        // m_motor.configStatorCurrentLimit(
-        //         new StatorCurrentLimitConfiguration(true, m_config.kCurrentLimit, m_config.kCurrentLimit, 0));
-        // m_motor.configSupplyCurrentLimit(
-        //         new SupplyCurrentLimitConfiguration(true, m_config.kCurrentLimit, m_config.kCurrentLimit, 0));
-        // SmartDashboard.putData(String.format("Falcon Turning Motor %s", name), this);
         m_motor.configNominalOutputForward(0);
         m_motor.configNominalOutputReverse(0);
         m_motor.config_kF(0, 0);
         m_motor.config_kP(0, 0);
         m_motor.config_kI(0, 0);
         m_motor.config_kD(0, 0);
+        m_motor.configVoltageCompSaturation(11);
+        m_motor.enableVoltageCompensation(true);
     m_robotContainer = new RobotContainer();
   }
 
   @Override
   public void robotPeriodic() {
+    double FF = .3;
+    if (FF<.575) {
+
+    }
+    SmartDashboard.putNumber("FF",FF);
     SmartDashboard.putNumber("Speed", m_motor.getSelectedSensorVelocity()/2048);
-    m_motor.set(ControlMode.Velocity, 0, DemandType.ArbitraryFeedForward, 0.4125
-    );
+    DemandType type = DemandType.ArbitraryFeedForward;
+    // m_motor.set(ControlMode.Velocity, 0, type, FF);
+    m_motor.setVoltage(FF);
     CommandScheduler.getInstance().run();
   }
 
