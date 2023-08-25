@@ -9,6 +9,7 @@ import javax.swing.SwingUtilities;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.rrt.RRTStar4;
+import org.team100.lib.rrt.RRTStar5;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
@@ -23,7 +24,7 @@ public class PendulumFrame extends JFrame {
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         final Arena arena = new PendulumArena2(new double[] { 0, 0 }, new double[] { Math.PI, 0 }, 9.81);
-        final Solver worker = new RRTStar4<>(arena, new Sample(arena), 2);
+        final Solver worker = new RRTStar5<>(arena, new Sample(arena), 2);
         final Runner rrtStar = new Runner(worker);
 
         SwingUtilities.invokeAndWait(new Runnable() {

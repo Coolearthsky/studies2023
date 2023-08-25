@@ -4,11 +4,6 @@ import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.numbers.N1;
-import edu.wpi.first.math.numbers.N2;
 
 /**
  * 
@@ -29,12 +24,7 @@ import edu.wpi.first.math.numbers.N2;
  * A = [ 0 1, -sin x1 0]
  * B = [0, 1]
  * 
- * note since this uses wpimathjni you have to run it in some way that knows
- * where the jni libs are, e.g. using the vscode "simulate robot" button.
- * 
- * The math here follows
- * https://github.com/MahanFathi/LQR-RRTstar
- * http://people.csail.mit.edu/tlp/pdf/2012/ICRA12_1657_FI.pdf
+ * the general idea is
  */
 public class PendulumArena2 implements Arena {
     /**
@@ -54,17 +44,6 @@ public class PendulumArena2 implements Arena {
 
     Obstacle[] _obstacles = new Obstacle[] {};
 
-    // Q is x norm coord
-    //Vector<N2> qelms = VecBuilder.fill(1, 1);
-    // R is u norm coord
-  //  Vector<N1> relms = VecBuilder.fill(50);
-
-    //Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
-//    Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
-
-    // Matrix<N2,N2> Q = Matrix.eye(Nat.N2());
-    // Matrix<N1,N1> R = VecBuilder.fill(50);
-
     double h = 0.1; // TODO: this is surely wrong. what time interval to use?
 
     // see pend_rrt.m
@@ -80,24 +59,8 @@ public class PendulumArena2 implements Arena {
         _init = init;
         _goal = goal;
         _g = gravity;
-        // Matrix<N2, N2> S = getS(new double[] { 0, 0 });
 
     }
-
-    public Matrix<N2, N2> getA(double[] x) {
-        return Matrix.mat(Nat.N2(), Nat.N2()).fill(
-                0, 1,
-                -_g * Math.cos(x[0]), -b / (m * Math.pow(l, 2)));
-
-    }
-
-    public Matrix<N2, N1> getB() {
-        return VecBuilder.fill(0, 1 / (m * Math.pow(l, 2)));
-    }
-
-
-
-
 
     @Override
     public int dimensions() {
@@ -106,59 +69,103 @@ public class PendulumArena2 implements Arena {
 
     @Override
     public double[] getMin() {
-        return _min.clone();        
+        return _min.clone();
     }
 
     @Override
     public double[] getMax() {
-        return _max.clone();        
+        return _max.clone();
     }
 
     /**
-     * if it's possible to get from start to end, return the time it takes.
-     * 
-     * TODO: this is currently ridiculously wrong
+     * This currently returns the euclidean distance which is very wrong,
+     * but does include some nearby points.
      */
     @Override
     public double dist(double[] start, double[] end) {
-        return 1;
+        double dist = 0;
+        for (int i = 0; i < DIMENSIONS; i += 2) {
+            double dx = start[i] - end[i];
+            double dy = start[i + 1] - end[i + 1];
+            dist += dx * dx + dy * dy;
+        }
+        return Math.sqrt(dist);
     }
 
     @Override
     public void setStepNo(int stepNo) {
-       // this.stepNo = stepNo;
+        // this.stepNo = stepNo;
     }
 
     @Override
     public void setRadius(double radius) {
-        //this.radius = radius;
+        // this.radius = radius;
     }
 
     /**
      * steer from the near config towards the new config using the real dynamics and
      * bang-bang control, i.e. find the u value to try to go from the current
      * point to the new point, and then integrate forward to find the new point.
+     * 
+     * Returns null if there is no easy way to get to the goal state.
+     * 
+     * @param x_nearest starting state
+     * @param x_rand    goal state
+     * @return x_new a feasible state
      */
     @Override
-    public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
-        // double[] nearConfig = x_nearest._nearest.getState();
+    public double[] steer(KDNearNode<Node> x_nearest, double[] x_rand) {
+
+        double[] x_nearest_state = x_nearest._nearest.getState();
+        double x_nearest1 = x_nearest_state[0];
+        double x_nearest2 = x_nearest_state[1];
+
+        double x_rand1 = x_rand[0];
+        double x_rand2 = x_rand[1];
+
+        // from system dynamics
+        double x1dot = x_nearest2;
+
+        double dx1 = x_rand1 - x_nearest1;
+        // xdot = dx/dt so dt = dx/xdot
+        double dt = dx1 / x1dot;
+        if (dt <= 0)
+            return null;
+
+        // from system dynamics
+        // x2dot = - g * sin(x1) / l + u
+        // u = dx2/dt + g*sin(x1)
+
+        double dx2 = x_rand2 - x_nearest2;
+        double u = dx2/dt + _g * Math.sin(x_rand1) / l;
+        u = Math.max(-1, u);
+        u = Math.min(1, u);
+
+        double x2dot = -1 * _g * Math.sin(x_rand1) / l + u;
+
+        double x_new1 = x_rand1 + x1dot*dt;
+        double x_new2 = x_rand2 + x2dot*dt;
+        return new double[]{x_new1,x_new2};
+
+
+
 
         // see pend_rrt.m
-    //     Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
-    //     Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
-    //     Matrix<N2, N1> dx = x_near.minus(x_rand);
-    //     Matrix<N1, N2> K = getK(newConfig);
-    //     double u = K.times(-1).times(dx).get(0, 0);
-    //     u = Math.max(-3, u);
-    //     u = Math.min(3, u);
-    //     Matrix<N2, N1> xdot = VecBuilder.fill(
-    //             nearConfig[1],
-    //             (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
-    //     Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
-    //     return x_new.getData();
-    //   //  newConfig[0] = x_new.get(0, 0);
-    //    // newConfig[1] = x_new.get(1, 0);
-       return new double[]{1,1};
+        // Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
+        // Matrix<N2, N1> x_rand = VecBuilder.fill(newConfig[0], newConfig[1]);
+        // Matrix<N2, N1> dx = x_near.minus(x_rand);
+        // Matrix<N1, N2> K = getK(newConfig);
+        // double u = K.times(-1).times(dx).get(0, 0);
+        // u = Math.max(-3, u);
+        // u = Math.min(3, u);
+        // Matrix<N2, N1> xdot = VecBuilder.fill(
+        // nearConfig[1],
+        // (u - b * nearConfig[1] - m * _g * l * Math.sin(nearConfig[0])));
+        // Matrix<N2, N1> x_new = x_near.plus(xdot.times(h));
+        // return x_new.getData();
+        // // newConfig[0] = x_new.get(0, 0);
+        // // newConfig[1] = x_new.get(1, 0);
+      //  return new double[] { 1, 1 };
     }
 
     @Override
