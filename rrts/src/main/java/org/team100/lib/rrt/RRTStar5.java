@@ -140,7 +140,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // if (_model.dist(x_min.getState(), x_new) < 0)
             // return edges;
             // Node newNode =
-            
+
             InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             // Rewire(X_near, newNode);
@@ -262,44 +262,44 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             double x1dot = x_nearest2;
             // random control
             double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
-           // u = 0;
+            //u = 0;
             double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
             double dt = DT;
-            // if (!timeForward)
-            // dt *= -1.0;
+            if (!timeForward)
+                dt *= -1.0;
 
             double x_new1;
             double x_new2;
 
             // accurate integration is absolutely required here,
             // otherwise the dynamics are wrong
-            BiFunction<Matrix<N2,N1>,Matrix<N1,N1>,Matrix<N2,N1>> f = (xx,uu) -> {
-                double xx1 = xx.get(0,0);
-                double xx2 = xx.get(1,0);
+            BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (xx, uu) -> {
+                double xx1 = xx.get(0, 0);
+                double xx2 = xx.get(1, 0);
                 double xx1dot = xx2;
-                double xx2dot = -1 * _g * Math.sin(xx1) / l + uu.get(0,0);
-                Matrix<N2,N1> result = new Matrix<>(Nat.N2(),Nat.N1());
-                result.set(0,0,xx1dot);
-                result.set(1,0,xx2dot);
+                double xx2dot = -1 * _g * Math.sin(xx1) / l + uu.get(0, 0);
+                Matrix<N2, N1> result = new Matrix<>(Nat.N2(), Nat.N1());
+                result.set(0, 0, xx1dot);
+                result.set(1, 0, xx2dot);
                 return result;
             };
 
-            Matrix<N2,N1> xxx = new Matrix<>(Nat.N2(),Nat.N1());
-            xxx.set(0,0,x_nearest1);
-            xxx.set(1,0,x_nearest2);
-            Matrix<N1,N1> uuu = new Matrix<>(Nat.N1(),Nat.N1());
-            uuu.set(0,0,u);
-            Matrix<N2,N1> newxxx =  NumericalIntegration.rk4(f, xxx, uuu, dt);
+            Matrix<N2, N1> xxx = new Matrix<>(Nat.N2(), Nat.N1());
+            xxx.set(0, 0, x_nearest1);
+            xxx.set(1, 0, x_nearest2);
+            Matrix<N1, N1> uuu = new Matrix<>(Nat.N1(), Nat.N1());
+            uuu.set(0, 0, u);
+            Matrix<N2, N1> newxxx = NumericalIntegration.rk4(f, xxx, uuu, dt);
 
-            if (timeForward) {
-                // x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
-                // x_new2 = x_nearest2 + x2dot * dt;
-                x_new1 = newxxx.get(0,0);
-                x_new2 = newxxx.get(1,0);
-            } else {
-                x_new1 = x_nearest1 - x1dot * dt - 0.5 * x2dot * dt * dt;
-                x_new2 = x_nearest2 - x2dot * dt;
-            }
+            // if (timeForward) {
+            // x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
+            // x_new2 = x_nearest2 + x2dot * dt;
+            // } else {
+            // x_new1 = x_nearest1 - x1dot * dt - 0.5 * x2dot * dt * dt;
+            // x_new2 = x_nearest2 - x2dot * dt;
+            // }
+            x_new1 = newxxx.get(0, 0);
+            x_new2 = newxxx.get(1, 0);
 
             // reject samples off the edge of the world
             // TODO: this is actually a cylindrical space, so make it so
