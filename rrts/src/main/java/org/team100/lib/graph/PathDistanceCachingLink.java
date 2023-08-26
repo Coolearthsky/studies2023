@@ -88,4 +88,10 @@ public class PathDistanceCachingLink implements LinkInterface {
     public double get_pathDist() {
         return _pathDist;
     }
+
+    @Override
+    public String toString() {
+        return "PathDistanceCachingLink [_source=" + _source + ", _target=" + _target + ", _linkDist=" + _linkDist
+                + ", _pathDist=" + _pathDist + "]";
+    }
 }

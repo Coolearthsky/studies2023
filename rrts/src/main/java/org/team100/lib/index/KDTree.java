@@ -25,6 +25,9 @@ public class KDTree {
 
     /** Inserts the value into the KD Tree. */
     public static <V extends Point> void insert(KDModel model, KDNode<V> root, V value) {
+      //  List<V> values = values(root);
+      //  System.out.println("whole tree " + values);
+      //  System.out.println("insert " + value);
         double[] min = model.getMin();
         double[] max = model.getMax();
 

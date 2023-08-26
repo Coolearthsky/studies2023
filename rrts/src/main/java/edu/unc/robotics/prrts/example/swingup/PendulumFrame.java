@@ -2,13 +2,13 @@ package edu.unc.robotics.prrts.example.swingup;
 
 import java.awt.BorderLayout;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.team100.lib.planner.Runner;
-import org.team100.lib.planner.Solver;
-import org.team100.lib.rrt.RRTStar4;
 import org.team100.lib.rrt.RRTStar5;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
@@ -23,8 +23,11 @@ public class PendulumFrame extends JFrame {
     }
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        final Arena arena = new PendulumArena2(new double[] { 0, 0 }, new double[] { Math.PI, 0 }, 9.81);
-        final Solver worker = new RRTStar5<>(arena, new Sample(arena), 2);
+        double[] init = new double[] { 0, 0 };
+        double[] goal = new double[] { Math.PI, 0 };
+        double gravity = 9.81;
+        final Arena arena = new PendulumArena2(init, goal, gravity);
+        final RRTStar5<Arena> worker = new RRTStar5<>(arena, new Sample(arena), 2);
         final Runner rrtStar = new Runner(worker);
 
         SwingUtilities.invokeAndWait(new Runnable() {
@@ -36,12 +39,28 @@ public class PendulumFrame extends JFrame {
                 frame.repaint();
             }
         });
-
-        rrtStar.runForDurationMS(20);
-        // rrtStar.runSamples(20);
+        // it should work both ways, time-reversed in this case:
+       // worker.SwapTrees();
+        // rrtStar.runForDurationMS(2000);
+        rrtStar.runSamples(100000);
         Path bestPath = rrtStar.getBestPath();
-        System.out.println(bestPath);
+        List<double[]> states = bestPath.getStates();
 
+        if (!same(init, states.get(0))) {
+            Collections.reverse(states);
+            bestPath = new Path(bestPath.getDistance(), states);
+        }
+        System.out.println(bestPath);
+    }
+
+    static boolean same(double[] a, double[] b) {
+        if (a.length != b.length)
+            return false;
+        for (int i = 0; i < a.length; ++i) {
+            if (Math.abs(a[i] - b[i]) > 0.0001)
+                return false;
+        }
+        return true;
     }
 
 }

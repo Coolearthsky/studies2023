@@ -14,7 +14,10 @@ public class Graph {
      * to target.
      */
     public static LinkInterface newLink(KDModel model, Node source, Node target) {
-        return newLink(source, target, model.dist(source.getState(), target.getState()));
+        double dist = model.dist(source.getState(), target.getState());
+        System.out.printf("newLink from [%5.3f %5.3f] to [%5.3f %5.3f] d %5.3f\n",
+                source.getState()[0], source.getState()[1], target.getState()[0], target.getState()[1], dist);
+        return newLink(source, target, dist);
     }
 
     /**

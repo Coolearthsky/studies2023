@@ -9,9 +9,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Random;
 
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
+import org.team100.lib.graph.LocalLink;
 import org.team100.lib.graph.NearNode;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDModel;
@@ -75,6 +77,18 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     Path _sigma_best;
     Map<Node, Node> connections = new HashMap<Node, Node>();
 
+    boolean bidirectional = false;
+
+    Random random = new Random();
+    private static final double MIN_U = -0.5;
+    private static final double MAX_U = 0.5;
+    private static final double MIN_DT = 0.01;
+    private static final double MAX_DT = 0.25;
+    private static final double DT = 0.2;
+    private static final double l = 1; // length meter
+    private static final double _g = 9.81; // gravity m/s/s
+    private static final int MAX_CHILDREN = 5;
+
     public RRTStar5(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
@@ -96,39 +110,68 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      */
     @Override
     public int step() {
+        // System.out.println("step");
         int edges = 0;
-        double[] x_rand = SampleFree();
-        KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
-        double[] x_new = Steer(x_nearest, x_rand);
-        if (x_new == null) return 0;
-        if (CollisionFree(x_nearest._nearest.getState(), x_new)) {
-            List<NearNode> X_near = Near(x_new, _T_a);
-            if (X_near.isEmpty())
-                X_near.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-            Node x_min = ChooseParent(X_near, x_new);
-            if (x_min != null) {
-                Node newNode = InsertNode(x_min, x_new, _T_a);
-                Rewire(X_near, newNode);
+
+        // the sample is now control-sampled, guaranteed feasible.
+
+        // double[] x_rand = SampleFree();
+        LocalLink randLink = SampleFree();
+        // System.out.println("x_rand: " + Arrays.toString(x_rand));
+
+        // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
+        // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
+        // if (x_nearest._nearest == null)
+            // return edges;
+        // System.out.println("x_nearest: " + x_nearest);
+
+        // double[] x_new = Steer(x_nearest, x_rand);
+        // double[] x_new = randLink.get_target().getState();
+        // if (x_new == null)
+            // return edges;
+        // System.out.println("x_new: " + Arrays.toString(x_new));
+
+        if (CollisionFree(randLink.get_source().getState(), randLink.get_target().getState())) {
+            // X_near uses Euclidean metric, so do the distance over
+            // actually for now don't use this near-search thing at all
+
+            // List<NearNode> X_near = Near(x_new, _T_a);
+            // if (X_near.isEmpty())
+            // X_near.add(new NearNode(x_nearest._nearest, x_nearest._dist));
+            // Node x_min = ChooseParent(X_near, x_new);
+
+            // Node x_min = x_nearest._nearest;
+            // if (x_min != null) {
+                // if (_model.dist(x_min.getState(), x_new) < 0)
+                    // return edges;
+                Node newNode = InsertNode(randLink.get_source(), randLink.get_target(), _T_a);
+                // System.out.println(newNode);
+                // Rewire(X_near, newNode);
                 edges += 1;
-                KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
-                Path sigma_new = Connect(newNode, x_conn, _T_b);
-                if (sigma_new != null) {
-                    edges += 1;
-                    if (_sigma_best == null) {
-                        _sigma_best = sigma_new;
-                    } else {
-                        if (sigma_new.getDistance() < _sigma_best.getDistance()) {
-                            _sigma_best = sigma_new;
-                        }
-                    }
-                }
-            }
+
+                // if (bidirectional) {
+                //     KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
+                //     Path sigma_new = Connect(newNode, x_conn, _T_b);
+                //     if (sigma_new != null) {
+                //         edges += 1;
+                //         if (_sigma_best == null) {
+                //             _sigma_best = sigma_new;
+                //         } else {
+                //             if (sigma_new.getDistance() < _sigma_best.getDistance()) {
+                //                 _sigma_best = sigma_new;
+                //             }
+                //         }
+                //     }
+                // }
+
+            // }
         }
-        SwapTrees();
+        if (bidirectional)
+            SwapTrees();
         return edges;
     }
 
-    void SwapTrees() {
+    public void SwapTrees() {
         KDNode<Node> tmp = _T_a;
         _T_a = _T_b;
         _T_b = tmp;
@@ -142,21 +185,31 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * @param x_1 newly inserted node
      * @param x_2 near node in the other tree
      */
-    Path Connect(Node x_1, KDNearNode<Node> x_2, KDNode<Node> rootNode) {
-        if (CollisionFree(x_2._nearest.getState(), x_1.getState())) {
-            List<NearNode> X_near = Near(x_1.getState(), rootNode);
-            if (X_near.isEmpty())
-                X_near.add(new NearNode(x_2._nearest, x_2._dist));
-            Node x_min = ChooseParent(X_near, x_1.getState());
-            if (x_min != null) {
-                Node newNode = InsertNode(x_min, x_1.getState(), rootNode);
-                connections.put(x_1, newNode);
-                Rewire(X_near, newNode);
-                return GeneratePath(x_1, newNode);
-            }
-        }
-        return null;
-    }
+    // Path Connect(Node x_1, KDNearNode<Node> x_2, KDNode<Node> rootNode) {
+    //     // this is now just a filter
+    //     double[] x_new = Steer(x_2, x_1.getState());
+    //     if (x_new == null)
+    //         return null;
+    //     if (!same(x_new, x_1.getState()))
+    //         return null;
+    //     if (CollisionFree(x_2._nearest.getState(), x_1.getState())) {
+    //         // List<NearNode> X_near = Near(x_1.getState(), rootNode);
+    //         // if (X_near.isEmpty())
+    //         // X_near.add(new NearNode(x_2._nearest, x_2._dist));
+    //         // Node x_min = ChooseParent(X_near, x_1.getState());
+
+    //         // skip near-search for now since it isn't Euclidean
+    //         Node x_min = x_2._nearest;
+
+    //         if (x_min != null) {
+    //             Node newNode = InsertNode(x_min, x_1.getState(), rootNode);
+    //             connections.put(x_1, newNode);
+    //             // Rewire(X_near, newNode);
+    //             return GeneratePath(x_1, newNode);
+    //         }
+    //     }
+    //     return null;
+    // }
 
     /**
      * the parameters describe a link between initial and goal trees, the same
@@ -173,6 +226,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         Path p_2 = walkParents(x_2);
         List<double[]> states_2 = p_2.getStates();
         Collections.reverse(states_2);
+        // don't include the same point twice
+        states_2.remove(0);
         List<double[]> fullStates = new ArrayList<double[]>();
         fullStates.addAll(p_1.getStates());
         fullStates.addAll(states_2);
@@ -183,12 +238,40 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         return _model.link(from, to);
     }
 
-    /** Return a state not within an obstacle. */
-    double[] SampleFree() {
+    /** Applies random control to random tree node. */
+    LocalLink SampleFree() {
         while (true) {
-            double[] newConfig = _sample.get();
+            // applied to a random point in the tree
+            List<Node> nodes = getNodes();
+            int nodect = nodes.size();
+            int nodeidx = random.nextInt(nodect);
+            Node nearest = nodes.get(nodeidx);
+            // persuade the tree to be longer
+            if (nearest.getOutgoingCount() > MAX_CHILDREN)
+            continue;
+
+            double x_nearest1 = nearest.getState()[0];
+            double x_nearest2 = nearest.getState()[1];
+
+            double x1dot = x_nearest2;
+            // random control
+            double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
+            double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
+
+            double x_new1 = x_nearest1 + x1dot * DT + 0.5 * x2dot * DT * DT;
+            double x_new2 = x_nearest2 + x2dot * DT;
+
+            System.out.printf("sample from [%5.3f %5.3f] to [%5.3f %5.3f] xdot [%5.3f %5.3f] dt %5.3f u %5.3f\n",
+            x_nearest1, x_nearest2, x_new1, x_new2, x1dot, x2dot, DT, u);
+
+            double[] newConfig = new double[] { x_new1, x_new2 };
+
+
+            // double[] newConfig = _sample.get();
             if (_model.clear(newConfig))
-                return newConfig;
+
+            return new LocalLink(nearest, new Node(newConfig), DT);
+                // return newConfig;
         }
     }
 
@@ -200,7 +283,21 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * @param rootNode the tree to look through
      */
     KDNearNode<Node> Nearest(double[] x_rand, KDNode<Node> rootNode) {
-        return KDTree.nearest(_model, rootNode, x_rand);
+        // for now just do it the dumb way
+        List<Node> nodes = KDTree.values(rootNode);
+        Node bestNode = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (Node node : nodes) {
+            double d = _model.dist(node.getState(), x_rand);
+            if (d <= 0)
+                continue;
+            if (d < bestDistance) {
+                bestDistance = d;
+                bestNode = node;
+            }
+        }
+        return new KDNearNode<Node>(bestDistance, bestNode);
+        // return KDTree.nearest(_model, rootNode, x_rand);
     }
 
     /**
@@ -213,7 +310,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      */
     double[] Steer(KDNearNode<Node> x_nearest, double[] x_rand) {
         _model.setStepNo(stepNo);
-        _model.setRadius(radius);
+        // _model.setRadius(radius);
+        _model.setRadius(same(_T_a.getValue().getState(), _model.initial()) ? 1 : -1);
         return _model.steer(x_nearest, x_rand);
     }
 
@@ -249,8 +347,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     }
 
     /** Add the node x_new to the tree, with an edge from x_min. */
-    Node InsertNode(Node x_min, double[] x_new, KDNode<Node> rootNode) {
-        Node newNode = new Node(x_new);
+    Node InsertNode(Node x_min, Node newNode, KDNode<Node> rootNode) {
+        // System.out.println("new node " + newNode);
         LinkInterface newLink = Graph.newLink(_model, x_min, newNode);
         _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
         KDTree.insert(_model, rootNode, newNode);
@@ -275,7 +373,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
     /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
-    public Iterable<Node> getNodes() {
+    public List<Node> getNodes() {
         List<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_a));
         allNodes.addAll(KDTree.values(_T_b));
@@ -348,5 +446,15 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         this.radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
                 1.0 / _model.dimensions());
+    }
+
+    static boolean same(double[] a, double[] b) {
+        if (a.length != b.length)
+            return false;
+        for (int i = 0; i < a.length; ++i) {
+            if (Math.abs(a[i] - b[i]) > 0.0001)
+                return false;
+        }
+        return true;
     }
 }
