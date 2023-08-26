@@ -14,7 +14,7 @@ import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
 public class PendulumFrame extends JFrame {
-    private static final int STEPS = 3000;
+    private static final int STEPS = 1000;
 
     public PendulumFrame(Arena arena, Runner rrtStar) {
         super("Pendulum RRT*");
@@ -26,7 +26,7 @@ public class PendulumFrame extends JFrame {
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         double[] init = new double[] { 0, 0 };
-        double[] goal = new double[] { Math.PI, 0 };
+        double[] goal = new double[] { Math.PI-0.5, 0 };
         double gravity = 9.81;
         final Arena arena = new PendulumArena2(init, goal, gravity);
         final RRTStar5<Arena> worker = new RRTStar5<>(arena, new Sample(arena), 2);
@@ -42,7 +42,7 @@ public class PendulumFrame extends JFrame {
             }
         });
         // it should work both ways, time-reversed in this case:
-        // worker.SwapTrees();
+        worker.SwapTrees();
         // rrtStar.runForDurationMS(2000);
         rrtStar.runSamples(STEPS);
         Path bestPath = rrtStar.getBestPath();

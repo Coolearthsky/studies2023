@@ -128,7 +128,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // if (x_min != null) {
             // if (_model.dist(x_min.getState(), x_new) < 0)
             // return edges;
-            Node newNode = InsertNode(randLink.get_source(), randLink.get_target(), _T_a);
+            Node newNode = InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             // Rewire(X_near, newNode);
             edges += 1;
@@ -227,6 +227,9 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * has a parent, just continue the same way as that node.
      */
     LocalLink SampleFree() {
+        // run backwards if the tree root is the goal
+        boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
+
         while (true) {
             // applied to a random point in the tree
             List<Node> nodes = getNodes();
@@ -247,9 +250,22 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // random control
             double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
             double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
+            double dt = DT;
+            // if (!timeForward)
+            // dt *= -1.0;
 
-            double x_new1 = x_nearest1 + x1dot * DT + 0.5 * x2dot * DT * DT;
-            double x_new2 = x_nearest2 + x2dot * DT;
+            ** this is the place to start
+
+            double x_new1;
+            double x_new2;
+
+            if (timeForward) {
+                x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
+                x_new2 = x_nearest2 + x2dot * dt;
+            } else {
+                x_new1 = x_nearest1 - x1dot * dt - 0.5 * x2dot * dt * dt;
+                x_new2 = x_nearest2 - x2dot * dt;
+            }
 
             // reject samples off the edge of the world
             // TODO: this is actually a cylindrical space, so make it so
@@ -282,7 +298,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                 if (dot < 0) {
                     System.out.printf(
                             "reject dot parent [%5.3f %5.3f] node [%5.3f %5.3f] to [%5.3f %5.3f] u %5.3f dot %5.3f\n",
-                            incoming.get_source().getState()[0], incoming.get_source().getState()[0],
+                            incoming.get_source().getState()[0], incoming.get_source().getState()[1],
                             x_nearest1, x_nearest2,
                             x_new1, x_new2,
                             u, dot);
@@ -312,9 +328,12 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             }
 
             // double[] newConfig = _sample.get();
-            if (_model.clear(newConfig))
-
+            if (_model.clear(newConfig)) {
+                System.out.printf(
+                        "found new [%5.3f %5.3f] u %5.3f dt %5.3f\n",
+                        x_new1, x_new2, u, dt);
                 return new LocalLink(node_rand, new Node(newConfig), DT);
+            }
             // return newConfig;
         }
     }
@@ -391,12 +410,15 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     }
 
     /** Add the node x_new to the tree, with an edge from x_min. */
-    Node InsertNode(Node x_min, Node newNode, KDNode<Node> rootNode) {
-        // System.out.println("new node " + newNode);
-        LinkInterface newLink = Graph.newLink(_model, x_min, newNode);
+    Node InsertNode(LocalLink link, KDNode<Node> rootNode) {
+        System.out.printf("newLink from [%5.3f %5.3f] to [%5.3f %5.3f] d %5.3f\n",
+                link.get_source().getState()[0], link.get_source().getState()[1],
+                link.get_target().getState()[0], link.get_target().getState()[1],
+                link.get_linkDist());
+        LinkInterface newLink = Graph.newLink(link.get_source(), link.get_target(), link.get_linkDist());
         _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
-        KDTree.insert(_model, rootNode, newNode);
-        return newNode;
+        KDTree.insert(_model, rootNode, link.get_target());
+        return link.get_target();
     }
 
     /**
