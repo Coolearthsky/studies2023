@@ -1,0 +1,44 @@
+-injars build/libs/piano_arm.jar
+-outjars build/libs/piano_arm_out.jar
+
+# Include java runtime classes
+-libraryjars  <java.home>/jmods/java.base.jmod(!**.jar;!module-info.class)
+# this contains MidiReader, which piano arm needs.
+-libraryjars  <java.home>/jmods/java.desktop.jmod(!**.jar;!module-info.class)
+
+-dontoptimize
+-dontobfuscate
+#-printusage unused.txt
+
+
+-keep public class org.team100.frc2023.Main {
+    public static void main(java.lang.String[]);
+}
+# this is used in RobotBase:423 whether you want it or not
+-keep class edu.wpi.first.cscore.** { *; }
+-keep class edu.wpi.first.hal.** { *; }
+-keep class edu.wpi.first.networktables.** { *; }
+# the piano arm project uses MidiReader.
+-keep class javax.sound.midi.** { *; }
+
+
+# don't worry about stuff that the linker can't find, since we don't use it:
+
+-dontwarn java.awt.**
+-dontwarn java.beans.**
+-dontwarn java.sql.**
+-dontwarn java.util.logging.**
+-dontwarn javax.sound.**
+-dontwarn javax.swing.**
+-dontwarn javax.xml.**
+-dontwarn org.ejml.dense.row.**
+-dontwarn org.jetbrains.**
+-dontwarn org.w3c.**
+-dontwarn org.xml.**
+-dontwarn sun.misc.Unsafe
+-dontwarn us.hebi.matlab.mat.**
+-dontwarn kotlin.time.**
+
+# reduce unnecessary output
+
+-dontnote **
