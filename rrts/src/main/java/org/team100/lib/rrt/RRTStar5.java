@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.function.BiFunction;
 
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
@@ -25,6 +26,12 @@ import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.system.NumericalIntegration;
+
 /**
  * RRT* version 5.
  * 
@@ -37,12 +44,16 @@ import org.team100.lib.space.Sample;
  * maybe try
  */
 public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
+    /**
+     * probability of branching
+     */
+    private static final double BUSHINESS = 0.001;
     private final T _model;
     /** Initially, tree grown from initial, but is swapped repeatedly */
     private KDNode<Node> _T_a;
     /** Initially, tree grown from goal, but is swapped repeatedly */
     private KDNode<Node> _T_b;
-    private final Sample _sample;
+    // private final Sample _sample;
     private final double _gamma;
     /** Lowest cost leaf leading to initial state. */
     // TODO: remove this
@@ -58,8 +69,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     boolean bidirectional = false;
 
     Random random = new Random();
-    private static final double MIN_U = -1;
-    private static final double MAX_U = 1;
+    private static final double MIN_U = -5;
+    private static final double MAX_U = 5;
     // private static final double MIN_DT = 0.01;
     // private static final double MAX_DT = 0.25;
     private static final double DT = 0.1;
@@ -78,7 +89,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         _model = model;
         _T_a = new KDNode<Node>(new Node(model.initial()));
         _T_b = new KDNode<Node>(new Node(model.goal()));
-        _sample = sample;
+        // _sample = sample;
         _gamma = gamma;
         _bestLeaf_a = null;
         min = _model.getMin();
@@ -128,7 +139,9 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // if (x_min != null) {
             // if (_model.dist(x_min.getState(), x_new) < 0)
             // return edges;
-            Node newNode = InsertNode(randLink, _T_a);
+            // Node newNode =
+            
+            InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             // Rewire(X_near, newNode);
             edges += 1;
@@ -239,7 +252,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // persuade the tree to be longer
             if (node_rand.getOutgoingCount() >= MAX_CHILDREN) {
                 // maybe add anyway?
-                if (random.nextDouble() > 0.001)
+                if (random.nextDouble() > BUSHINESS)
                     continue;
             }
 
@@ -249,19 +262,40 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             double x1dot = x_nearest2;
             // random control
             double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
+           // u = 0;
             double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
             double dt = DT;
             // if (!timeForward)
             // dt *= -1.0;
 
-            ** this is the place to start
-
             double x_new1;
             double x_new2;
 
+            // accurate integration is absolutely required here,
+            // otherwise the dynamics are wrong
+            BiFunction<Matrix<N2,N1>,Matrix<N1,N1>,Matrix<N2,N1>> f = (xx,uu) -> {
+                double xx1 = xx.get(0,0);
+                double xx2 = xx.get(1,0);
+                double xx1dot = xx2;
+                double xx2dot = -1 * _g * Math.sin(xx1) / l + uu.get(0,0);
+                Matrix<N2,N1> result = new Matrix<>(Nat.N2(),Nat.N1());
+                result.set(0,0,xx1dot);
+                result.set(1,0,xx2dot);
+                return result;
+            };
+
+            Matrix<N2,N1> xxx = new Matrix<>(Nat.N2(),Nat.N1());
+            xxx.set(0,0,x_nearest1);
+            xxx.set(1,0,x_nearest2);
+            Matrix<N1,N1> uuu = new Matrix<>(Nat.N1(),Nat.N1());
+            uuu.set(0,0,u);
+            Matrix<N2,N1> newxxx =  NumericalIntegration.rk4(f, xxx, uuu, dt);
+
             if (timeForward) {
-                x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
-                x_new2 = x_nearest2 + x2dot * dt;
+                // x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
+                // x_new2 = x_nearest2 + x2dot * dt;
+                x_new1 = newxxx.get(0,0);
+                x_new2 = newxxx.get(1,0);
             } else {
                 x_new1 = x_nearest1 - x1dot * dt - 0.5 * x2dot * dt * dt;
                 x_new2 = x_nearest2 - x2dot * dt;
