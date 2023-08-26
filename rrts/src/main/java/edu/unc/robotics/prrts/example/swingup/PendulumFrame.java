@@ -14,6 +14,8 @@ import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
 public class PendulumFrame extends JFrame {
+    private static final int STEPS = 3000;
+
     public PendulumFrame(Arena arena, Runner rrtStar) {
         super("Pendulum RRT*");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -40,17 +42,20 @@ public class PendulumFrame extends JFrame {
             }
         });
         // it should work both ways, time-reversed in this case:
-       // worker.SwapTrees();
+        // worker.SwapTrees();
         // rrtStar.runForDurationMS(2000);
-        rrtStar.runSamples(100000);
+        rrtStar.runSamples(STEPS);
         Path bestPath = rrtStar.getBestPath();
-        List<double[]> states = bestPath.getStates();
+        if (bestPath != null) {
+            List<double[]> states = bestPath.getStates();
 
-        if (!same(init, states.get(0))) {
-            Collections.reverse(states);
-            bestPath = new Path(bestPath.getDistance(), states);
+            if (!same(init, states.get(0))) {
+                Collections.reverse(states);
+                bestPath = new Path(bestPath.getDistance(), states);
+            }
+            System.out.println(bestPath);
         }
-        System.out.println(bestPath);
+        System.out.println("done");
     }
 
     static boolean same(double[] a, double[] b) {
