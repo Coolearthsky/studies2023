@@ -141,25 +141,35 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // return edges;
             // Node newNode =
 
-            InsertNode(randLink, _T_a);
+            Node newNode = InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             // Rewire(X_near, newNode);
             edges += 1;
 
-            // if (bidirectional) {
-            // KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
-            // Path sigma_new = Connect(newNode, x_conn, _T_b);
-            // if (sigma_new != null) {
-            // edges += 1;
-            // if (_sigma_best == null) {
-            // _sigma_best = sigma_new;
-            // } else {
-            // if (sigma_new.getDistance() < _sigma_best.getDistance()) {
-            // _sigma_best = sigma_new;
-            // }
-            // }
-            // }
-            // }
+            if (bidirectional) {
+                // is there a point in the other tree that is reachable from
+                // the node we just inserted? reachable nodes are nearby in a Euclidean
+                // sense, though most Euclidean nearby nodes are not reachable.
+                // so start with a list of near nodes and test them one by one.
+                //
+                List<NearNode> X_near = Near(newNode.getState(), _T_b);
+                for (NearNode nearNode : X_near) {
+
+                }
+
+                // KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
+                // Path sigma_new = Connect(newNode, x_conn, _T_b);
+                // if (sigma_new != null) {
+                // edges += 1;
+                if (_sigma_best == null) {
+                    // _sigma_best = sigma_new;
+                } else {
+                    // if (sigma_new.getDistance() < _sigma_best.getDistance()) {
+                    // _sigma_best = sigma_new;
+                    // }
+                }
+                // }
+            }
 
             // }
         }
@@ -262,7 +272,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             double x1dot = x_nearest2;
             // random control
             double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
-            //u = 0;
+            // u = 0;
             double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
             double dt = DT;
             if (!timeForward)
