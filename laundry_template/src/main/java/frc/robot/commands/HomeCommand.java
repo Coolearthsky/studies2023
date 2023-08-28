@@ -63,6 +63,7 @@ public class HomeCommand extends Command {
                 return;
             }
             m_arm.zeroSet();
+            m_arm.setCalibrated(true);
             m_arm.setOutput(0);
             isFinished = true;
         }

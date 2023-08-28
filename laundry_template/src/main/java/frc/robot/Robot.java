@@ -9,16 +9,20 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
+import edu.wpi.first.util.concurrent.Event;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.event.BooleanEvent;
+import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.motorcontrol.Talon;
 import frc.robot.commands.HomeCommand;
 import frc.robot.subsystems.LaundryArm;
 
 /**
- * This is a demo program showing the use of the DifferentialDrive class. Runs the motors with
+ * This is a demo program showing the use of the DifferentialDrive class. Runs
+ * the motors with
  * arcade steering.
  */
 public class Robot extends TimedRobot {
@@ -30,18 +34,29 @@ public class Robot extends TimedRobot {
   private final ProfiledPIDController m_controller = new ProfiledPIDController(.1, .1, .1, m_constraints);
   private final DigitalInput m_upperSwitch = new DigitalInput(3);
   private final DigitalInput m_lowerSwitch = new DigitalInput(4);
-  private final LaundryArm m_arm = new LaundryArm(m_controller, m_armMotor, m_upperSwitch, m_lowerSwitch);
+  private final LaundryArm m_arm = new LaundryArm(m_controller, m_armMotor, m_upperSwitch, m_lowerSwitch, false);
   private final HomeCommand m_home = new HomeCommand(m_arm);
   private final Joystick m_stick = new Joystick(0);
+  private final EventLoop m_loop = new EventLoop();
+  private final double up_degrees = 15;
+  private final double down_degrees = 90;
 
   @Override
   public void robotInit() {
     m_leftMotor.setInverted(false);
     m_rightMotor.setInverted(true);
+    BooleanEvent topButton = m_stick.button(2, m_loop);
+    topButton.ifHigh(() -> m_home.schedule());
   }
 
   @Override
   public void teleopPeriodic() {
     m_robotDrive.arcadeDrive(-m_stick.getY(), -m_stick.getX(), false);
+    if (m_stick.getTrigger()) {
+      m_arm.setDegrees(down_degrees);
+    } else {
+      m_arm.setDegrees(up_degrees);
+    }
+    m_loop.poll();
   }
 }
