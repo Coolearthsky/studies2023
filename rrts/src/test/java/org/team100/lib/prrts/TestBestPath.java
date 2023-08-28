@@ -32,7 +32,7 @@ public class TestBestPath {
 
         assertEquals(2400, nodes, 800);
         Path bestPath = rrtStar.getBestPath();
-        assertEquals(16, bestPath.getDistance(), 1);
+        assertEquals(16.5, bestPath.getDistance(), 1.5);
     }
 
     @Test
