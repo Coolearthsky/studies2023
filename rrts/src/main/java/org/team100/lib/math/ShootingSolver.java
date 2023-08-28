@@ -35,6 +35,10 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
      * This function assumes the waviness is small relative to the tolerance, and
      * checks "inside" via the angles to the vertices.
      * 
+     * Note the triangle may be degenerate: imagine a motionless start, pushed
+     * by positive or negative u -- the min, start, and max will all be on the same
+     * line.
+     * 
      * 
      * @param x1 source state
      * @param x2 target state
@@ -55,8 +59,8 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     }
 
     /**
-     * @param x1 start
-     * @param x2 goal
+     * @param x1    start
+     * @param x2    goal
      * @param minX2 reached by min u
      * @param maxX2 reached by max u
      */
@@ -82,10 +86,11 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
             return true;
 
         // there are three angles between the three vectors
-        double x2x1_x2minX2 = angleRad(x2x1, x2minX2);
-        double x2x1_x2maxX2 = angleRad(x2x1, x2maxX2);
-        double x2minX2_x2maxX2 = angleRad(x2minX2, x2maxX2);
-        double angleSum = x2x1_x2minX2 + x2x1_x2maxX2 + x2minX2_x2maxX2;
+        // double x2x1_x2minX2 = angleRad(x2x1, x2minX2);
+        // double x2x1_x2maxX2 = angleRad(x2x1, x2maxX2);
+        // double x2minX2_x2maxX2 = angleRad(x2minX2, x2maxX2);
+        // double angleSum = x2x1_x2minX2 + x2x1_x2maxX2 + x2minX2_x2maxX2;
+        double angleSum = angleSum(x2x1, x2minX2, x2maxX2);
 
         // if the point is near the triangle then the angles should add to 2pi.
         // there's no way the angles could possibly be *more* than 2pi.
@@ -94,6 +99,17 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         if (2.0 * Math.PI - angleSum < TOLERANCE)
             return true;
         return false;
+    }
+
+    // there are three angles between the three vectors
+    public double angleSum(Matrix<States, N1> x2x1,
+            Matrix<States, N1> x2minX2,
+            Matrix<States, N1> x2maxX2) {
+        double x2x1_x2minX2 = angleRad(x2x1, x2minX2);
+        double x2x1_x2maxX2 = angleRad(x2x1, x2maxX2);
+        double x2minX2_x2maxX2 = angleRad(x2minX2, x2maxX2);
+        double angleSum = x2x1_x2minX2 + x2x1_x2maxX2 + x2minX2_x2maxX2;
+        return angleSum;
     }
 
     public double angleRad(Matrix<States, N1> x, Matrix<States, N1> y) {
