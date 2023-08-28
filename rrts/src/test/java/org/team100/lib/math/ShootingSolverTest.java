@@ -163,6 +163,7 @@ public class ShootingSolverTest {
             assertFalse(s.inside(x1, x2, minX2, maxX2));
         }
     }
+
     @Test
     void testRK4MotionlessStart() {
         // double-integrator
@@ -326,7 +327,7 @@ public class ShootingSolverTest {
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 0);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(-1, sol.u.get(0,0), 0.001);
+            assertEquals(-1, sol.u.get(0, 0), 0.001);
             assertEquals(1, sol.dt, 0.001);
         }
         {
@@ -334,15 +335,15 @@ public class ShootingSolverTest {
             Matrix<N2, N1> x2 = VecBuilder.fill(1.5, 2);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(1, sol.u.get(0,0), 0.001);
+            assertEquals(1, sol.u.get(0, 0), 0.001);
             assertEquals(1, sol.dt, 0.001);
         }
         {
             // end = within the triangle (from above RK4 test)
-            Matrix<N2, N1> x2 = VecBuilder.fill( 0.5625, 1.25);
+            Matrix<N2, N1> x2 = VecBuilder.fill(0.5625, 1.25);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(0.5, sol.u.get(0,0), 0.001);
+            assertEquals(0.5, sol.u.get(0, 0), 0.001);
             assertEquals(0.5, sol.dt, 0.001);
         }
         {
@@ -351,6 +352,20 @@ public class ShootingSolverTest {
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNull(sol);
         }
+    }
 
+    @Test
+    void testNear() {
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        {
+            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
+            Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
+            assertTrue(s.near(x1, x2));
+        }
+        {
+            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
+            Matrix<N2, N1> x2 = VecBuilder.fill(0, 1.1);
+            assertFalse(s.near(x1, x2));
+        }
     }
 }

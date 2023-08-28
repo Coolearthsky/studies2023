@@ -14,11 +14,12 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     public class Solution {
         public Matrix<Inputs, N1> u;
         public double dt;
+
         public Solution(Matrix<Inputs, N1> u, double dt) {
             this.u = u;
             this.dt = dt;
         }
-        
+
     }
 
     private static double TOLERANCE = 0.01;
@@ -31,11 +32,12 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     }
 
     public Solution solve(Nat<States> states, Nat<Inputs> inputs,
-    BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
-    Matrix<States, N1> x1,
-    Matrix<States, N1> x2)  {
-        if (!possible(states, inputs, f, x1, x2)) return null;
-        
+            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
+            Matrix<States, N1> x1,
+            Matrix<States, N1> x2) {
+        if (!possible(states, inputs, f, x1, x2))
+            return null;
+
         double dt = maxDt;
         Matrix<Inputs, N1> u = this.maxU.times(0);
         // Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, u, dt);
@@ -44,9 +46,36 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
 
     }
 
+    public Solution solve(Nat<States> states, Nat<Inputs> inputs,
+            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
+            Matrix<States, N1> x1,
+            Matrix<States, N1> x2,
+            Matrix<Inputs, N1> minU, Matrix<Inputs, N1> maxU,
+            double minDt, double maxDt) {
+        double midDt = (minDt + maxDt) / 2;
+        Matrix<Inputs, N1> midU = minU.plus(maxU).div(2);
+        Matrix<States, N1> midX2 = NumericalIntegration.rk4(f, x1, midU, midDt);
+        if (near(x2, midX2)) {
+            // close enough
+            return new Solution(midU, midDt);
+        }
+
+
+        return null;
+    }
+
+    public boolean near(Matrix<States, N1> x1, Matrix<States, N1> x2) {
+        return x1.isIdentical(x2, TOLERANCE);
+    }
+
     /**
-     * Returns the constant u value to get from x1 to x2 in time dt, or null if the
-     * path is infeasible.
+     * For the one-dimensional control case, return true if the target state is
+     * within the triangle swept by u and dt.
+     * 
+     * TODO: this is definitely wrong for higher dimensionality, it tests the
+     * surface
+     * from minimum U (in all dimensions) to maximum U (in all dimensions), i.e. a
+     * plane cutting through the hypervolume that we should really test.
      * 
      * The full range of u and dt values paints a surface that includes x1, minX2,
      * and maxX2, like a wavy triangle. In the 2d case it's exactly a triangle and
@@ -79,6 +108,9 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     }
 
     /**
+     * Inside test for one input dimension, which together with dt forms a
+     * two-dimensional space of possible results.
+     * 
      * @param x1    start
      * @param x2    goal
      * @param minX2 reached by min u
@@ -105,11 +137,6 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         if (x2maxX2.normF() < TOLERANCE)
             return true;
 
-        // there are three angles between the three vectors
-        // double x2x1_x2minX2 = angleRad(x2x1, x2minX2);
-        // double x2x1_x2maxX2 = angleRad(x2x1, x2maxX2);
-        // double x2minX2_x2maxX2 = angleRad(x2minX2, x2maxX2);
-        // double angleSum = x2x1_x2minX2 + x2x1_x2maxX2 + x2minX2_x2maxX2;
         double angleSum = angleSum(x2x1, x2minX2, x2maxX2);
 
         // if the point is near the triangle then the angles should add to 2pi.
@@ -121,7 +148,11 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         return false;
     }
 
-    // there are three angles between the three vectors
+    /**
+     * For the one-control-dimension case, the two-dimensional result can be
+     * approximated by a triangle; this calculates the sum of the angles from the
+     * target point to each triangle vertex.
+     */
     public double angleSum(Matrix<States, N1> x2x1,
             Matrix<States, N1> x2minX2,
             Matrix<States, N1> x2maxX2) {
@@ -132,6 +163,7 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         return angleSum;
     }
 
+    /** Return the angle between the vectors, using the dot product. */
     public double angleRad(Matrix<States, N1> x, Matrix<States, N1> y) {
         double dot = x.transpose().times(y).get(0, 0);
         double xNorm = x.normF();
