@@ -3,11 +3,14 @@ package org.team100.lib.math;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.math.ShootingSolver.Solution;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -160,16 +163,14 @@ public class ShootingSolverTest {
             assertFalse(s.inside(x1, x2, minX2, maxX2));
         }
     }
-
     @Test
-    void testRK4() {
+    void testRK4MotionlessStart() {
         // double-integrator
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
             return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
         };
         double dt = 1;
         {
-            // motionless start, u=1
             Matrix<N2, N1> x1 = VecBuilder.fill(0, 0);
             Matrix<N1, N1> maxU = VecBuilder.fill(1);
             Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
@@ -177,45 +178,64 @@ public class ShootingSolverTest {
             // v = v0 + u t = 1
             assertArrayEquals(new double[] { 0.5, 1 }, maxX2.getData(), 0.001);
         }
+    }
+
+    @Test
+    void testRK4MovingStart() {
+        // double-integrator
+        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
+            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+        };
+        Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
         {
-            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-            Matrix<N1, N1> maxU = VecBuilder.fill(-1);
-            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
+            Matrix<N1, N1> u = VecBuilder.fill(-1);
+            double dt = 1;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
             // x = x0 + v t + 0.5 u t ^ 2 = 1 - 0.5 = 0.5
             // v = v0 + u = 1 - 1 = 0
             assertArrayEquals(new double[] { 0.5, 0 }, maxX2.getData(), 0.001);
         }
         {
-            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-            Matrix<N1, N1> maxU = VecBuilder.fill(-0.5);
-            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
+            Matrix<N1, N1> u = VecBuilder.fill(-0.5);
+            double dt = 1;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
             // x = x0 + v t + 0.5 u t ^ 2 = 1 - 0.5 = 0.5
             // v = v0 + u = 1 - 1 = 0
             assertArrayEquals(new double[] { 0.75, 0.5 }, maxX2.getData(), 0.001);
         }
         {
-            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-            Matrix<N1, N1> maxU = VecBuilder.fill(0);
-            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
+            Matrix<N1, N1> u = VecBuilder.fill(0);
+            double dt = 1;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
             // x = x0 + v t = 1
             // v = v0 = 1
             assertArrayEquals(new double[] { 1, 1 }, maxX2.getData(), 0.001);
         }
         {
-            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-            Matrix<N1, N1> maxU = VecBuilder.fill(0.5);
-            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
+            Matrix<N1, N1> u = VecBuilder.fill(0.5);
+            double dt = 1;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
             // x = x0 + v t + 0.5 u t ^ 2 = 1 + 0.5 = 1.5
             // v = v0 + u = 1 + 1 = 2
             assertArrayEquals(new double[] { 1.25, 1.5 }, maxX2.getData(), 0.001);
         }
         {
-            Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-            Matrix<N1, N1> maxU = VecBuilder.fill(1);
-            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
+            Matrix<N1, N1> u = VecBuilder.fill(1);
+            double dt = 1;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
             // x = x0 + v t + 0.5 u t ^ 2 = 1 + 0.5 = 1.5
             // v = v0 + u = 1 + 1 = 2
             assertArrayEquals(new double[] { 1.5, 2 }, maxX2.getData(), 0.001);
+        }
+        {
+            // in the middle somewhere
+            Matrix<N1, N1> u = VecBuilder.fill(0.5);
+            double dt = 0.5;
+            Matrix<N2, N1> maxX2 = NumericalIntegration.rk4(f, x1, u, dt);
+            // x = x0 + v t + 0.5 u t ^ 2 = 1 + 0.5 = 1.5
+            // v = v0 + u = 1 + 1 = 2
+            // this is the solution my solver should find below
+            assertArrayEquals(new double[] { 0.5625, 1.25 }, maxX2.getData(), 0.001);
         }
     }
 
@@ -281,5 +301,56 @@ public class ShootingSolverTest {
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 1);
             assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
         }
+    }
+
+    @Test
+    void testSolve() {
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+
+        // double-integrator
+        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
+            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
+        };
+        // motionless start makes the feasible region a line
+        Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
+        {
+            // end = start
+            Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            assertNotNull(sol);
+            // u is irrelevant
+            assertEquals(0, sol.dt, 0.001);
+        }
+        {
+            // end = minU
+            Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 0);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            assertNotNull(sol);
+            assertEquals(-1, sol.u.get(0,0), 0.001);
+            assertEquals(1, sol.dt, 0.001);
+        }
+        {
+            // end = maxU
+            Matrix<N2, N1> x2 = VecBuilder.fill(1.5, 2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            assertNotNull(sol);
+            assertEquals(1, sol.u.get(0,0), 0.001);
+            assertEquals(1, sol.dt, 0.001);
+        }
+        {
+            // end = within the triangle (from above RK4 test)
+            Matrix<N2, N1> x2 = VecBuilder.fill( 0.5625, 1.25);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            assertNotNull(sol);
+            assertEquals(0.5, sol.u.get(0,0), 0.001);
+            assertEquals(0.5, sol.dt, 0.001);
+        }
+        {
+            // end = very infeasible
+            Matrix<N2, N1> x2 = VecBuilder.fill(-10, 10);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            assertNull(sol);
+        }
+
     }
 }

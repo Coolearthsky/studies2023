@@ -5,6 +5,7 @@ import java.util.function.BiFunction;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.Num;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.system.NumericalIntegration;
 
@@ -13,6 +14,11 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     public class Solution {
         public Matrix<Inputs, N1> u;
         public double dt;
+        public Solution(Matrix<Inputs, N1> u, double dt) {
+            this.u = u;
+            this.dt = dt;
+        }
+        
     }
 
     private static double TOLERANCE = 0.01;
@@ -22,6 +28,20 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     public ShootingSolver(Matrix<Inputs, N1> maxU, double maxDt) {
         this.maxU = maxU;
         this.maxDt = maxDt;
+    }
+
+    public Solution solve(Nat<States> states, Nat<Inputs> inputs,
+    BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
+    Matrix<States, N1> x1,
+    Matrix<States, N1> x2)  {
+        if (!possible(states, inputs, f, x1, x2)) return null;
+        
+        double dt = maxDt;
+        Matrix<Inputs, N1> u = this.maxU.times(0);
+        // Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, u, dt);
+        // this is definitely wrong
+        return new Solution(u, dt);
+
     }
 
     /**
