@@ -312,7 +312,6 @@ public class ShootingSolverTest {
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
             return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
         };
-        // motionless start makes the feasible region a line
         Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
         {
             // end = start
@@ -367,5 +366,29 @@ public class ShootingSolverTest {
             Matrix<N2, N1> x2 = VecBuilder.fill(0, 1.1);
             assertFalse(s.near(x1, x2));
         }
+    }
+
+    @Test
+    void testSolve2() {
+        // 1d
+        ShootingSolver<N1, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        // xdot = u
+        BiFunction<Matrix<N1, N1>, Matrix<N1, N1>, Matrix<N1, N1>> f = (x, u) -> {
+            return VecBuilder.fill(u.get(0, 0));
+        };
+        Matrix<N1, N1> x1 = VecBuilder.fill(0);
+        Matrix<N1, N1> x2 = VecBuilder.fill(0.5);
+        Matrix<N1, N1> minU = VecBuilder.fill(-1);
+        Matrix<N1, N1> maxU = VecBuilder.fill(1);
+        double minDt = 0;
+        double maxDt = 1;
+        int index = 0;
+        ShootingSolver<N1, N1>.Solution sol = s.solve(Nat.N1(), Nat.N1(), f, x1, x2, minU, maxU, minDt, maxDt, index);
+        assertNotNull(sol);
+        // since there are 2 free variables there is an infinite number
+        // of solutions
+        // TODO: a different example.
+        assertEquals(0.5, sol.u.get(0,0));
+        assertEquals(1, sol.dt);
     }
 }

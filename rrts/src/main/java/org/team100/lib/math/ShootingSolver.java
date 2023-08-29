@@ -50,18 +50,79 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
             BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
             Matrix<States, N1> x1,
             Matrix<States, N1> x2,
-            Matrix<Inputs, N1> minU, Matrix<Inputs, N1> maxU,
-            double minDt, double maxDt) {
+            Matrix<Inputs, N1> minU,
+            Matrix<Inputs, N1> maxU,
+            double minDt,
+            double maxDt,
+            int index) {
+        // choose the midpoint of time and control axes
         double midDt = (minDt + maxDt) / 2;
         Matrix<Inputs, N1> midU = minU.plus(maxU).div(2);
+        // find the resulting state
         Matrix<States, N1> midX2 = NumericalIntegration.rk4(f, x1, midU, midDt);
         if (near(x2, midX2)) {
             // close enough
             return new Solution(midU, midDt);
         }
-
-
-        return null;
+        int axis = index % inputs.getNum();
+        if (axis == 0) {
+            // use the time axis
+            Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, midU, minDt);
+            double x2minX2 = x2.minus(minX2).normF();
+            if (x2minX2 < TOLERANCE) {
+                // close enough
+                return new Solution(midU, minDt);
+            }
+            Matrix<States, N1> maxX2 = NumericalIntegration.rk4(f, x1, midU, maxDt);
+            double x2maxX2 = x2.minus(maxX2).normF();
+            if (x2maxX2 < TOLERANCE) {
+                // close enough
+                return new Solution(midU, maxDt);
+            }
+            double minX2maxX2 = minX2.minus(maxX2).normF();
+            if (x2minX2 > minX2maxX2 || x2maxX2 > minX2maxX2) {
+                // it's outside, assuming a flat space, which
+                // isn't a great assumption. :(
+                return null;
+            }
+            if (x2minX2 < x2maxX2) {
+                // closer to the minimum, so look there
+                return solve(states, inputs, f, x1, x2, minU, maxU, minDt, midDt, index + 1);
+            } else {
+                return solve(states, inputs, f, x1, x2, minU, maxU, midDt, maxDt, index + 1);
+            }
+        } else {
+            // use one of the u axes; use the midpoint for all the control values
+            // except one
+            Matrix<Inputs, N1> minU2 = midU;
+            minU2.set(index - 1, 0, minU.get(index - 1, 0));
+            Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, minU2, midDt);
+            double x2minX2 = x2.minus(minX2).normF();
+            if (x2minX2 < TOLERANCE) {
+                // close enough
+                return new Solution(minU2, midDt);
+            }
+            Matrix<Inputs, N1> maxU2 = midU;
+            maxU2.set(index - 1, 0, maxU.get(index - 1, 0));
+            Matrix<States, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU2, midDt);
+            double x2maxX2 = x2.minus(maxX2).normF();
+            if (x2maxX2 < TOLERANCE) {
+                // close enough
+                return new Solution(maxU2, midDt);
+            }
+            double minX2maxX2 = minX2.minus(maxX2).normF();
+            if (x2minX2 > minX2maxX2 || x2maxX2 > minX2maxX2) {
+                // it's outside, assuming a flat space, which
+                // isn't a great assumption. :(
+                return null;
+            }
+            if (x2minX2 < x2maxX2) {
+                // closer to the minimum, so look there
+                return solve(states, inputs, f, x1, x2, minU2, midU, minDt, maxDt, index + 1);
+            } else {
+                return solve(states, inputs, f, x1, x2, midU, maxU2, minDt, maxDt, index + 1);
+            }
+        }
     }
 
     public boolean near(Matrix<States, N1> x1, Matrix<States, N1> x2) {
