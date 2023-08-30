@@ -26,30 +26,33 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     private static double TOLERANCE = 0.01;
     Matrix<Inputs, N1> maxU;
     double maxDt;
+    int maxSteps;
 
-    public ShootingSolver(Matrix<Inputs, N1> maxU, double maxDt) {
+    public ShootingSolver(Matrix<Inputs, N1> maxU, double maxDt, int maxSteps) {
         this.maxU = maxU;
         this.maxDt = maxDt;
+        this.maxSteps = maxSteps;
     }
 
     public Solution solve(Nat<States> states, Nat<Inputs> inputs,
             BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
             Matrix<States, N1> x1,
             Matrix<States, N1> x2) {
-        if (!possible(states, inputs, f, x1, x2))
-            return null;
+        return solve(states, inputs, f, x1, x2, this.maxU.times(-1), this.maxU, 0, this.maxDt, 0);
+        // if (!possible(states, inputs, f, x1, x2))
+        // return null;
 
-        double dt = maxDt;
-        Matrix<Inputs, N1> u = this.maxU.times(0);
-        // Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, u, dt);
-        // this is definitely wrong
-        return new Solution(u, dt);
+        // double dt = maxDt;
+        // Matrix<Inputs, N1> u = this.maxU.times(0);
+        // // Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, u, dt);
+        // // this is definitely wrong
+        // return new Solution(u, dt);
     }
 
-    static <U extends Num,V extends Num> String matStr(Matrix<U,V> mat) {
+    static <U extends Num, V extends Num> String matStr(Matrix<U, V> mat) {
         String result = "";
         for (double d : mat.getData()) {
-            result += String.format("%5.3f",d);
+            result += String.format("%5.3f ", d);
         }
         return result;
     }
@@ -63,8 +66,9 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
             double minDt,
             double maxDt,
             int index) {
-        System.out.printf("solve minU %s maxU %s index %d\n", matStr(minU), matStr(maxU), index);
-        if(index>10){
+        System.out.printf("solve minU %s maxU %s minDt %5.3f maxDt %5.3f index %d\n",
+                matStr(minU), matStr(maxU), minDt, maxDt, index);
+        if (index > maxSteps) {
             System.out.println("index too high");
             return null;
         }

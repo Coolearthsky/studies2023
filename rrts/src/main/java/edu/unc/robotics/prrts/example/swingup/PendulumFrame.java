@@ -41,7 +41,7 @@ public class PendulumFrame extends JFrame {
             }
         });
         // it should work both ways, time-reversed in this case:
-        worker.SwapTrees();
+        //worker.SwapTrees();
         // rrtStar.runForDurationMS(2000);
         rrtStar.runSamples(STEPS);
         Path bestPath = rrtStar.getBestPath();

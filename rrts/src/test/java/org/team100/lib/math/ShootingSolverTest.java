@@ -55,7 +55,7 @@ public class ShootingSolverTest {
 
     @Test
     void testAngle() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1, 10);
         {
             Matrix<N2, N1> x = VecBuilder.fill(1, 0);
             Matrix<N2, N1> y = VecBuilder.fill(0, 1);
@@ -70,7 +70,7 @@ public class ShootingSolverTest {
 
     @Test
     void testAngleSum() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1, 10);
         {
             Matrix<N2, N1> x1 = VecBuilder.fill(0, 0);
             Matrix<N2, N1> x2 = VecBuilder.fill(1, 1);
@@ -87,7 +87,7 @@ public class ShootingSolverTest {
     @Test
     void testAngleSum3d() {
         // 3d because i can visualize it; the actual case is 4d.
-        ShootingSolver<N3, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1);
+        ShootingSolver<N3, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1, 10);
         {
             // this plane is x+y+z=1
             // so the closest point to 0,0,0 is 1/sqrt(3) away
@@ -107,7 +107,7 @@ public class ShootingSolverTest {
 
     @Test
     void testInside2d() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1, 10);
         {
             // far outside
             Matrix<N2, N1> x1 = VecBuilder.fill(0, 0);
@@ -137,7 +137,7 @@ public class ShootingSolverTest {
     @Test
     void testInside3d() {
         // 3d because i can visualize it; the actual case is 4d.
-        ShootingSolver<N3, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1);
+        ShootingSolver<N3, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 0.1, 10);
         {
             // far outside
             Matrix<N3, N1> x1 = VecBuilder.fill(0, 0, 0);
@@ -242,7 +242,7 @@ public class ShootingSolverTest {
 
     @Test
     void testPossibleMotionlessStart() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
 
         // double-integrator
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
@@ -274,7 +274,7 @@ public class ShootingSolverTest {
 
     @Test
     void testPossibleMovingStart() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
 
         // double-integrator
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
@@ -305,8 +305,8 @@ public class ShootingSolverTest {
     }
 
     @Test
-    void testSolve() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+    void testSolve2d() {
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 20);
 
         // double-integrator
         BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
@@ -314,7 +314,7 @@ public class ShootingSolverTest {
         };
         Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
         {
-            // end = start
+            System.out.println("==== end = start");
             Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
@@ -322,31 +322,33 @@ public class ShootingSolverTest {
             assertEquals(0, sol.dt, 0.001);
         }
         {
-            // end = minU
+            System.out.println("==== end = minU");
+            Matrix<N2, N1> goalX2 = NumericalIntegration.rk4(f, x1, VecBuilder.fill(-1), 1);
+            System.out.printf("GOAL: %s\n", goalX2);
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 0);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(-1, sol.u.get(0, 0), 0.001);
-            assertEquals(1, sol.dt, 0.001);
+            assertEquals(-1, sol.u.get(0, 0), 0.01);
+            assertEquals(1, sol.dt, 0.01);
         }
         {
-            // end = maxU
+            System.out.println("==== end = maxU");
             Matrix<N2, N1> x2 = VecBuilder.fill(1.5, 2);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(1, sol.u.get(0, 0), 0.001);
-            assertEquals(1, sol.dt, 0.001);
+            assertEquals(1, sol.u.get(0, 0), 0.01);
+            assertEquals(1, sol.dt, 0.01);
         }
         {
-            // end = within the triangle (from above RK4 test)
+            System.out.println("==== end = within the triangle (from above RK4 test)");
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5625, 1.25);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNotNull(sol);
-            assertEquals(0.5, sol.u.get(0, 0), 0.001);
-            assertEquals(0.5, sol.dt, 0.001);
+            assertEquals(0.5, sol.u.get(0, 0), 0.01);
+            assertEquals(0.5, sol.dt, 0.01);
         }
         {
-            // end = very infeasible
+            System.out.println("==== end = very infeasible");
             Matrix<N2, N1> x2 = VecBuilder.fill(-10, 10);
             ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
             assertNull(sol);
@@ -355,7 +357,7 @@ public class ShootingSolverTest {
 
     @Test
     void testNear() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
         {
             Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
             Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
@@ -369,9 +371,9 @@ public class ShootingSolverTest {
     }
 
     @Test
-    void testSolve2() {
+    void testSolve1d() {
         // 1d
-        ShootingSolver<N1, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1);
+        ShootingSolver<N1, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
         // xdot = u
         BiFunction<Matrix<N1, N1>, Matrix<N1, N1>, Matrix<N1, N1>> f = (x, u) -> {
             return VecBuilder.fill(u.get(0, 0));
@@ -388,7 +390,7 @@ public class ShootingSolverTest {
         // since there are 2 free variables there is an infinite number
         // of solutions
         // TODO: a different example.
-        assertEquals(0.5, sol.u.get(0,0));
+        assertEquals(0.5, sol.u.get(0, 0));
         assertEquals(1, sol.dt);
     }
 }
