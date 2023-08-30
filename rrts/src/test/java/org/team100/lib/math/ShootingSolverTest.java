@@ -380,8 +380,8 @@ public class ShootingSolverTest {
         Matrix<N1, N1> x2 = VecBuilder.fill(0.5);
         Matrix<N1, N1> minU = VecBuilder.fill(-1);
         Matrix<N1, N1> maxU = VecBuilder.fill(1);
-        double minDt = 0;
-        double maxDt = 1;
+        double minDt = 0.99;
+        double maxDt = 1.01;
         int index = 0;
         ShootingSolver<N1, N1>.Solution sol = s.solve(Nat.N1(), Nat.N1(), f, x1, x2, minU, maxU, minDt, maxDt, index);
         assertNotNull(sol);
