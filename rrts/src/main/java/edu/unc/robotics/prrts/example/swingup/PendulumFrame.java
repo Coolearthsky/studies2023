@@ -24,7 +24,7 @@ public class PendulumFrame extends JFrame {
     }
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        double[] init = new double[] { 1, 0 };
+        double[] init = new double[] { 0, 0 };
         double[] goal = new double[] { Math.PI, 0 };
         double gravity = 9.81;
         final Arena arena = new PendulumArena2(init, goal, gravity);
@@ -42,8 +42,8 @@ public class PendulumFrame extends JFrame {
         });
         // it should work both ways, time-reversed in this case:
         //worker.SwapTrees();
-        // rrtStar.runForDurationMS(2000);
-        rrtStar.runSamples(STEPS);
+        rrtStar.runForDurationMS(1000);
+        //rrtStar.runSamples(STEPS);
         Path bestPath = rrtStar.getBestPath();
         if (bestPath != null) {
             List<double[]> states = bestPath.getStates();

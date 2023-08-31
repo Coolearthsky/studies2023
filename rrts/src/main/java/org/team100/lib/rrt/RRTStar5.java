@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.team100.lib.graph.Graph;
@@ -26,6 +28,7 @@ import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.util.Util;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -68,7 +71,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     Path _sigma_best;
     Map<Node, Node> connections = new HashMap<Node, Node>();
 
-    boolean bidirectional = false;
+    boolean bidirectional = true;
 
     Random random = new Random();
     private static final double MIN_U = -5;
@@ -109,14 +112,14 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      */
     @Override
     public int step() {
-        // System.out.println("step");
+       // System.out.println("step");
         int edges = 0;
 
         // the sample is now control-sampled, guaranteed feasible.
 
         // double[] x_rand = SampleFree();
         LocalLink randLink = SampleFree();
-        // System.out.println("x_rand: " + Arrays.toString(x_rand));
+        //System.out.println("randLink: " + randLink);
 
         // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
         // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
@@ -145,6 +148,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // return edges;
             // Node newNode =
 
+            // new node in "this" tree
             Node newNode = InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             // Rewire(X_near, newNode);
@@ -155,22 +159,29 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                 // the node we just inserted? reachable nodes are nearby in a Euclidean
                 // sense, though most Euclidean nearby nodes are not reachable.
                 // so start with a list of near nodes and test them one by one.
-                //
+                
+                // near nodes in the other tree:
                 List<NearNode> X_near = Near(newNode.getState(), _T_b);
                 Matrix<N2, N1> x1 = VecBuilder.fill(newNode.getState()[0], newNode.getState()[1]);
                 for (NearNode nearNode : X_near) {
+                    // one near node in the other tree
                     Matrix<N2, N1> x2 = VecBuilder.fill(nearNode.node.getState()[0], nearNode.node.getState()[1]);
                     ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2);
                     if (sol != null) {
-                        System.out.println("FOUND feasible link");
+                        // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
+                        //System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n", Util.matStr(x1), Util.matStr(x2), sol);
                         // TODO: do something with the solution u value
-                        // LocalLink link = new LocalLink(nearNode.node, newNode, sol.dt);
-                        // Node newNewNode = InsertNode(link, _T_b);
-                        // connections.put(x_1, newNode);
+                        // add a node in a corresponding to the near node in b
+                        LocalLink newInA =  new LocalLink(newNode, new Node(nearNode.node.getState()), sol.dt);
+                      //  LocalLink link = new LocalLink(newNode, nearNode.node, sol.dt);
+                        Node newNewNode = InsertNode(newInA, _T_a);
+                        connections.put(newNode, nearNode.node);
                         // // Rewire(X_near, newNode);
                         // return GeneratePath(x_1, newNode);
-                        // Path p = GeneratePath(newNewNode, newNode);
-                        Path p = null;
+                        // create a path that traverses the new link.
+                        Path p = GeneratePath(newNewNode, nearNode.node);
+                       //System.out.println("PATH " + p);
+                        //Path p = null;
                         if (_sigma_best == null) {
                             _sigma_best = p;
                         } else {
@@ -253,10 +264,11 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             if (x_1.getState()[i] != x_2.getState()[i])
                 throw new IllegalArgumentException(
                         "x1 " + Arrays.toString(x_1.getState()) + " x2 " + Arrays.toString(x_2.getState()));
-        }
-
-        Path p_1 = walkParents(x_1);
-        Path p_2 = walkParents(x_2);
+        } 
+        Path p_1 = walkParents(new HashSet<Node>(), x_1);
+        // System.out.println("p1 " + p_1);
+        Path p_2 = walkParents(new HashSet<Node>(), x_2);
+        // System.out.println("p2 " + p_2);
         List<double[]> states_2 = p_2.getStates();
         Collections.reverse(states_2);
         // don't include the same point twice
@@ -285,7 +297,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     };
 
     /**
-     * Applies random control to random tree node. If the node
+     * Applies random control to random tree node *in T_a.* If the node
      * has a parent, just continue the same way as that node.
      */
     LocalLink SampleFree() {
@@ -293,8 +305,10 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
 
         while (true) {
+            //System.out.println("sample");
             // applied to a random point in the tree
-            List<Node> nodes = getNodes();
+            // List<Node> nodes = getNodes();
+            List<Node> nodes = KDTree.values(_T_a);
             int nodect = nodes.size();
             int nodeidx = random.nextInt(nodect);
             Node node_rand = nodes.get(nodeidx);
@@ -308,11 +322,12 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             double x_nearest1 = node_rand.getState()[0];
             double x_nearest2 = node_rand.getState()[1];
 
-            double x1dot = x_nearest2;
+            // double x1dot = x_nearest2;
             // random control
-           // double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
-            double u = 0;
-            double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
+            // TODO: shape the sampling to look more "bang bang" like.
+            double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
+            // double u = 0;
+            // double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
             double dt = DT;
             if (!timeForward)
                 dt *= -1.0;
@@ -479,7 +494,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         return null;
     }
 
-    /** Add the node x_new to the tree, with an edge from x_min. */
+    /** Add the node link.target to the tree, with an edge from source to target. */
     Node InsertNode(LocalLink link, KDNode<Node> rootNode) {
         // System.out.printf("newLink from [%5.3f %5.3f] to [%5.3f %5.3f] d %5.3f\n",
         //         link.get_source().getState()[0], link.get_source().getState()[1],
@@ -555,13 +570,20 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * 
      * @param node leaf node
      */
-    Path walkParents(Node node) {
+    Path walkParents( Set<Node> visited, Node node) {
         // Collect the states along the path (backwards)
         List<double[]> configs = new LinkedList<double[]>();
         // Since we're visiting all the nodes it's very cheap to verify the total
         // distance
         double totalDistance = 0;
         while (true) {
+            // System.out.printf("walking node %s\n", node);
+            if (visited.contains(node)) {
+                System.out.println("found a cycle");
+                throw new IllegalArgumentException();
+            }
+            visited.add(node);
+            //System.out.println("walk");
             configs.add(node.getState());
             LinkInterface incoming = node.getIncoming();
             if (incoming == null)

@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.math.ShootingSolver.Solution;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
