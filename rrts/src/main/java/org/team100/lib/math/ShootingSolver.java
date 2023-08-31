@@ -28,6 +28,8 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
 
     }
 
+    private static final boolean DEBUG = false;
+
     private static double TOLERANCE = 0.01;
     Matrix<Inputs, N1> maxU;
     double maxDt;
@@ -63,10 +65,12 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
             double minDt,
             double maxDt,
             int index) {
-       // System.out.printf("solve x1 %s x2 %s minU %s maxU %s minDt %5.3f maxDt %5.3f index %d\n",
-       //         Util.matStr(x1), Util.matStr(x2), Util.matStr(minU), Util.matStr(maxU), minDt, maxDt, index);
+        if (DEBUG)
+            System.out.printf("solve x1 %s x2 %s minU %s maxU %s minDt %5.3f maxDt %5.3f index %d\n",
+                    Util.matStr(x1), Util.matStr(x2), Util.matStr(minU), Util.matStr(maxU), minDt, maxDt, index);
         if (index > maxSteps) {
-            // System.out.println("index too high");
+            if (DEBUG)
+                System.out.println("index too high");
             return null;
         }
         // choose the midpoint of time and control axes
@@ -75,38 +79,52 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         // find the resulting state
         Matrix<States, N1> midX2 = NumericalIntegration.rk4(f, x1, midU, midDt);
         if (near(x2, midX2)) {
-            // System.out.println("SOLVED near midpoint");
+            if (DEBUG)
+                System.out.println("SOLVED near midpoint");
             return new Solution(midU, midDt);
         }
         int axis = index % (inputs.getNum() + 1);
-        // System.out.printf("axis %d\n", axis);
+        if (DEBUG)
+            System.out.printf("axis %d\n", axis);
         if (axis == 0) {
             // use the time axis
             Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, midU, minDt);
+            if (DEBUG)
+                System.out.printf("integrated minX2 %s = rk4(x1 %s midU %s minDt %5.3f)\n",
+                        Util.matStr(minX2), Util.matStr(x1), Util.matStr(midU), minDt);
             double x2minX2 = x2.minus(minX2).normF();
             if (x2minX2 < TOLERANCE) {
-                //System.out.println("SOLVED near min dt");
+                if (DEBUG)
+                    System.out.println("SOLVED near min dt");
                 return new Solution(midU, minDt);
             }
             Matrix<States, N1> maxX2 = NumericalIntegration.rk4(f, x1, midU, maxDt);
+            if (DEBUG)
+                System.out.printf("integrated minX2 %s = rk4(x1 %s midU %s maxDt %5.3f)\n",
+                        Util.matStr(minX2), Util.matStr(x1), Util.matStr(midU), maxDt);
             double x2maxX2 = x2.minus(maxX2).normF();
             if (x2maxX2 < TOLERANCE) {
-                // System.out.println("SOLVED near max dt");
+                if (DEBUG)
+                    System.out.println("SOLVED near max dt");
                 return new Solution(midU, maxDt);
             }
             double minX2maxX2 = minX2.minus(maxX2).normF();
-            // System.out.printf("minX2 %s maxX2 %s x2 %s\n", matStr(minX2), matStr(maxX2),
-            // matStr(x2));
+            if (DEBUG)
+                System.out.printf("minX2 %s maxX2 %s x2 %s\n", Util.matStr(minX2), Util.matStr(maxX2),
+                        Util.matStr(x2));
             if (minX2maxX2 < TOLERANCE) {
-                // System.out.println("min dt near max");
+                if (DEBUG)
+                    System.out.println("min dt near max");
                 // just try the next axis?
                 return solve(states, inputs, f, x1, x2, minU, maxU, minDt, maxDt, index + 1);
             }
             if (x2minX2 < x2maxX2) {
-                // System.out.println("look lower dt");
+                if (DEBUG)
+                    System.out.println("look lower dt");
                 return solve(states, inputs, f, x1, x2, minU, maxU, minDt, midDt, index + 1);
             } else {
-                // System.out.println("look higher dt");
+                if (DEBUG)
+                    System.out.println("look higher dt");
                 return solve(states, inputs, f, x1, x2, minU, maxU, midDt, maxDt, index + 1);
             }
         } else {
@@ -115,33 +133,51 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
             Matrix<Inputs, N1> minU2 = midU.copy();
             minU2.set(axis - 1, 0, minU.get(axis - 1, 0));
             Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, minU2, midDt);
+            if (DEBUG)
+                System.out.printf("integrated minX2 %s = rk4(x1 %s minU2 %s midDt %5.3f)\n",
+                        Util.matStr(minX2), Util.matStr(x1), Util.matStr(minU2), midDt);
             double x2minX2 = x2.minus(minX2).normF();
             if (x2minX2 < TOLERANCE) {
-                // System.out.println("SOLVED near min u");
+                if (DEBUG)
+                    System.out.println("SOLVED near min u");
                 return new Solution(minU2, midDt);
             }
             Matrix<Inputs, N1> maxU2 = midU.copy();
             maxU2.set(axis - 1, 0, maxU.get(axis - 1, 0));
             Matrix<States, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU2, midDt);
+            if (DEBUG)
+                System.out.printf("integrated maxX2 %s = rk4(x1 %s maxU2 %s midDt %5.3f)\n",
+                        Util.matStr(maxX2), Util.matStr(x1), Util.matStr(maxU2), midDt);
             double x2maxX2 = x2.minus(maxX2).normF();
             if (x2maxX2 < TOLERANCE) {
-                // System.out.println("SOLVED near max u");
+                if (DEBUG)
+                    System.out.println("SOLVED near max u");
                 return new Solution(maxU2, midDt);
             }
             double minX2maxX2 = minX2.minus(maxX2).normF();
-            // System.out.printf("minX2 %s maxX2 %s x2 %s\n", matStr(minX2), matStr(maxX2),
-            // matStr(x2));
+            if (DEBUG)
+                System.out.printf("minX2 %s maxX2 %s x2 %s\n", Util.matStr(minX2), Util.matStr(maxX2),
+                        Util.matStr(x2));
             if (minX2maxX2 < TOLERANCE) {
-                // System.out.println("min u near max");
+                if (DEBUG)
+                    System.out.println("min u near max");
                 // just try the next axis?
                 return solve(states, inputs, f, x1, x2, minU, maxU, minDt, maxDt, index + 1);
             }
             if (x2minX2 < x2maxX2) {
-                // System.out.println("look lower u");
-                return solve(states, inputs, f, x1, x2, minU2, midU, minDt, maxDt, index + 1);
+                if (DEBUG)
+                    System.out.println("look lower u");
+                // u needs to be full-range except for the axis we're looking at.
+                Matrix<Inputs, N1> midU2 = maxU.copy();
+                midU2.set(axis - 1, 0, midU.get(axis - 1, 0));
+                return solve(states, inputs, f, x1, x2, minU, midU2, minDt, maxDt, index + 1);
             } else {
-                // System.out.println("look higher u");
-                return solve(states, inputs, f, x1, x2, midU, maxU2, minDt, maxDt, index + 1);
+                if (DEBUG)
+                    System.out.println("look higher u");
+                // u needs to be full-range except for the axis we're looking at.
+                Matrix<Inputs, N1> midU2 = minU.copy();
+                midU2.set(axis - 1, 0, midU.get(axis - 1, 0));
+                return solve(states, inputs, f, x1, x2, midU2, maxU, minDt, maxDt, index + 1);
             }
         }
     }

@@ -36,17 +36,11 @@ import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.NumericalIntegration;
 
 /**
- * RRT* version 5.
+ * RRT* version 6
  * 
- * For the non-Euclidean spaces, state sampling doesn't seem to work
- * very well; there's no good way to find "nearby" states, and the
- * admissible fraction is tiny, especially with a weak control.
- * 
- * So instead, sample control space and apply to a random node.
- * 
- * maybe try
+ * This is the full-state field, so 4d altogether.
  */
-public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
+public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
     /**
      * probability of branching
      */
@@ -86,7 +80,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
     ShootingSolver<N2, N1> solver = new ShootingSolver<>(VecBuilder.fill(MAX_U), DT, 20);
 
-    public RRTStar5(T model, Sample sample, double gamma) {
+    public RRTStar6(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
@@ -100,8 +94,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         max = _model.getMax();
     }
 
-    // accurate integration is absolutely required here,
-    // otherwise the dynamics are wrong
+    // The top level is just a 2d double-integrator.
     BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (xx, uu) -> {
         double xx1 = xx.get(0, 0);
         double xx2 = xx.get(1, 0);
