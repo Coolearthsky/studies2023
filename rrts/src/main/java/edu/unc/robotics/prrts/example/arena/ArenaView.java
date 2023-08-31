@@ -29,10 +29,6 @@ public class ArenaView extends JComponent {
     private final Runner _rrtStar;
     private final Arena _robotModel;
 
-    private static final Color[] COLORS = new Color[] {
-            Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
-    };
-
     private Image _backgroundImage;
     private Path _bestPath = null;
 
@@ -115,14 +111,27 @@ public class ArenaView extends JComponent {
         int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
 
-        for (Node node : _rrtStar.getNodes()) {
+        for (Node node : _rrtStar.getNodesA()) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();
                 double[] p = parent.getState();
                 for (int i = 0; i < dim; i += 2) {
-                    g.setColor(COLORS[i / 2]);
+                    g.setColor(Color.GREEN);
+                    line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
+                    g.draw(line);
+                }
+            }
+        }
+        for (Node node : _rrtStar.getNodesB()) {
+            LinkInterface incoming = node.getIncoming();
+            if (incoming != null) {
+                Node parent = incoming.get_source();
+                double[] n = node.getState();
+                double[] p = parent.getState();
+                for (int i = 0; i < dim; i += 2) {
+                    g.setColor(Color.RED);
                     line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
                     g.draw(line);
                 }
@@ -139,13 +148,26 @@ public class ArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        if (path.getStates().size() > 1) {
-            Iterator<double[]> pathIter = path.getStates().iterator();
+        if (path.getStatesA().size() > 1) {
+            Iterator<double[]> pathIter = path.getStatesA().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
                 for (int i = 0; i < dim; i += 2) {
-                    g.setColor(brighter(COLORS[i / 2]));
+                    g.setColor(Color.GREEN);
+                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
+                    g.draw(line);
+                }
+                prev = curr;
+            }
+        }
+        if (path.getStatesB().size() > 1) {
+            Iterator<double[]> pathIter = path.getStatesB().iterator();
+            double[] prev = pathIter.next();
+            while (pathIter.hasNext()) {
+                double[] curr = pathIter.next();
+                for (int i = 0; i < dim; i += 2) {
+                    g.setColor(Color.RED);
                     line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
                     g.draw(line);
                 }

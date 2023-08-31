@@ -7,7 +7,7 @@ import org.team100.lib.space.Path;
  * Runs the specified steps or time.
  */
 public class Runner {
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private final Solver _solver;
     private int _stepNo;
@@ -38,8 +38,13 @@ public class Runner {
     }
 
     /** For listeners. */
-    public Iterable<Node> getNodes() {
-        return _solver.getNodes();
+    public Iterable<Node> getNodesA() {
+        return _solver.getNodesA();
+    }
+
+    /** For listeners. */
+    public Iterable<Node> getNodesB() {
+        return _solver.getNodesB();
     }
 
     /** For listeners. */
@@ -53,9 +58,11 @@ public class Runner {
         long startTime = System.nanoTime();
         int actualLimit = 0;
         while (true) {
-            if (DEBUG) System.out.println(actualLimit);
+            if (DEBUG)
+                System.out.println("counter: " + actualLimit);
             actualLimit += 1;
-            if (actualLimit > 10000) break;
+            if (actualLimit > 10000)
+                break;
             _solver.setStepNo(_stepNo);
             if (_solver.step() > 0) {
                 _stepNo++;

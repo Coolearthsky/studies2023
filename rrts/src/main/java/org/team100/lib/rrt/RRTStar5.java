@@ -126,9 +126,9 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         int edges = 0;
 
         // the sample is now control-sampled, guaranteed feasible.
-
+        boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
         // double[] x_rand = SampleFree();
-        LocalLink randLink = SampleFree();
+        LocalLink randLink = SampleFree(timeForward);
         // System.out.println("randLink: " + randLink);
 
         // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
@@ -162,7 +162,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             Node newNode = InsertNode(randLink, _T_a);
             // System.out.println(newNode);
             List<NearNode> X_nearA = Near(newNode.getState(), _T_a);
-            Rewire(X_nearA, newNode);
+            Rewire(X_nearA, newNode, timeForward);
 
             edges += 1;
 
@@ -178,7 +178,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                 for (NearNode nearNode : X_near) {
                     // one near node in the other tree
                     Matrix<N2, N1> x2 = VecBuilder.fill(nearNode.node.getState()[0], nearNode.node.getState()[1]);
-                    ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+                    ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2, timeForward);
                     if (sol != null) {
                         // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
                         // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
@@ -282,14 +282,14 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         // System.out.println("p1 " + p_1);
         Path p_2 = walkParents(new HashSet<Node>(), x_2);
         // System.out.println("p2 " + p_2);
-        List<double[]> states_2 = p_2.getStates();
+        List<double[]> states_2 = p_2.getStatesA();
         Collections.reverse(states_2);
         // don't include the same point twice
         states_2.remove(0);
-        List<double[]> fullStates = new ArrayList<double[]>();
-        fullStates.addAll(p_1.getStates());
-        fullStates.addAll(states_2);
-        return new Path(p_1.getDistance() + p_2.getDistance(), fullStates);
+        // List<double[]> fullStates = new ArrayList<double[]>();
+        // fullStates.addAll(p_1.getStates());
+        // fullStates.addAll(states_2);
+        return new Path(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
     }
 
     boolean CollisionFree(double[] from, double[] to) {
@@ -300,9 +300,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * Applies random control to random tree node *in T_a.* If the node
      * has a parent, just continue the same way as that node.
      */
-    LocalLink SampleFree() {
+    LocalLink SampleFree(boolean timeForward) {
         // run backwards if the tree root is the goal
-        boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
 
         while (true) {
             // System.out.println("sample");
@@ -518,16 +517,16 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * look through the nodes in X_near to see if any should be new children of
      * newNode.
      */
-    void Rewire(List<NearNode> X_near, Node newNode) {
+    void Rewire(List<NearNode> X_near, Node newNode, boolean timeForward) {
         ListIterator<NearNode> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
             NearNode jn = li.previous();
             if (jn.node.getIncoming() != null) {
                 Matrix<N2, N1> x1 = VecBuilder.fill(newNode.getState()[0], newNode.getState()[1]);
                 Matrix<N2, N1> x2 = VecBuilder.fill(jn.node.getState()[0], jn.node.getState()[1]);
-                ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+                ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2, timeForward);
                 if (sol != null) {
-                    if (Graph.rewire(_model, newNode, jn.node, sol.dt)) {
+                    if (Graph.rewire(_model, newNode, jn.node, Math.abs(sol.dt))) {
                         // System.out.println("REWIRED");
                         _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
                     }
@@ -540,11 +539,16 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
     /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
-    public List<Node> getNodes() {
+    public List<Node> getNodesA() {
         List<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_a));
-        if (bidirectional)
-            allNodes.addAll(KDTree.values(_T_b));
+        return allNodes;
+    }
+
+    @Override
+    public List<Node> getNodesB() {
+        List<Node> allNodes = new ArrayList<Node>();
+        allNodes.addAll(KDTree.values(_T_b));
         return allNodes;
     }
 
@@ -610,7 +614,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         // now we have the forwards list of states
         Collections.reverse(configs);
 
-        return new Path(totalDistance, configs);
+        return new Path(totalDistance, configs,new LinkedList<double[]>());
     }
 
     @Override

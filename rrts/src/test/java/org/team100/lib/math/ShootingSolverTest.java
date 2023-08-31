@@ -244,69 +244,6 @@ public class ShootingSolverTest {
         }
     }
 
-    @Test
-    void testPossibleMotionlessStart() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
-
-        // double-integrator
-        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
-            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-        };
-        // motionless start makes the feasible region a line
-        Matrix<N2, N1> x1 = VecBuilder.fill(0, 0);
-        {
-            // end = start
-            Matrix<N2, N1> x2 = VecBuilder.fill(0, 0);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = minU
-            Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 1);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = maxU
-            Matrix<N2, N1> x2 = VecBuilder.fill(-0.5, -1);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = between start and maxU
-            Matrix<N2, N1> x2 = VecBuilder.fill(0.25, 0.5);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-    }
-
-    @Test
-    void testPossibleMovingStart() {
-        ShootingSolver<N2, N1> s = new ShootingSolver<>(VecBuilder.fill(1), 1, 10);
-
-        // double-integrator
-        BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (x, u) -> {
-            return VecBuilder.fill(x.get(1, 0), u.get(0, 0));
-        };
-        // motionless start makes the feasible region a line
-        Matrix<N2, N1> x1 = VecBuilder.fill(0, 1);
-        {
-            // end = start
-            Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = minU
-            Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 0);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = maxU
-            Matrix<N2, N1> x2 = VecBuilder.fill(1.5, 2);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-        {
-            // end = within the triangle
-            Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 1);
-            assertTrue(s.possible(Nat.N2(), Nat.N1(), f, x1, x2));
-        }
-    }
 
     @Test
     void testSolve2d() {
@@ -321,7 +258,7 @@ public class ShootingSolverTest {
             if (DEBUG)
                 System.out.println("==== end = start");
             Matrix<N2, N1> x2 = VecBuilder.fill(0, 1);
-            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2, true);
             assertNotNull(sol);
             // u is irrelevant
             assertEquals(0, sol.dt, DELTA);
@@ -333,7 +270,7 @@ public class ShootingSolverTest {
             if (DEBUG)
                 System.out.printf("GOAL: %s\n", goalX2);
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5, 0);
-            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2, true);
             assertNotNull(sol);
             assertEquals(-1, sol.u.get(0, 0), DELTA);
             assertEquals(1, sol.dt, DELTA);
@@ -342,7 +279,7 @@ public class ShootingSolverTest {
             if (DEBUG)
                 System.out.println("==== end = maxU");
             Matrix<N2, N1> x2 = VecBuilder.fill(1.5, 2);
-            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2, true);
             assertNotNull(sol);
             assertEquals(1, sol.u.get(0, 0), DELTA);
             assertEquals(1, sol.dt, DELTA);
@@ -351,7 +288,7 @@ public class ShootingSolverTest {
             if (DEBUG)
                 System.out.println("==== end = within the triangle (from above RK4 test)");
             Matrix<N2, N1> x2 = VecBuilder.fill(0.5625, 1.25);
-            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2, true);
             assertNotNull(sol);
             assertEquals(0.5, sol.u.get(0, 0), DELTA);
             assertEquals(0.5, sol.dt, DELTA);
@@ -360,7 +297,7 @@ public class ShootingSolverTest {
             if (DEBUG)
                 System.out.println("==== end = very infeasible");
             Matrix<N2, N1> x2 = VecBuilder.fill(-10, 10);
-            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2);
+            ShootingSolver<N2, N1>.Solution sol = s.solve(Nat.N2(), Nat.N1(), f, x1, x2, true);
             assertNull(sol);
         }
     }
@@ -410,9 +347,9 @@ public class ShootingSolverTest {
         ShootingSolver<N4, N2> s = new ShootingSolver<>(VecBuilder.fill(1, 1), 1, 30);
         // two double-integrators.
         BiFunction<Matrix<N4, N1>, Matrix<N2, N1>, Matrix<N4, N1>> f = (x, u) -> {
-            double x1 = x.get(0, 0);
+            // double x1 = x.get(0, 0);
             double x2 = x.get(1, 0);
-            double y1 = x.get(2, 0);
+            // double y1 = x.get(2, 0);
             double y2 = x.get(3, 0);
             double ux = u.get(0, 0);
             double uy = u.get(1, 0);
@@ -455,7 +392,7 @@ public class ShootingSolverTest {
         {
             Matrix<N4, N1> x1 = VecBuilder.fill(0, 1, 0, 0);
             Matrix<N4, N1> x2 = VecBuilder.fill(0, 1, 0, 0);
-            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2);
+            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2, true);
             assertNotNull(sol);
             // u is irrelevant
             assertEquals(0, sol.dt, DELTA);
@@ -465,7 +402,7 @@ public class ShootingSolverTest {
             Matrix<N4, N1> x2 = VecBuilder.fill(0.5, 1, 0, 0);
             if (DEBUG)
                 System.out.printf("===========\nTEST x1 %s x2 %s\n", Util.matStr(x1), Util.matStr(x2));
-            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2);
+            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2, true);
             assertNotNull(sol);
             assertArrayEquals(new double[] { 1, 0 }, sol.u.getData(), DELTA);
             assertEquals(1, sol.dt, DELTA);
@@ -473,7 +410,7 @@ public class ShootingSolverTest {
         {
             Matrix<N4, N1> x1 = VecBuilder.fill(0, 0, 0, 0);
             Matrix<N4, N1> x2 = VecBuilder.fill(0.5, 1, -0.5, -1);
-            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2);
+            ShootingSolver<N4, N2>.Solution sol = s.solve(Nat.N4(), Nat.N2(), f, x1, x2, true);
             assertNotNull(sol);
             assertArrayEquals(new double[] { 1, -1 }, sol.u.getData(), DELTA);
             assertEquals(1, sol.dt, DELTA);

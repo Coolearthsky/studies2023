@@ -26,10 +26,12 @@ public class TestBestPath {
         assertEquals(2400, steps, 1200); 
 
         int nodes = 0;
-        for (var n : rrtStar.getNodes()) {
+        for (var n : rrtStar.getNodesA()) {
             nodes++;
         }
-
+        for (var n : rrtStar.getNodesB()) {
+            nodes++;
+        }
         assertEquals(2400, nodes, 1200);
         Path bestPath = rrtStar.getBestPath();
         assertEquals(16.5, bestPath.getDistance(), 1.5);
@@ -46,7 +48,10 @@ public class TestBestPath {
         int steps = rrtStar.getStepNo();
         assertEquals(504, steps, 10);
         int nodes = 0;
-        for (var n : rrtStar.getNodes()) {
+        for (var n : rrtStar.getNodesA()) {
+            nodes++;
+        }
+        for (var n : rrtStar.getNodesB()) {
             nodes++;
         }
         assertEquals(500, nodes, 10);

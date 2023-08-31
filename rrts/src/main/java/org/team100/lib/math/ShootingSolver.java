@@ -44,8 +44,12 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
     public Solution solve(Nat<States> states, Nat<Inputs> inputs,
             BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
             Matrix<States, N1> x1,
-            Matrix<States, N1> x2) {
-        return solve(states, inputs, f, x1, x2, this.maxU.times(-1), this.maxU, 0, this.maxDt, 0);
+            Matrix<States, N1> x2,
+            boolean timeForward) {
+        if (timeForward)
+            return solve(states, inputs, f, x1, x2, this.maxU.times(-1), this.maxU, 0, this.maxDt, 0);
+        return solve(states, inputs, f, x1, x2, this.maxU.times(-1), this.maxU, -1.0 * this.maxDt, 0, 0);
+
         // if (!possible(states, inputs, f, x1, x2))
         // return null;
 
@@ -56,6 +60,7 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
         // return new Solution(u, dt);
     }
 
+    /** Note using a negative minDt is required for the backwards case. */
     public Solution solve(Nat<States> states, Nat<Inputs> inputs,
             BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
             Matrix<States, N1> x1,
@@ -184,45 +189,6 @@ public class ShootingSolver<States extends Num, Inputs extends Num> {
 
     public boolean near(Matrix<States, N1> x1, Matrix<States, N1> x2) {
         return x1.isIdentical(x2, TOLERANCE);
-    }
-
-    /**
-     * For the one-dimensional control case, return true if the target state is
-     * within the triangle swept by u and dt.
-     * 
-     * TODO: this is definitely wrong for higher dimensionality, it tests the
-     * surface
-     * from minimum U (in all dimensions) to maximum U (in all dimensions), i.e. a
-     * plane cutting through the hypervolume that we should really test.
-     * 
-     * The full range of u and dt values paints a surface that includes x1, minX2,
-     * and maxX2, like a wavy triangle. In the 2d case it's exactly a triangle and
-     * x2 is in the same plane, but i'd like this to work for 4d.
-     * 
-     * This function assumes the waviness is small relative to the tolerance, and
-     * checks "inside" via the angles to the vertices.
-     * 
-     * Note the triangle may be degenerate: imagine a motionless start, pushed
-     * by positive or negative u -- the min, start, and max will all be on the same
-     * line.
-     * 
-     * 
-     * @param x1 source state
-     * @param x2 target state
-     */
-    public boolean possible(Nat<States> states, Nat<Inputs> inputs,
-            BiFunction<Matrix<States, N1>, Matrix<Inputs, N1>, Matrix<States, N1>> f,
-            Matrix<States, N1> x1,
-            Matrix<States, N1> x2) {
-
-        double dt = maxDt;
-        Matrix<Inputs, N1> minU = this.maxU.times(-1);
-        Matrix<States, N1> minX2 = NumericalIntegration.rk4(f, x1, minU, dt);
-
-        Matrix<Inputs, N1> maxU = this.maxU;
-        Matrix<States, N1> maxX2 = NumericalIntegration.rk4(f, x1, maxU, dt);
-
-        return inside(x1, x2, minX2, maxX2);
     }
 
     /**

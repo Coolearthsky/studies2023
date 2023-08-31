@@ -15,7 +15,8 @@ public interface Solver {
     int step();
 
     /** Return the whole tree. */
-    Iterable<Node> getNodes();
+    Iterable<Node> getNodesA();
+    Iterable<Node> getNodesB();
 
     /** The best path so far, or null if no path spans the start and end states. */
     Path getBestPath();

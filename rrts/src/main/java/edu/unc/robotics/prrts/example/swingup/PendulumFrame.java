@@ -2,8 +2,6 @@ package edu.unc.robotics.prrts.example.swingup;
 
 import java.awt.BorderLayout;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -44,12 +42,6 @@ public class PendulumFrame extends JFrame {
         //rrtStar.runSamples(3000);
         Path bestPath = rrtStar.getBestPath();
         if (bestPath != null) {
-            List<double[]> states = bestPath.getStates();
-
-            if (!same(init, states.get(0))) {
-                Collections.reverse(states);
-                bestPath = new Path(bestPath.getDistance(), states);
-            }
             System.out.println(bestPath);
         }
         System.out.println("done");
