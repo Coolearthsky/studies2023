@@ -9,16 +9,20 @@ import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
 import edu.unc.robotics.prrts.example.swingup.Arena;
 
+/** this only works for 4d full state
+ * TODO: remove the whole "dimensions" idea and all these arrays, use type-safe wpi stuff
+ */
 public class FullStateHolonomicArena implements Arena {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;
-    private static final int DIMENSIONS = 2;
+    private static final int DIMENSIONS = 4;
 
-    private static final double[] _init = { 15.5, 6.75 };
-    private static final double[] _goal = { 1.93, 2.748 };
-    private static final double[] _min = { 0, 0 };
-    private static final double[] _max = { 16, 8 };
+    // init and goal are motionless
+    private static final double[] _init = { 15.5,0, 6.75,0 };
+    private static final double[] _goal = { 1.93,0, 2.748,0 };
+    private static final double[] _min = { 0, -6, 0, -6};
+    private static final double[] _max = { 16, 6, 8, 6};
 
     // used for steering
     // private final double _gamma;
@@ -103,15 +107,14 @@ public class FullStateHolonomicArena implements Arena {
 
     }
 
+    /** config is (x xdot y ydot)
+     * so we check x and y only
+     */
     @Override
     public boolean clear(double[] config) {
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
-            for (int j = 0; j < DIMENSIONS; j += 2) {
-                if (obstacle.distToPoint(config[j], config[j + 1]) < ROBOT_RADIUS) {
-                    return false;
-                }
-            }
+            if (obstacle.distToPoint(config[0], config[2]) < ROBOT_RADIUS) return false;
         }
         return true;
     }

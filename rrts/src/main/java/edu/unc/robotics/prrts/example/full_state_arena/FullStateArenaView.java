@@ -12,6 +12,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import javax.swing.JComponent;
@@ -25,7 +26,15 @@ import org.team100.lib.space.Path;
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.swingup.Arena;
 
+/**
+ * note this ignores model.dimensions since the plotted dimensions and model
+ * dimensions aren't the same.
+ * 
+ * TODO: make both x/y and xdot/ydot pics
+ */
 public class FullStateArenaView extends JComponent {
+    private static final boolean DEBUG = false;
+
     private final Runner _rrtStar;
     private final Arena _robotModel;
 
@@ -56,19 +65,24 @@ public class FullStateArenaView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
+        if (DEBUG)
+            System.out.println("doPaint");
         Arena robotModel = _robotModel;
         double[] min = robotModel.getMin();
         double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 
-        if (_backgroundImage == null ||
-                _backgroundImage.getWidth(null) != size.width ||
-                _backgroundImage.getHeight(null) != size.height ||
-                Path.isBetter(bestPath, _bestPath)) {
-            createBGImage(min, max, size, bestPath);
+        // if (_backgroundImage == null ||
+        // _backgroundImage.getWidth(null) != size.width ||
+        // _backgroundImage.getHeight(null) != size.height ||
+        // Path.isBetter(bestPath, _bestPath)) {
+        // createBGImage(min, max, size, bestPath);
+        // _bestPath = bestPath;
+        // }
+        if (Path.isBetter(bestPath, _bestPath))
             _bestPath = bestPath;
-        }
+        createBGImage(min, max, size, _bestPath);
 
         g.drawImage(_backgroundImage, 0, 0, null);
 
@@ -84,6 +98,7 @@ public class FullStateArenaView extends JComponent {
         g.drawString(count, 3, 3 + fm.getAscent());
     }
 
+    /** min and max are (x xdot y ydot) */
     private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
         _backgroundImage = createImage(size.width, size.height);
 
@@ -111,8 +126,9 @@ public class FullStateArenaView extends JComponent {
         g.dispose();
     }
 
-    private void renderRRTTree(Graphics2D g) {
-        int dim = _robotModel.dimensions();
+    public void renderRRTTree(Graphics2D g) {
+        if (DEBUG)
+            System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
 
         for (Node node : _rrtStar.getNodes()) {
@@ -121,11 +137,13 @@ public class FullStateArenaView extends JComponent {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();
                 double[] p = parent.getState();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(COLORS[i / 2]);
-                    line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
-                    g.draw(line);
-                }
+                if (DEBUG)
+                    System.out.printf("node %s parent %s\n"
+                            + Arrays.toString(n), Arrays.toString(p));
+                g.setColor(Color.BLACK);
+                line.setLine(n[0], n[2], p[0], p[2]);
+                g.draw(line);
+
             }
         }
     }
@@ -135,7 +153,6 @@ public class FullStateArenaView extends JComponent {
             return;
         }
 
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
@@ -144,35 +161,26 @@ public class FullStateArenaView extends JComponent {
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(brighter(COLORS[i / 2]));
-                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
-                    g.draw(line);
-                }
+                g.setColor(Color.RED);
+                line.setLine(prev[0], prev[2], curr[0], curr[2]);
+                g.draw(line);
                 prev = curr;
             }
         }
     }
 
+    /** min and max are (x xdot y ydot) */
     private double setupGraphics(double[] min, double[] max, Dimension size, Graphics2D g) {
         g.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g.translate(min[0], min[1]);
+        g.translate(min[0], min[2]);
         double scale = Math.min(
                 size.width / (max[0] - min[0]),
-                size.height / (max[1] - min[1]));
+                size.height / (max[2] - min[2]));
         g.scale(scale, scale);
-        g.setStroke(new BasicStroke((float) (0.5 / scale / _robotModel.dimensions())));
+        g.setStroke(new BasicStroke((float) (0.25 / scale)));
         return scale;
-    }
-
-    static Color brighter(Color color) {
-        float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
-        hsb[1] = Math.max(0.0f, hsb[1] - 0.25f);
-        hsb[2] = Math.min(1.0f, hsb[2] + 0.25f);
-        color = Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
-        return color;
     }
 }
