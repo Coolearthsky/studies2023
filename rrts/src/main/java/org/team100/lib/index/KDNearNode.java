@@ -8,4 +8,9 @@ public class KDNearNode<V> {
         _dist = dist;
         _nearest = nearest;
     }
+
+    @Override
+    public String toString() {
+        return "KDNearNode [_dist=" + _dist + ", _nearest=" + _nearest + "]";
+    }
 }

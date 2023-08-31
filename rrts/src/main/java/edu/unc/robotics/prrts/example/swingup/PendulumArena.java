@@ -1,9 +1,7 @@
 package edu.unc.robotics.prrts.example.swingup;
 
 import org.team100.lib.graph.Node;
-import org.team100.lib.index.KDModel;
 import org.team100.lib.index.KDNearNode;
-import org.team100.lib.planner.RobotModel;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.wpi.first.math.DARE;
@@ -38,7 +36,7 @@ import edu.wpi.first.math.system.Discretization;
  * https://github.com/MahanFathi/LQR-RRTstar
  * http://people.csail.mit.edu/tlp/pdf/2012/ICRA12_1657_FI.pdf
  */
-public class PendulumArena implements RobotModel, KDModel {
+public class PendulumArena implements Arena {
     /**
      * zeroth dimension is position (radians, down is zero).
      * first dimension is velocity (radians per second).

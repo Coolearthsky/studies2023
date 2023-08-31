@@ -91,4 +91,11 @@ public class LocalLink implements LinkInterface {
         return _source.getPathDist() + _linkDist;
         // return _pathDist;
     }
+
+    @Override
+    public String toString() {
+        return "LocalLink [_source=" + _source
+                + ", _target=" + _target
+                + ", _linkDist=" + _linkDist + "]";
+    }
 }

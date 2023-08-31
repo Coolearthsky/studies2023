@@ -3,14 +3,13 @@ package edu.unc.robotics.prrts.example.arena;
 import java.awt.Color;
 
 import org.team100.lib.graph.Node;
-import org.team100.lib.index.KDModel;
 import org.team100.lib.index.KDNearNode;
-import org.team100.lib.planner.RobotModel;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.geom.Polygon;
+import edu.unc.robotics.prrts.example.swingup.Arena;
 
-public class HolonomicArena implements RobotModel, KDModel {
+public class HolonomicArena implements Arena {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;

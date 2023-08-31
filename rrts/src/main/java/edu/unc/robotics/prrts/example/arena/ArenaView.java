@@ -23,10 +23,11 @@ import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
+import edu.unc.robotics.prrts.example.swingup.Arena;
 
 public class ArenaView extends JComponent {
     private final Runner _rrtStar;
-    private final HolonomicArena _robotModel;
+    private final Arena _robotModel;
 
     private static final Color[] COLORS = new Color[] {
             Color.BLACK, Color.BLUE, Color.MAGENTA, Color.GREEN
@@ -37,7 +38,7 @@ public class ArenaView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public ArenaView(HolonomicArena arena, Runner rrtStar) {
+    public ArenaView(Arena arena, Runner rrtStar) {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
@@ -55,7 +56,7 @@ public class ArenaView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
-        HolonomicArena robotModel = _robotModel;
+        Arena robotModel = _robotModel;
         double[] min = robotModel.getMin();
         double[] max = robotModel.getMax();
 

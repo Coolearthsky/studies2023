@@ -1,5 +1,6 @@
 package org.team100.lib.graph;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -45,10 +46,19 @@ public class Node implements Point {
         return outgoing.iterator();
     }
 
+    public int getOutgoingCount() {
+        return outgoing.size();
+    }
+
     /** The path distance of the incoming link, if any. */
     public double getPathDist() {
         if (incoming == null)
             return 0;
         return incoming.get_pathDist();
+    }
+
+    @Override
+    public String toString() {
+        return "Node [state=" + Arrays.toString(state) + "]";
     }
 }

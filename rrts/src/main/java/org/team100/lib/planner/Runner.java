@@ -49,7 +49,11 @@ public class Runner {
 
     private void run(int sampleLimit, long timeLimitNS) {
         long startTime = System.nanoTime();
+        int actualLimit = 0;
         while (true) {
+           // System.out.println(actualLimit);
+            actualLimit += 1;
+            if (actualLimit > 10000) break;
             _solver.setStepNo(_stepNo);
             if (_solver.step() > 0) {
                 _stepNo++;

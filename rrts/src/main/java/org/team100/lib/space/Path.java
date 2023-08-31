@@ -108,6 +108,13 @@ public class Path implements Comparable<Path> {
 
     @Override
     public String toString() {
-        return "Path [_dist=" + String.format("%8.5f", distance) + ", _configs=" + states + "]";
+        String result="";
+        result += "Path [_dist=" + String.format("%8.5f", distance);
+        result += " states=[";
+        for (double[] d : states) {
+            result += Arrays.toString(d);
+        } 
+        result += "]]";
+    return result;
     }
 }

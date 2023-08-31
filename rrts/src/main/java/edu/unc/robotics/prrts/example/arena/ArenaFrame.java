@@ -49,13 +49,14 @@ public class ArenaFrame extends JFrame {
 
             // final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new
             // Sample(arena), 6);
-            final Solver rrtstar4 = new RRTStar4<>(arena, new Sample(arena), 6);
+            final RRTStar4<HolonomicArena> rrtstar4 = new RRTStar4<>(arena, new Sample(arena), 6);
             final Runner runner2 = new Runner(rrtstar4);
             Graph.linkTypeCaching = true;
             run(arena, runner2, rrtstar4);
 
             System.out.printf("2 steps %d distance %5.2f\n",
                     runner2.getStepNo(), runner2.getBestPath().getDistance());
+            System.out.printf("full distance %5.2f\n", rrtstar4.getFullBestPath().getDistance());
             System.out.printf("1 steps %d distance %5.2f --- 2 steps %d distance %5.2f\n",
                     runner.getStepNo(), runner.getBestPath().getDistance(),
                     runner2.getStepNo(), runner2.getBestPath().getDistance());
@@ -82,7 +83,7 @@ public class ArenaFrame extends JFrame {
             }
         });
 
-        runner.runForDurationMS(10);
+        runner.runForDurationMS(20);
         // runner.runSamples(500);
 
     }
