@@ -14,12 +14,15 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.Node;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.KDTree;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
 
@@ -43,9 +46,14 @@ public class FullStateArenaView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public FullStateArenaView(Arena arena, Runner rrtStar) {
+    private KDNode<Node> _T_a;
+    private KDNode<Node> _T_b;
+
+    public FullStateArenaView(Arena arena, Runner rrtStar, KDNode<Node> T_a,  KDNode<Node> T_b) {
         _rrtStar = rrtStar;
         _robotModel = arena;
+        _T_a = T_a;
+        _T_b = T_b;
     }
 
     @Override
@@ -122,12 +130,17 @@ public class FullStateArenaView extends JComponent {
         g.dispose();
     }
 
+    private static final boolean renderTree = true;
+
     public void renderRRTTree(Graphics2D g) {
+        if (!renderTree)
+            return;
         if (DEBUG)
             System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
 
-        for (Node node : _rrtStar.getNodesA()) {
+        // List<Node> nodesA = _rrtStar.getNodesA();
+        for (Node node : KDTree.values( _T_a)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
@@ -141,7 +154,8 @@ public class FullStateArenaView extends JComponent {
                 g.draw(line);
             }
         }
-        for (Node node : _rrtStar.getNodesB()) {
+        // List<Node> nodesB = _rrtStar.getNodesB();
+        for (Node node : KDTree.values(_T_b)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
@@ -165,8 +179,9 @@ public class FullStateArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        if (path.getStatesA().size() > 1) {
-            Iterator<double[]> pathIter = path.getStatesA().iterator();
+        List<double[]> statesA = path.getStatesA();
+        if (statesA.size() > 1) {
+            Iterator<double[]> pathIter = statesA.iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
@@ -176,8 +191,9 @@ public class FullStateArenaView extends JComponent {
                 prev = curr;
             }
         }
-        if (path.getStatesB().size() > 1) {
-            Iterator<double[]> pathIter = path.getStatesB().iterator();
+        List<double[]> statesB = path.getStatesB();
+        if (statesB.size() > 1) {
+            Iterator<double[]> pathIter = statesB.iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
@@ -187,6 +203,19 @@ public class FullStateArenaView extends JComponent {
                 prev = curr;
             }
         }
+
+        double[] nA = statesA.get(statesA.size() -  1);
+        double[] nB = statesB.get(0);
+        if (nA != null && nB != null) {
+           // System.out.printf("LINK [%5.3f %5.3f] to [%5.3f %5.3f]\n",
+            //        nA[0], nA[2], nB[0], nB[2]);
+            g.setColor(Color.BLACK);
+            line.setLine(nA[0], nA[2], nB[0], nB[2]);
+            g.draw(line);
+        } else {
+            System.out.println("NULLS");
+        }
+
     }
 
     /** min and max are (x xdot y ydot) */

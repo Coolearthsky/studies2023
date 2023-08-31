@@ -6,6 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import org.team100.lib.graph.Node;
+import org.team100.lib.index.KDNode;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.rrt.RRTStar6;
@@ -24,10 +26,12 @@ public class FullStateArenaFrame extends JFrame {
         // double[] init = new double[] { 0, 0 };
         // double[] goal = new double[] { Math.PI, 0 };
 
-        final FullStateHolonomicArena arena = new FullStateHolonomicArena(6);
-        final Solver solver = new RRTStar6<>(arena, new Sample(arena), 6);
+        final FullStateHolonomicArena arena = new FullStateHolonomicArena();
+        KDNode<Node> T_a = new KDNode<Node>(new Node(arena.initial()));
+        KDNode<Node> T_b = new KDNode<Node>(new Node(arena.goal()));
+        final Solver solver = new RRTStar6<>(arena, new Sample(arena), 3, T_a, T_b);
         final Runner runner = new Runner(solver);
-        final FullStateArenaView view = new FullStateArenaView(arena, runner);
+        final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
         final FullStateArenaFrame frame = new FullStateArenaFrame(view);
 
         SwingUtilities.invokeAndWait(new Runnable() {
@@ -39,8 +43,8 @@ public class FullStateArenaFrame extends JFrame {
             }
         });
 
-        // runner.runForDurationMS(20000);
-        runner.runSamples(4000);
+        runner.runForDurationMS(5000);
+        //runner.runSamples(5000);
 
         Path bestPath = runner.getBestPath();
         if (bestPath == null) {

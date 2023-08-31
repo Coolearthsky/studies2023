@@ -173,12 +173,12 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
     }
 
     @Override
-    public Iterable<Node> getNodesA() {
+    public List<Node> getNodesA() {
         return KDTree.values(_rootNode);
     }
 
     @Override
-    public Iterable<Node> getNodesB() {
+    public List<Node> getNodesB() {
         return new ArrayList<Node>();
     }
 

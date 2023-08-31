@@ -50,7 +50,7 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
     /**
      * probability of branching
      */
-    private static final double BUSHINESS = 0.25;
+    private static final double BUSHINESS = 0.2;
     private final T _model;
     /** Initially, tree grown from initial, but is swapped repeatedly */
     private KDNode<Node> _T_a;
@@ -60,7 +60,7 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
     private final double _gamma;
     /** Lowest cost leaf leading to initial state. */
     // TODO: remove this
-    private LinkInterface _bestLeaf_a;
+    // private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
     int stepNo;
@@ -71,27 +71,29 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
 
     boolean bidirectional = true;
 
-    Random random = new MersenneTwister(0);
+    Random random = new MersenneTwister(new Random().nextInt());
     private static final double MAX_U = 2.5;
-    private static final double DT = 0.5;
+    private static final double DT = 0.6;
     private static final int MAX_CHILDREN = 1;
-    private static final double BUFFER = 0.25;
+    private static final double BUFFER = 0.4;
 
     double[] min;
     double[] max;
 
     ShootingSolver<N4, N2> solver = new ShootingSolver<>(VecBuilder.fill(MAX_U, MAX_U), DT, 20);
 
-    public RRTStar6(T model, Sample sample, double gamma) {
+    public RRTStar6(T model, Sample sample, double gamma,   KDNode<Node> T_a,  KDNode<Node> T_b) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _T_a = new KDNode<Node>(new Node(model.initial()));
-        _T_b = new KDNode<Node>(new Node(model.goal()));
+        // _T_a = new KDNode<Node>(new Node(model.initial()));
+        // _T_b = new KDNode<Node>(new Node(model.goal()));
+        _T_a = T_a;
+        _T_b = T_b;
         // _sample = sample;
         _gamma = gamma;
-        _bestLeaf_a = null;
+        // _bestLeaf_a = null;
         min = _model.getMin();
         max = _model.getMax();
     }
@@ -197,7 +199,7 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
                     ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
                     if (sol != null) {
                         // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
-                        if (DEBUG)
+                       // if (DEBUG)
                             System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
                                     Util.matStr(x1), Util.matStr(x2), sol);
                         // TODO: do something with the solution u value
@@ -206,7 +208,7 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
                         // LocalLink link = new LocalLink(newNode, nearNode.node, sol.dt);
                         Node newNewNode = InsertNode(newInA, _T_a);
                         connections.put(newNode, nearNode.node);
-                        // Rewire(X_near, newNode);
+                        Rewire(X_near, newNewNode, timeForward);
                         // return GeneratePath(x_1, newNode);
                         // create a path that traverses the new link.
                         Path p = GeneratePath(newNewNode, nearNode.node);
@@ -543,8 +545,8 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
      * single
      * nearest node if there are no other near nodes.
      */
-    List<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
-        List<NearNode> nearNodes = new ArrayList<>();
+    ArrayList<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
+        ArrayList<NearNode> nearNodes = new ArrayList<>();
         KDTree.near(_model, rootNode, x_new, radius, (node, dist) -> {
             nearNodes.add(new NearNode(node, dist));
         });
@@ -575,7 +577,7 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
         // link.get_target().getState()[0], link.get_target().getState()[1],
         // link.get_linkDist());
         LinkInterface newLink = Graph.newLink(link.get_source(), link.get_target(), link.get_linkDist());
-        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
+        // _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
         KDTree.insert(_model, rootNode, link.get_target());
         return link.get_target();
     }
@@ -585,6 +587,8 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
      * newNode.
      */
     void Rewire(List<NearNode> X_near, Node newNode, boolean timeForward) {
+        if (DEBUG)
+            System.out.printf("Rewire candidates %d\n", X_near.size());
         ListIterator<NearNode> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
             NearNode jn = li.previous();
@@ -599,11 +603,20 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
                         jn.node.getState()[1],
                         jn.node.getState()[2],
                         jn.node.getState()[3]);
+                // shortcut the inevitable duplicate
+                if (x1.isEqual(x2, 0.01))
+                    continue;
+                if (DEBUG)
+                    System.out.printf("Try rewiring %s to %s\n", Util.matStr(x1), Util.matStr(x2));
                 ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
-                if (sol != null) {
+                if (sol == null) {
+                    if (DEBUG)
+                        System.out.println("no solution");
+                } else {
                     if (Graph.rewire(_model, newNode, jn.node, Math.abs(sol.dt))) {
-                        // System.out.println("REWIRED");
-                        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
+                        if (DEBUG)
+                            System.out.println("REWIRED");
+                        // _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
                     }
 
                 }
@@ -614,14 +627,14 @@ public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
     /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
     public List<Node> getNodesA() {
-        List<Node> allNodes = new ArrayList<Node>();
+        ArrayList<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_a));
         return allNodes;
     }
 
     @Override
     public List<Node> getNodesB() {
-        List<Node> allNodes = new ArrayList<Node>();
+        ArrayList<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_b));
         return allNodes;
     }

@@ -1,5 +1,7 @@
 package org.team100.lib.planner;
 
+import java.util.List;
+
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
 
@@ -15,8 +17,8 @@ public interface Solver {
     int step();
 
     /** Return the whole tree. */
-    Iterable<Node> getNodesA();
-    Iterable<Node> getNodesB();
+    List<Node> getNodesA();
+    List<Node> getNodesB();
 
     /** The best path so far, or null if no path spans the start and end states. */
     Path getBestPath();

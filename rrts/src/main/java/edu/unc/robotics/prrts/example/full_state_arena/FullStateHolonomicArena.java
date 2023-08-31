@@ -50,7 +50,7 @@ public class FullStateHolonomicArena implements Arena {
             new Polygon(Color.BLUE, 11.63, 1.51, 13.56, 1.51, 13.56, 3.98, 11.63, 3.98)
     };
 
-    public FullStateHolonomicArena(double gamma) {
+    public FullStateHolonomicArena() {
         // _gamma = gamma;
     }
 

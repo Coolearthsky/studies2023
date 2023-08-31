@@ -1,5 +1,7 @@
 package org.team100.lib.planner;
 
+import java.util.List;
+
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
 
@@ -38,12 +40,12 @@ public class Runner {
     }
 
     /** For listeners. */
-    public Iterable<Node> getNodesA() {
+    public List<Node> getNodesA() {
         return _solver.getNodesA();
     }
 
     /** For listeners. */
-    public Iterable<Node> getNodesB() {
+    public List<Node> getNodesB() {
         return _solver.getNodesB();
     }
 
