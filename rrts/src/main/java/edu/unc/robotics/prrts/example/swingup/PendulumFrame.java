@@ -28,7 +28,7 @@ public class PendulumFrame extends JFrame {
         double[] goal = new double[] { Math.PI, 0 };
         double gravity = 9.81;
         final Arena arena = new PendulumArena2(init, goal, gravity);
-        final RRTStar5<Arena> worker = new RRTStar5<>(arena, new Sample(arena), 2);
+        final RRTStar5<Arena> worker = new RRTStar5<>(arena, new Sample(arena), 1);
         final Runner rrtStar = new Runner(worker);
 
         SwingUtilities.invokeAndWait(new Runnable() {
