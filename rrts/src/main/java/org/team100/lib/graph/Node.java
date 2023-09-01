@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.team100.lib.space.Point;
 
+/** TODO: add u value */
 public class Node implements Point {
     private final double[] state;
 

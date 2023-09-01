@@ -1,11 +1,5 @@
 package org.team100.lib.graph;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.team100.lib.space.Path;
-
 /**
  * This link type keeps a consistent "path distance" and must be
  * updated by the rewiring process to keep it consistent.
@@ -46,21 +40,21 @@ public class PathDistanceCachingLink implements LinkInterface {
         _source = source;
     }
 
-    @Override
-    public Path path() {
-        Node node = get_target();
-        List<double[]> configs = new LinkedList<double[]>();
-        double pathDist = get_pathDist();
-        while (true) {
-            configs.add(node.getState());
-            LinkInterface incoming = node.getIncoming();
-            if (incoming == null)
-                break;
-            node = incoming.get_source();
-        }
-        Collections.reverse(configs);
-        return new Path(pathDist, configs);
-    }
+    // @Override
+    // public Path path() {
+    //     Node node = get_target();
+    //     List<double[]> configs = new LinkedList<double[]>();
+    //     double pathDist = get_pathDist();
+    //     while (true) {
+    //         configs.add(node.getState());
+    //         LinkInterface incoming = node.getIncoming();
+    //         if (incoming == null)
+    //             break;
+    //         node = incoming.get_source();
+    //     }
+    //     Collections.reverse(configs);
+    //     return new Path(pathDist, configs);
+    // }
 
     @Override
     public Node get_source() {

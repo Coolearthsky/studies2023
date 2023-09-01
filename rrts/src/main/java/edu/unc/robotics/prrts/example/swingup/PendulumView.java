@@ -29,9 +29,8 @@ public class PendulumView extends JComponent {
     private final Arena _robotModel;
     private int framecounter;
 
-
     private Image _backgroundImage;
-    //private Path _bestPath = null;
+    // private Path _bestPath = null;
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
@@ -120,13 +119,24 @@ public class PendulumView extends JComponent {
     private void renderRRTTree(Graphics2D g) {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) 0.01));
-        for (Node node : _rrtStar.getNodes()) {
+        for (Node node : _rrtStar.getNodesA()) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();
                 double[] p = parent.getState();
-                g.setColor(Color.DARK_GRAY);
+                g.setColor(Color.GREEN);
+                line.setLine(n[0], n[1], p[0], p[1]);
+                g.draw(line);
+            }
+        }
+        for (Node node : _rrtStar.getNodesB()) {
+            LinkInterface incoming = node.getIncoming();
+            if (incoming != null) {
+                Node parent = incoming.get_source();
+                double[] n = node.getState();
+                double[] p = parent.getState();
+                g.setColor(Color.RED);
                 line.setLine(n[0], n[1], p[0], p[1]);
                 g.draw(line);
             }
@@ -141,16 +151,25 @@ public class PendulumView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) 0.1));
 
-        if (path.getStates().size() > 1) {
-            Iterator<double[]> pathIter = path.getStates().iterator();
+        if (path.getStatesA().size() > 1) {
+            Iterator<double[]> pathIter = path.getStatesA().iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
-          
-                    g.setColor(brighter(Color.RED));
-                    line.setLine(prev[0], prev[1], curr[0], curr[1]);
-                    g.draw(line);
-                
+                g.setColor(brighter(Color.GREEN));
+                line.setLine(prev[0], prev[1], curr[0], curr[1]);
+                g.draw(line);
+                prev = curr;
+            }
+        }
+        if (path.getStatesB().size() > 1) {
+            Iterator<double[]> pathIter = path.getStatesB().iterator();
+            double[] prev = pathIter.next();
+            while (pathIter.hasNext()) {
+                double[] curr = pathIter.next();
+                g.setColor(brighter(Color.RED));
+                line.setLine(prev[0], prev[1], curr[0], curr[1]);
+                g.draw(line);
                 prev = curr;
             }
         }

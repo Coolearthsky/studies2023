@@ -26,31 +26,31 @@ import org.team100.lib.index.KDTree;
 import org.team100.lib.math.ShootingSolver;
 import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
+import org.team100.lib.random.MersenneTwister;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.util.Util;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
+import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
 
 /**
- * RRT* version 5.
+ * RRT* version 6
  * 
- * For the non-Euclidean spaces, state sampling doesn't seem to work
- * very well; there's no good way to find "nearby" states, and the
- * admissible fraction is tiny, especially with a weak control.
- * 
- * So instead, sample control space and apply to a random node.
- * 
- * maybe try
+ * This is the full-state field, so 4d altogether.
  */
-public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
+public class RRTStar6<T extends KDModel & RobotModel> implements Solver {
+    private static final boolean DEBUG = false;
+
     /**
      * probability of branching
      */
-    private static final double BUSHINESS = 0.001;
+    private static final double BUSHINESS = 0.2;
     private final T _model;
     /** Initially, tree grown from initial, but is swapped repeatedly */
     private KDNode<Node> _T_a;
@@ -60,7 +60,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     private final double _gamma;
     /** Lowest cost leaf leading to initial state. */
     // TODO: remove this
-    private LinkInterface _bestLeaf_a;
+    // private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
     int stepNo;
@@ -71,45 +71,50 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
     boolean bidirectional = true;
 
-    Random random = new Random();
+    Random random = new MersenneTwister(new Random().nextInt());
     private static final double MAX_U = 2.5;
-    // private static final double MIN_DT = 0.01;
-    // private static final double MAX_DT = 0.25;
-    private static final double DT = 0.1;
-    private static final double l = 1; // length meter
-    private static final double _g = 9.81; // gravity m/s/s
+    private static final double DT = 0.6;
     private static final int MAX_CHILDREN = 1;
-    private static final double BUFFER = 0.025;
+    private static final double BUFFER = 0.4;
 
     double[] min;
     double[] max;
 
-    ShootingSolver<N2, N1> solver = new ShootingSolver<>(VecBuilder.fill(MAX_U), DT, 20);
+    ShootingSolver<N4, N2> solver = new ShootingSolver<>(VecBuilder.fill(MAX_U, MAX_U), DT, 20);
 
-    public RRTStar5(T model, Sample sample, double gamma) {
+    public RRTStar6(T model, Sample sample, double gamma,   KDNode<Node> T_a,  KDNode<Node> T_b) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _T_a = new KDNode<Node>(new Node(model.initial()));
-        _T_b = new KDNode<Node>(new Node(model.goal()));
+        // _T_a = new KDNode<Node>(new Node(model.initial()));
+        // _T_b = new KDNode<Node>(new Node(model.goal()));
+        _T_a = T_a;
+        _T_b = T_b;
         // _sample = sample;
         _gamma = gamma;
-        _bestLeaf_a = null;
+        // _bestLeaf_a = null;
         min = _model.getMin();
         max = _model.getMax();
     }
 
-    // accurate integration is absolutely required here,
-    // otherwise the dynamics are wrong
-    BiFunction<Matrix<N2, N1>, Matrix<N1, N1>, Matrix<N2, N1>> f = (xx, uu) -> {
-        double xx1 = xx.get(0, 0);
-        double xx2 = xx.get(1, 0);
-        double xx1dot = xx2;
-        double xx2dot = -1 * _g * Math.sin(xx1) / l + uu.get(0, 0);
-        Matrix<N2, N1> result = new Matrix<>(Nat.N2(), Nat.N1());
-        result.set(0, 0, xx1dot);
-        result.set(1, 0, xx2dot);
+    // The top level is just a 2d double-integrator.
+    BiFunction<Matrix<N4, N1>, Matrix<N2, N1>, Matrix<N4, N1>> f = (x, u) -> {
+        // double x1 = x.get(0, 0);
+        double x2 = x.get(1, 0);
+        // double y1 = x.get(2, 0);
+        double y2 = x.get(3, 0);
+        double ux = u.get(0, 0);
+        double uy = u.get(1, 0);
+        double x1dot = x2;
+        double x2dot = ux;
+        double y1dot = y2;
+        double y2dot = uy;
+        Matrix<N4, N1> result = new Matrix<>(Nat.N4(), Nat.N1());
+        result.set(0, 0, x1dot);
+        result.set(1, 0, x2dot);
+        result.set(2, 0, y1dot);
+        result.set(3, 0, y2dot);
         return result;
     };
 
@@ -122,14 +127,18 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      */
     @Override
     public int step() {
-        // System.out.println("step");
+        if (DEBUG)
+            System.out.println("step");
         int edges = 0;
 
         // the sample is now control-sampled, guaranteed feasible.
-        boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
+
         // double[] x_rand = SampleFree();
+        boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
+
         LocalLink randLink = SampleFree(timeForward);
-        // System.out.println("randLink: " + randLink);
+        if (DEBUG)
+            System.out.println("randLink: " + randLink);
 
         // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
         // KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
@@ -160,7 +169,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
             // new node in "this" tree
             Node newNode = InsertNode(randLink, _T_a);
-            // System.out.println(newNode);
+            if (DEBUG)
+                System.out.println("NEW NODE " + newNode);
             List<NearNode> X_nearA = Near(newNode.getState(), _T_a);
             Rewire(X_nearA, newNode, timeForward);
 
@@ -174,22 +184,31 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
                 // near nodes in the other tree:
                 List<NearNode> X_near = Near(newNode.getState(), _T_b);
-                Matrix<N2, N1> x1 = VecBuilder.fill(newNode.getState()[0], newNode.getState()[1]);
+                Matrix<N4, N1> x1 = VecBuilder.fill(
+                        newNode.getState()[0],
+                        newNode.getState()[1],
+                        newNode.getState()[2],
+                        newNode.getState()[3]);
                 for (NearNode nearNode : X_near) {
                     // one near node in the other tree
-                    Matrix<N2, N1> x2 = VecBuilder.fill(nearNode.node.getState()[0], nearNode.node.getState()[1]);
-                    ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2, timeForward);
+                    Matrix<N4, N1> x2 = VecBuilder.fill(
+                            nearNode.node.getState()[0],
+                            nearNode.node.getState()[1],
+                            nearNode.node.getState()[2],
+                            nearNode.node.getState()[3]);
+                    ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
                     if (sol != null) {
                         // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
-                        // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
-                        // Util.matStr(x1), Util.matStr(x2), sol);
+                       // if (DEBUG)
+                            System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
+                                    Util.matStr(x1), Util.matStr(x2), sol);
                         // TODO: do something with the solution u value
                         // add a node in a corresponding to the near node in b
-                        LocalLink newInA = new LocalLink(newNode, new Node(nearNode.node.getState()), sol.dt);
+                        LocalLink newInA = new LocalLink(newNode, new Node(nearNode.node.getState()), Math.abs(sol.dt));
                         // LocalLink link = new LocalLink(newNode, nearNode.node, sol.dt);
                         Node newNewNode = InsertNode(newInA, _T_a);
                         connections.put(newNode, nearNode.node);
-                        // Rewire(X_near, newNode);
+                        Rewire(X_near, newNewNode, timeForward);
                         // return GeneratePath(x_1, newNode);
                         // create a path that traverses the new link.
                         Path p = GeneratePath(newNewNode, nearNode.node);
@@ -203,6 +222,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                             }
                         }
                         // don't need more than one feasible link
+                        // throw new RuntimeException("pause");
                         break;
                     }
                 }
@@ -302,8 +322,10 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      */
     LocalLink SampleFree(boolean timeForward) {
         // run backwards if the tree root is the goal
-
+        if (DEBUG)
+            System.out.println("SampleFree");
         while (true) {
+            // if (DEBUG)
             // System.out.println("sample");
             // applied to a random point in the tree
             // List<Node> nodes = getNodes();
@@ -314,38 +336,28 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // persuade the tree to be longer
             if (node_rand.getOutgoingCount() >= MAX_CHILDREN) {
                 // maybe add anyway?
-                if (random.nextDouble() > BUSHINESS)
+                if (random.nextDouble() > BUSHINESS) {
+                    // if (DEBUG)
+                    // System.out.println("skip node with too many children");
                     continue;
+                }
             }
 
             double x_nearest1 = node_rand.getState()[0];
             double x_nearest2 = node_rand.getState()[1];
+            double x_nearest3 = node_rand.getState()[2];
+            double x_nearest4 = node_rand.getState()[3];
 
-            // double x1dot = x_nearest2;
-            // random control
-            // TODO: shape the sampling to look more "bang bang" like.
-            // double u = MIN_U + (MAX_U - MIN_U) * random.nextDouble();
-            double u = MAX_U + random.nextGaussian(0, MAX_U / 10);
-            if (u > MAX_U)
-                u = -2.0 * MAX_U + u;
-            u = Math.max(-1.0 * MAX_U, u);
-            u = Math.min(MAX_U, u);
-            // System.out.println("U " + u);
-            // double u = 0;
-            // double x2dot = -1 * _g * Math.sin(x_nearest1) / l + u;
-            double dt = DT;
-            if (!timeForward)
-                dt *= -1.0;
-
-            double x_new1;
-            double x_new2;
-
-            Matrix<N2, N1> xxx = new Matrix<>(Nat.N2(), Nat.N1());
+            Matrix<N4, N1> xxx = new Matrix<>(Nat.N4(), Nat.N1());
             xxx.set(0, 0, x_nearest1);
             xxx.set(1, 0, x_nearest2);
-            Matrix<N1, N1> uuu = new Matrix<>(Nat.N1(), Nat.N1());
-            uuu.set(0, 0, u);
-            Matrix<N2, N1> newxxx = NumericalIntegration.rk4(f, xxx, uuu, dt);
+            xxx.set(2, 0, x_nearest3);
+            xxx.set(3, 0, x_nearest4);
+
+            Matrix<N2, N1> uuu = new Matrix<>(Nat.N2(), Nat.N1());
+            double[] u_rand = u_rand();
+            uuu.set(0, 0, u_rand[0]);
+            uuu.set(1, 0, u_rand[1]);
 
             // if (timeForward) {
             // x_new1 = x_nearest1 + x1dot * dt + 0.5 * x2dot * dt * dt;
@@ -354,15 +366,31 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // x_new1 = x_nearest1 - x1dot * dt - 0.5 * x2dot * dt * dt;
             // x_new2 = x_nearest2 - x2dot * dt;
             // }
-            x_new1 = newxxx.get(0, 0);
-            x_new2 = newxxx.get(1, 0);
+
+            double dt = DT * random.nextDouble();
+            // maybe integrate backwards :-)
+            if (!timeForward)
+                dt *= -1.0;
+            Matrix<N4, N1> newxxx = NumericalIntegration.rk4(f, xxx, uuu, dt);
+            double x_new1 = newxxx.get(0, 0);
+            double x_new2 = newxxx.get(1, 0);
+            double x_new3 = newxxx.get(2, 0);
+            double x_new4 = newxxx.get(3, 0);
+
+            if (DEBUG)
+                System.out.printf("integrated to get %s\n", Util.matStr(newxxx));
 
             // reject samples off the edge of the world
             // TODO: this is actually a cylindrical space, so make it so
-            if (x_new1 < min[0] || x_new1 > max[0] || x_new2 < min[1] || x_new2 > max[1]) {
-                // System.out.printf(
-                // "reject out of bounds [%5.3f %5.3f] u %5.3f\n",
-                // x_new1, x_new2, u);
+            if (x_new1 < min[0] || x_new1 > max[0]
+                    || x_new2 < min[1] || x_new2 > max[1]
+                    || x_new3 < min[2] || x_new3 > max[2]
+                    || x_new4 < min[3] || x_new4 > max[3]
+
+            ) {
+                if (DEBUG)
+                    System.out.printf("reject out of bounds %s u %s\n",
+                            Util.matStr(newxxx), Util.matStr(uuu));
                 continue;
             }
 
@@ -370,9 +398,14 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
             // %5.3f] dt %5.3f u %5.3f\n",
             // x_nearest1, x_nearest2, x_new1, x_new2, x1dot, x2dot, DT, u);
 
-            double[] newConfig = new double[] { x_new1, x_new2 };
+            double[] newConfig = new double[] { x_new1, x_new2, x_new3, x_new4 };
 
-            double[] dx_new = new double[] { x_new1 - x_nearest1, x_new2 - x_nearest2 };
+            double[] dx_new = new double[] {
+                    x_new1 - x_nearest1,
+                    x_new2 - x_nearest2,
+                    x_new3 - x_nearest3,
+                    x_new4 - x_nearest4
+            };
             if (node_rand.getIncoming() != null) {
                 // continue in the same direction as the incoming,
                 // to avoid clumping
@@ -381,18 +414,24 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                 LinkInterface incoming = node_rand.getIncoming();
                 double[] incoming_dx_new = new double[] {
                         incoming.get_target().getState()[0] - incoming.get_source().getState()[0],
-                        incoming.get_target().getState()[1] - incoming.get_source().getState()[1]
+                        incoming.get_target().getState()[1] - incoming.get_source().getState()[1],
+                        incoming.get_target().getState()[2] - incoming.get_source().getState()[2],
+                        incoming.get_target().getState()[3] - incoming.get_source().getState()[3]
+
                 };
                 double dot = incoming_dx_new[0] * dx_new[0]
-                        + incoming_dx_new[1] * dx_new[1];
+                        + incoming_dx_new[1] * dx_new[1]
+                        + incoming_dx_new[2] * dx_new[2]
+                        + incoming_dx_new[3] * dx_new[3];
                 if (dot < 0) {
-                    // System.out.printf(
-                    // "reject dot parent [%5.3f %5.3f] node [%5.3f %5.3f] to [%5.3f %5.3f] u %5.3f
-                    // dot %5.3f\n",
-                    // incoming.get_source().getState()[0], incoming.get_source().getState()[1],
-                    // x_nearest1, x_nearest2,
-                    // x_new1, x_new2,
-                    // u, dot);
+                    if (DEBUG)
+                        System.out.printf(
+                                "reject dot parent [%5.3f %5.3f %5.3f %5.3f] node %s to %s u %s dot %5.3f\n",
+                                incoming.get_source().getState()[0], incoming.get_source().getState()[1],
+                                incoming.get_source().getState()[2], incoming.get_source().getState()[3],
+                                Util.matStr(xxx),
+                                Util.matStr(newxxx),
+                                Util.matStr(uuu), dot);
                     continue;
                 }
 
@@ -402,17 +441,19 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                 // size is larger than the buffer size
                 KDNearNode<Node> n = KDTree.nearest(_model, _T_a, newConfig);
                 if (n != null) {
-
+                    // look only at spatial dimensions; it's ok for there to be lots of
+                    // points at the same velocity.
                     double newDist = Math.sqrt(Math.pow(x_new1 - n._nearest.getState()[0], 2) +
-                            Math.pow(x_new2 - n._nearest.getState()[1], 2));
+                            Math.pow(x_new3 - n._nearest.getState()[2], 2));
                     if (newDist < BUFFER) {
-                        // System.out.printf(
-                        // "reject conflict from [%5.3f %5.3f] to [%5.3f %5.3f] old [%5.3f %5.3f] d
-                        // %5.3f\n",
-                        // x_nearest1, x_nearest2,
-                        // x_new1, x_new2,
-                        // n._nearest.getState()[0], n._nearest.getState()[1],
-                        // newDist);
+                        if (DEBUG)
+                            System.out.printf(
+                                    "reject conflict from %s to %s old [%5.3f %5.3f %5.3f %5.3f] d %5.3f\n",
+                                    Util.matStr(xxx),
+                                    Util.matStr(newxxx),
+                                    n._nearest.getState()[0], n._nearest.getState()[1],
+                                    n._nearest.getState()[2], n._nearest.getState()[3],
+                                    newDist);
                         continue;
                     }
                 }
@@ -421,13 +462,41 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
 
             // double[] newConfig = _sample.get();
             if (_model.clear(newConfig)) {
-                // System.out.printf(
-                // "found new [%5.3f %5.3f] u %5.3f dt %5.3f\n",
-                // x_new1, x_new2, u, dt);
-                return new LocalLink(node_rand, new Node(newConfig), DT);
+                if (DEBUG)
+                    System.out.printf(
+                            "found new %s u %s dt %5.3f\n",
+                            Util.matStr(newxxx), Util.matStr(uuu), dt);
+                // note abs() due to (sometimes) time reversal
+                return new LocalLink(node_rand, new Node(newConfig), Math.abs(dt));
             }
+            if (DEBUG)
+                System.out.println("not clear");
             // return newConfig;
         }
+    }
+
+    /** either 2d bang-bang is just full-throttle with azimuth */
+    double[] u_rand() {
+        double azimuth = 2 * Math.PI * random.nextDouble();
+        return new double[] {
+                MAX_U * Math.cos(azimuth),
+                MAX_U * Math.sin(azimuth)
+        };
+    }
+
+    /** u near max and min but not exactly */
+    double u_rand2() {
+        double u = MAX_U + random.nextGaussian(0, MAX_U / 10);
+        if (u > MAX_U)
+            u = -2.0 * MAX_U + u;
+        u = Math.max(-1.0 * MAX_U, u);
+        u = Math.min(MAX_U, u);
+        return u;
+    }
+
+    /** zero u for testing */
+    double u_rand3() {
+        return 0;
     }
 
     /**
@@ -476,8 +545,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * single
      * nearest node if there are no other near nodes.
      */
-    List<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
-        List<NearNode> nearNodes = new ArrayList<>();
+    ArrayList<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
+        ArrayList<NearNode> nearNodes = new ArrayList<>();
         KDTree.near(_model, rootNode, x_new, radius, (node, dist) -> {
             nearNodes.add(new NearNode(node, dist));
         });
@@ -508,7 +577,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         // link.get_target().getState()[0], link.get_target().getState()[1],
         // link.get_linkDist());
         LinkInterface newLink = Graph.newLink(link.get_source(), link.get_target(), link.get_linkDist());
-        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
+        // _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
         KDTree.insert(_model, rootNode, link.get_target());
         return link.get_target();
     }
@@ -518,21 +587,39 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
      * newNode.
      */
     void Rewire(List<NearNode> X_near, Node newNode, boolean timeForward) {
+        if (DEBUG)
+            System.out.printf("Rewire candidates %d\n", X_near.size());
         ListIterator<NearNode> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
             NearNode jn = li.previous();
             if (jn.node.getIncoming() != null) {
-                Matrix<N2, N1> x1 = VecBuilder.fill(newNode.getState()[0], newNode.getState()[1]);
-                Matrix<N2, N1> x2 = VecBuilder.fill(jn.node.getState()[0], jn.node.getState()[1]);
-                ShootingSolver<N2, N1>.Solution sol = solver.solve(Nat.N2(), Nat.N1(), f, x1, x2, timeForward);
-                if (sol != null) {
+                Matrix<N4, N1> x1 = VecBuilder.fill(
+                        newNode.getState()[0],
+                        newNode.getState()[1],
+                        newNode.getState()[2],
+                        newNode.getState()[3]);
+                Matrix<N4, N1> x2 = VecBuilder.fill(
+                        jn.node.getState()[0],
+                        jn.node.getState()[1],
+                        jn.node.getState()[2],
+                        jn.node.getState()[3]);
+                // shortcut the inevitable duplicate
+                if (x1.isEqual(x2, 0.01))
+                    continue;
+                if (DEBUG)
+                    System.out.printf("Try rewiring %s to %s\n", Util.matStr(x1), Util.matStr(x2));
+                ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
+                if (sol == null) {
+                    if (DEBUG)
+                        System.out.println("no solution");
+                } else {
                     if (Graph.rewire(_model, newNode, jn.node, Math.abs(sol.dt))) {
-                        // System.out.println("REWIRED");
-                        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
+                        if (DEBUG)
+                            System.out.println("REWIRED");
+                        // _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
                     }
 
                 }
-
             }
         }
     }
@@ -540,36 +627,36 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
     public List<Node> getNodesA() {
-        List<Node> allNodes = new ArrayList<Node>();
+        ArrayList<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_a));
         return allNodes;
     }
 
     @Override
     public List<Node> getNodesB() {
-        List<Node> allNodes = new ArrayList<Node>();
+        ArrayList<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_b));
         return allNodes;
     }
 
-    /**
-     * the path distance may have been changed by rewiring. does this actually
-     * matter? experiment says no.
-     * TODO: remove this
-     */
-    public Path getFullBestPath() {
-        Path bestPath = null;
-        for (Map.Entry<Node, Node> entry : connections.entrySet()) {
-            Path aPath = GeneratePath(entry.getKey(), entry.getValue());
-            if (bestPath == null) {
-                bestPath = aPath;
-            } else {
-                if (aPath.getDistance() < bestPath.getDistance())
-                    bestPath = aPath;
-            }
-        }
-        return bestPath;
-    }
+    // /**
+    // * the path distance may have been changed by rewiring. does this actually
+    // * matter? experiment says no.
+    // * TODO: remove this
+    // */
+    // public Path getFullBestPath() {
+    // Path bestPath = null;
+    // for (Map.Entry<Node, Node> entry : connections.entrySet()) {
+    // Path aPath = GeneratePath(entry.getKey(), entry.getValue());
+    // if (bestPath == null) {
+    // bestPath = aPath;
+    // } else {
+    // if (aPath.getDistance() < bestPath.getDistance())
+    // bestPath = aPath;
+    // }
+    // }
+    // return bestPath;
+    // }
 
     @Override
     public Path getBestPath() {
@@ -587,6 +674,8 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
     /**
      * Starting from leaf node, walk the parent links to accumulate
      * the full path, and reverse it, to return a path from root to node.
+     * 
+     * populates list A only. bleah.
      * 
      * @param node leaf node
      */
@@ -614,7 +703,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
         // now we have the forwards list of states
         Collections.reverse(configs);
 
-        return new Path(totalDistance, configs,new LinkedList<double[]>());
+        return new Path(totalDistance, configs, new LinkedList<double[]>());
     }
 
     @Override

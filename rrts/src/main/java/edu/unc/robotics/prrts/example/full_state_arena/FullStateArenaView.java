@@ -1,4 +1,4 @@
-package edu.unc.robotics.prrts.example.arena;
+package edu.unc.robotics.prrts.example.full_state_arena;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
@@ -12,20 +12,32 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
 import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.Node;
+import org.team100.lib.index.KDNode;
+import org.team100.lib.index.KDTree;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
 
 import edu.unc.robotics.prrts.example.geom.Obstacle;
 import edu.unc.robotics.prrts.example.swingup.Arena;
 
-public class ArenaView extends JComponent {
+/**
+ * note this ignores model.dimensions since the plotted dimensions and model
+ * dimensions aren't the same.
+ * 
+ * TODO: make both x/y and xdot/ydot pics
+ */
+public class FullStateArenaView extends JComponent {
+    private static final boolean DEBUG = false;
+
     private final Runner _rrtStar;
     private final Arena _robotModel;
 
@@ -34,9 +46,14 @@ public class ArenaView extends JComponent {
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
-    public ArenaView(Arena arena, Runner rrtStar) {
+    private KDNode<Node> _T_a;
+    private KDNode<Node> _T_b;
+
+    public FullStateArenaView(Arena arena, Runner rrtStar, KDNode<Node> T_a,  KDNode<Node> T_b) {
         _rrtStar = rrtStar;
         _robotModel = arena;
+        _T_a = T_a;
+        _T_b = T_b;
     }
 
     @Override
@@ -52,19 +69,24 @@ public class ArenaView extends JComponent {
     }
 
     public void doPaint(Graphics2D g, Dimension size) {
+        if (DEBUG)
+            System.out.println("doPaint");
         Arena robotModel = _robotModel;
         double[] min = robotModel.getMin();
         double[] max = robotModel.getMax();
 
         Path bestPath = _rrtStar.getBestPath();
 
-        if (_backgroundImage == null ||
-                _backgroundImage.getWidth(null) != size.width ||
-                _backgroundImage.getHeight(null) != size.height ||
-                Path.isBetter(bestPath, _bestPath)) {
-            createBGImage(min, max, size, bestPath);
+        // if (_backgroundImage == null ||
+        // _backgroundImage.getWidth(null) != size.width ||
+        // _backgroundImage.getHeight(null) != size.height ||
+        // Path.isBetter(bestPath, _bestPath)) {
+        // createBGImage(min, max, size, bestPath);
+        // _bestPath = bestPath;
+        // }
+        if (Path.isBetter(bestPath, _bestPath))
             _bestPath = bestPath;
-        }
+        createBGImage(min, max, size, _bestPath);
 
         g.drawImage(_backgroundImage, 0, 0, null);
 
@@ -80,6 +102,7 @@ public class ArenaView extends JComponent {
         g.drawString(count, 3, 3 + fm.getAscent());
     }
 
+    /** min and max are (x xdot y ydot) */
     private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
         _backgroundImage = createImage(size.width, size.height);
 
@@ -107,34 +130,43 @@ public class ArenaView extends JComponent {
         g.dispose();
     }
 
-    private void renderRRTTree(Graphics2D g) {
-        int dim = _robotModel.dimensions();
+    private static final boolean renderTree = true;
+
+    public void renderRRTTree(Graphics2D g) {
+        if (!renderTree)
+            return;
+        if (DEBUG)
+            System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
 
-        for (Node node : _rrtStar.getNodesA()) {
+        // List<Node> nodesA = _rrtStar.getNodesA();
+        for (Node node : KDTree.values( _T_a)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();
                 double[] p = parent.getState();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.GREEN);
-                    line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
-                    g.draw(line);
-                }
+                if (DEBUG)
+                    System.out.printf("A node %s parent %s\n"
+                            + Arrays.toString(n), Arrays.toString(p));
+                g.setColor(Color.GREEN);
+                line.setLine(n[0], n[2], p[0], p[2]);
+                g.draw(line);
             }
         }
-        for (Node node : _rrtStar.getNodesB()) {
+        // List<Node> nodesB = _rrtStar.getNodesB();
+        for (Node node : KDTree.values(_T_b)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
                 double[] n = node.getState();
                 double[] p = parent.getState();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.RED);
-                    line.setLine(n[i], n[i + 1], p[i], p[i + 1]);
-                    g.draw(line);
-                }
+                if (DEBUG)
+                    System.out.printf("B node %s parent %s\n"
+                            + Arrays.toString(n), Arrays.toString(p));
+                g.setColor(Color.RED);
+                line.setLine(n[0], n[2], p[0], p[2]);
+                g.draw(line);
             }
         }
     }
@@ -144,57 +176,60 @@ public class ArenaView extends JComponent {
             return;
         }
 
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        if (path.getStatesA().size() > 1) {
-            Iterator<double[]> pathIter = path.getStatesA().iterator();
+        List<double[]> statesA = path.getStatesA();
+        if (statesA.size() > 1) {
+            Iterator<double[]> pathIter = statesA.iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.GREEN);
-                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
-                    g.draw(line);
-                }
+                g.setColor(Color.GREEN);
+                line.setLine(prev[0], prev[2], curr[0], curr[2]);
+                g.draw(line);
                 prev = curr;
             }
         }
-        if (path.getStatesB().size() > 1) {
-            Iterator<double[]> pathIter = path.getStatesB().iterator();
+        List<double[]> statesB = path.getStatesB();
+        if (statesB.size() > 1) {
+            Iterator<double[]> pathIter = statesB.iterator();
             double[] prev = pathIter.next();
             while (pathIter.hasNext()) {
                 double[] curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.RED);
-                    line.setLine(prev[i], prev[i + 1], curr[i], curr[i + 1]);
-                    g.draw(line);
-                }
+                g.setColor(Color.RED);
+                line.setLine(prev[0], prev[2], curr[0], curr[2]);
+                g.draw(line);
                 prev = curr;
             }
         }
+
+        double[] nA = statesA.get(statesA.size() -  1);
+        double[] nB = statesB.get(0);
+        if (nA != null && nB != null) {
+           // System.out.printf("LINK [%5.3f %5.3f] to [%5.3f %5.3f]\n",
+            //        nA[0], nA[2], nB[0], nB[2]);
+            g.setColor(Color.BLACK);
+            line.setLine(nA[0], nA[2], nB[0], nB[2]);
+            g.draw(line);
+        } else {
+            System.out.println("NULLS");
+        }
+
     }
 
+    /** min and max are (x xdot y ydot) */
     private double setupGraphics(double[] min, double[] max, Dimension size, Graphics2D g) {
         g.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g.translate(min[0], min[1]);
+        g.translate(min[0], min[2]);
         double scale = Math.min(
                 size.width / (max[0] - min[0]),
-                size.height / (max[1] - min[1]));
+                size.height / (max[2] - min[2]));
         g.scale(scale, scale);
-        g.setStroke(new BasicStroke((float) (0.5 / scale / _robotModel.dimensions())));
+        g.setStroke(new BasicStroke((float) (0.25 / scale)));
         return scale;
-    }
-
-    static Color brighter(Color color) {
-        float[] hsb = Color.RGBtoHSB(color.getRed(), color.getGreen(), color.getBlue(), null);
-        hsb[1] = Math.max(0.0f, hsb[1] - 0.25f);
-        hsb[2] = Math.min(1.0f, hsb[2] + 0.25f);
-        color = Color.getHSBColor(hsb[0], hsb[1], hsb[2]);
-        return color;
     }
 }

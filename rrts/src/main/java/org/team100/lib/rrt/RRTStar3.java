@@ -21,7 +21,7 @@ import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
 /**
- * RRT* version 3.  this is the "good" version of single-tree.
+ * RRT* version 3. this is the "good" version of single-tree.
  * 
  * This is an attempt to make the code below look more like the pseudocode.
  * 
@@ -173,8 +173,13 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
     }
 
     @Override
-    public Iterable<Node> getNodes() {
+    public List<Node> getNodesA() {
         return KDTree.values(_rootNode);
+    }
+
+    @Override
+    public List<Node> getNodesB() {
+        return new ArrayList<Node>();
     }
 
     @Override
@@ -201,7 +206,7 @@ public class RRTStar3<T extends KDModel & RobotModel> implements Solver {
         // now we have the forwards list of states
         Collections.reverse(configs);
 
-        return new Path(totalDistance, configs);
+        return new Path(totalDistance, configs, new LinkedList<double[]>());
     }
 
     @Override

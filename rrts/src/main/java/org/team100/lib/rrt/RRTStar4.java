@@ -170,12 +170,12 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
 
         Path p_1 = walkParents(x_1);
         Path p_2 = walkParents(x_2);
-        List<double[]> states_2 = p_2.getStates();
+        List<double[]> states_2 = p_2.getStatesA();
         Collections.reverse(states_2);
-        List<double[]> fullStates = new ArrayList<double[]>();
-        fullStates.addAll(p_1.getStates());
-        fullStates.addAll(states_2);
-        return new Path(p_1.getDistance() + p_2.getDistance(), fullStates);
+        // List<double[]> fullStates = new ArrayList<double[]>();
+        // fullStates.addAll(p_1.getStates());
+        // fullStates.addAll(states_2);
+        return new Path(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
     }
 
     boolean CollisionFree(double[] from, double[] to) {
@@ -278,9 +278,15 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
 
     /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
-    public Iterable<Node> getNodes() {
+    public List<Node> getNodesA() {
         List<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_a));
+        return allNodes;
+    }
+
+    @Override
+    public List<Node> getNodesB() {
+        List<Node> allNodes = new ArrayList<Node>();
         allNodes.addAll(KDTree.values(_T_b));
         return allNodes;
     }
@@ -340,7 +346,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         // now we have the forwards list of states
         Collections.reverse(configs);
 
-        return new Path(totalDistance, configs);
+        return new Path(totalDistance, configs,new LinkedList<double[]>());
     }
 
     @Override

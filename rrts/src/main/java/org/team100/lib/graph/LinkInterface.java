@@ -1,11 +1,9 @@
 package org.team100.lib.graph;
 
-import org.team100.lib.space.Path;
-
 /** Allows experimentation with link behaviors. */
 public interface LinkInterface {
 
-    Path path();
+    // Path path();
 
     Node get_source();
 
