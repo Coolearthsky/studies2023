@@ -64,16 +64,13 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     private KDNode<Node> _T_b;
     private final Sample _sample;
     private final double _gamma;
-    /** Lowest cost leaf leading to initial state. */
-    // TODO: remove this
-    private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
-    int stepNo;
-    double radius;
+    private int stepNo;
+    private double radius;
 
-    Path _sigma_best;
-    Map<Node, Node> connections = new HashMap<Node, Node>();
+    private Path _sigma_best;
+    private Map<Node, Node> connections = new HashMap<Node, Node>();
 
     public RRTStar4(T model, Sample sample, double gamma) {
         if (gamma < 1.0) {
@@ -84,7 +81,6 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         _T_b = new KDNode<Node>(new Node(model.goal()));
         _sample = sample;
         _gamma = gamma;
-        _bestLeaf_a = null;
     }
 
     /**
@@ -172,9 +168,6 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         Path p_2 = walkParents(x_2);
         List<double[]> states_2 = p_2.getStatesA();
         Collections.reverse(states_2);
-        // List<double[]> fullStates = new ArrayList<double[]>();
-        // fullStates.addAll(p_1.getStates());
-        // fullStates.addAll(states_2);
         return new Path(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
     }
 
@@ -254,8 +247,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     /** Add the node x_new to the tree, with an edge from x_min. */
     Node InsertNode(Node x_min, double[] x_new, KDNode<Node> rootNode) {
         Node newNode = new Node(x_new);
-        LinkInterface newLink = Graph.newLink(_model, x_min, newNode);
-        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
+        Graph.newLink(_model, x_min, newNode);
         KDTree.insert(_model, rootNode, newNode);
         return newNode;
     }
@@ -269,14 +261,11 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         while (li.hasPrevious()) {
             NearNode jn = li.previous();
             if (jn.node.getIncoming() != null) {
-                if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
-                    _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
-                }
+                Graph.rewire(_model, newNode, jn.node, jn.linkDist);
             }
         }
     }
 
-    /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
     public List<Node> getNodesA() {
         List<Node> allNodes = new ArrayList<Node>();
@@ -314,14 +303,6 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     public Path getBestPath() {
         return _sigma_best;
     }
-
-    // @Override
-    // public Path getBestPath() {
-    // LinkInterface link = _bestLeaf_a;
-    // if (link == null) {
-    // return null;
-    // }
-    // Node node = link.get_target();
 
     /**
      * Starting from leaf node, walk the parent links to accumulate

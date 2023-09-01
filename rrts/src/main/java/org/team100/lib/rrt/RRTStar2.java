@@ -30,7 +30,6 @@ import org.team100.lib.space.Sample;
  * x_nearest <- Nearest(x_rand) // find the nearest node in the tree to x_rand
  * x_new <- Steer(x_nearest, x_rand) // find a point feasible from x_nearest
  * 
- * 
  * References:
  * 
  * http://msl.cs.illinois.edu/~lavalle/papers/Lav98c.pdf
@@ -87,12 +86,6 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
 
             // make a list of points near the feasible one
             List<NearNode> X_near = Near(x_new);
-
-            // List<NearNode> X_near = new ArrayList<>();
-            // KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
-            // if (node.getIncoming() != null)
-            // X_near.add(new NearNode(node, dist));
-            // });
 
             // Sort the array by total distance (including the distance to the new node).
             // We take the best (shortest) feasible node.
@@ -163,12 +156,9 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
             return x_rand;
         }
         single_nearest = true;
-        // System.out.println("x_nearest: " +
-        // Arrays.toString(x_nearest._nearest.getState()));
         _model.setStepNo(stepNo);
         _model.setRadius(radius);
         double[] x_new = _model.steer(x_nearest, x_rand);
-        // System.out.println("x_new: " + Arrays.toString(x_new));
         return x_new;
     }
 
@@ -185,20 +175,8 @@ public class RRTStar2<T extends KDModel & RobotModel> implements Solver {
             nearNodes.add(new NearNode(x_nearest._nearest, x_nearest._dist));
             return nearNodes;
         }
-        // for (Node n : KDTree.values(_rootNode)) {
-        // System.out.println("tree: " + Arrays.toString(n.getState()));
-        // }
 
-        // System.out.println("stepNo " + stepNo);
-        // System.out.println("A " + Math.log(stepNo + 1));
-        // double radius = _gamma * Math.pow(
-        // Math.log(stepNo + 1) / (stepNo + 1),
-        // 1.0 / _model.dimensions());
-        // // make it a bit bigger than the steering radius to be sure to catch the seed
-        // radius += 0.1;
-        // System.out.println("radius " + radius);
         KDTree.near(_model, _rootNode, x_new, radius, (node, dist) -> {
-            // if (node.getIncoming() != null)
             nearNodes.add(new NearNode(node, dist));
         });
         // this should really never happen
