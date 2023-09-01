@@ -8,9 +8,10 @@ import org.team100.lib.geom.Polygon;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 
-
-/** this only works for 4d full state
- * TODO: remove the whole "dimensions" idea and all these arrays, use type-safe wpi stuff
+/**
+ * this only works for 4d full state
+ * TODO: remove the whole "dimensions" idea and all these arrays, use type-safe
+ * wpi stuff
  */
 public class FullStateHolonomicArena implements Arena {
     private static final double DISCRETIZATION = 0.25;
@@ -19,10 +20,10 @@ public class FullStateHolonomicArena implements Arena {
     private static final int DIMENSIONS = 4;
 
     // init and goal are motionless
-    private static final double[] _init = { 15.5,0, 6.75,0 };
-    private static final double[] _goal = { 1.93,0, 2.748,0 };
-    private static final double[] _min = { 0, -6, 0, -6};
-    private static final double[] _max = { 16, 6, 8, 6};
+    private static final double[] _init = { 15.5, 0, 6.75, 0 };
+    private static final double[] _goal = { 1.93, 0, 2.748, 0 };
+    private static final double[] _min = { 0, -6, 0, -6 };
+    private static final double[] _max = { 16, 6, 8, 6 };
 
     // used for steering
     // private final double _gamma;
@@ -107,14 +108,16 @@ public class FullStateHolonomicArena implements Arena {
 
     }
 
-    /** config is (x xdot y ydot)
+    /**
+     * config is (x xdot y ydot)
      * so we check x and y only
      */
     @Override
     public boolean clear(double[] config) {
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
-            if (obstacle.distToPoint(config[0], config[2]) < ROBOT_RADIUS) return false;
+            if (obstacle.distToPoint(config[0], config[2]) < ROBOT_RADIUS)
+                return false;
         }
         return true;
     }

@@ -29,7 +29,6 @@ public class PendulumView extends JComponent {
     private int framecounter;
 
     private Image _backgroundImage;
-    // private Path _bestPath = null;
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
@@ -58,17 +57,11 @@ public class PendulumView extends JComponent {
 
         Path bestPath = _rrtStar.getBestPath();
 
-        // if (_backgroundImage == null ||
-        // _backgroundImage.getWidth(null) != size.width ||
-        // _backgroundImage.getHeight(null) != size.height ){//||
-        // // Path.isBetter(bestPath, _bestPath)) {
         framecounter += 1;
         if (framecounter > 100) {
             framecounter = 0;
             createBGImage(min, max, size, bestPath);
         }
-        // _bestPath = bestPath;
-        // }
 
         g.drawImage(_backgroundImage, 0, 0, null);
 
@@ -101,7 +94,6 @@ public class PendulumView extends JComponent {
 
         // obstacles
         g.setStroke(new BasicStroke(0f));
-        // g.setColor(new Color(0x8888ff));
         for (Obstacle obstacle : _robotModel.obstacles()) {
             g.setColor(obstacle.color());
             g.fill(obstacle.shape());

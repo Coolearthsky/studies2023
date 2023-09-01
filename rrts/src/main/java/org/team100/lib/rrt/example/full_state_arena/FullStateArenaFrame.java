@@ -23,9 +23,6 @@ public class FullStateArenaFrame extends JFrame {
     }
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
-        // double[] init = new double[] { 0, 0 };
-        // double[] goal = new double[] { Math.PI, 0 };
-
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node> T_a = new KDNode<Node>(new Node(arena.initial()));
         KDNode<Node> T_b = new KDNode<Node>(new Node(arena.goal()));
@@ -43,7 +40,7 @@ public class FullStateArenaFrame extends JFrame {
             }
         });
 
-        runner.runForDurationMS(1000);
+        runner.runForDurationMS(100000);
         //runner.runSamples(5000);
 
         Path bestPath = runner.getBestPath();

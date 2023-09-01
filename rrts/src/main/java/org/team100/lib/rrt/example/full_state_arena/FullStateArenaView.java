@@ -28,7 +28,6 @@ import org.team100.lib.index.KDTree;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
 
-
 /**
  * note this ignores model.dimensions since the plotted dimensions and model
  * dimensions aren't the same.
@@ -40,16 +39,16 @@ public class FullStateArenaView extends JComponent {
 
     private final Runner _rrtStar;
     private final Arena _robotModel;
+    private int framecounter;
 
     private Image _backgroundImage;
-    private Path _bestPath = null;
 
     private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
 
     private KDNode<Node> _T_a;
     private KDNode<Node> _T_b;
 
-    public FullStateArenaView(Arena arena, Runner rrtStar, KDNode<Node> T_a,  KDNode<Node> T_b) {
+    public FullStateArenaView(Arena arena, Runner rrtStar, KDNode<Node> T_a, KDNode<Node> T_b) {
         _rrtStar = rrtStar;
         _robotModel = arena;
         _T_a = T_a;
@@ -77,16 +76,11 @@ public class FullStateArenaView extends JComponent {
 
         Path bestPath = _rrtStar.getBestPath();
 
-        // if (_backgroundImage == null ||
-        // _backgroundImage.getWidth(null) != size.width ||
-        // _backgroundImage.getHeight(null) != size.height ||
-        // Path.isBetter(bestPath, _bestPath)) {
-        // createBGImage(min, max, size, bestPath);
-        // _bestPath = bestPath;
-        // }
-        if (Path.isBetter(bestPath, _bestPath))
-            _bestPath = bestPath;
-        createBGImage(min, max, size, _bestPath);
+        framecounter += 1;
+        if (framecounter > 100) {
+            framecounter = 0;
+            createBGImage(min, max, size, bestPath);
+        }
 
         g.drawImage(_backgroundImage, 0, 0, null);
 
@@ -116,7 +110,6 @@ public class FullStateArenaView extends JComponent {
 
         // obstacles
         g.setStroke(new BasicStroke(0f));
-        // g.setColor(new Color(0x8888ff));
         for (Obstacle obstacle : _robotModel.obstacles()) {
             g.setColor(obstacle.color());
             g.fill(obstacle.shape());
@@ -139,8 +132,7 @@ public class FullStateArenaView extends JComponent {
             System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
 
-        // List<Node> nodesA = _rrtStar.getNodesA();
-        for (Node node : KDTree.values( _T_a)) {
+        for (Node node : KDTree.values(_T_a)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
                 Node parent = incoming.get_source();
@@ -154,7 +146,6 @@ public class FullStateArenaView extends JComponent {
                 g.draw(line);
             }
         }
-        // List<Node> nodesB = _rrtStar.getNodesB();
         for (Node node : KDTree.values(_T_b)) {
             LinkInterface incoming = node.getIncoming();
             if (incoming != null) {
@@ -204,11 +195,9 @@ public class FullStateArenaView extends JComponent {
             }
         }
 
-        double[] nA = statesA.get(statesA.size() -  1);
+        double[] nA = statesA.get(statesA.size() - 1);
         double[] nB = statesB.get(0);
         if (nA != null && nB != null) {
-           // System.out.printf("LINK [%5.3f %5.3f] to [%5.3f %5.3f]\n",
-            //        nA[0], nA[2], nB[0], nB[2]);
             g.setColor(Color.BLACK);
             line.setLine(nA[0], nA[2], nB[0], nB[2]);
             g.draw(line);

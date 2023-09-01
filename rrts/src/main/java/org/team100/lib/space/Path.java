@@ -33,31 +33,6 @@ public class Path implements Comparable<Path> {
         return Double.compare(distance, that.distance);
     }
 
-    // public void interpolate(double[] outConfig, double offset, KDModel kdModel) {
-    //     Iterator<double[]> pathIter = states.iterator();
-    //     double[] from = pathIter.next();
-    //     double[] dest = pathIter.next();
-    //     double distToFrom = 0;
-    //     double distToDest = kdModel.dist(from, dest);
-
-    //     while (pathIter.hasNext() && distToDest < offset) {
-    //         from = dest;
-    //         distToFrom = distToDest;
-    //         dest = pathIter.next();
-    //         distToDest += kdModel.dist(from, dest);
-    //     }
-    //     double distBetween = distToDest - distToFrom;
-    //     offset -= distToFrom;
-    //     offset /= distBetween;
-
-    //     double s = offset;
-    //     double p = 1.0 - s;
-
-    //     for (int i=0 ; i<kdModel.dimensions() ; ++i) {
-    //         outConfig[i] = from[i] * p + dest[i] * s;
-    //     }
-    // }
-
     public static boolean isBetter(Path a, Path b) {
         if (a == null) {
             return false;
