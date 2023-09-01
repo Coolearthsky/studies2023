@@ -81,7 +81,7 @@ public class Graph {
      */
     public static LinkInterface chooseBestPath(RobotModel model, final LinkInterface oldLink,
             final LinkInterface newLink) {
-        System.out.println("try new best path");
+        // System.out.println("try new best path");
         if (newLink == null)
             throw new IllegalArgumentException();
 
@@ -92,7 +92,7 @@ public class Graph {
             return newLink;
 
         if (newLink.get_pathDist() < oldLink.get_pathDist()) {
-            System.out.printf("new best path %5.3f\n", newLink.get_pathDist());
+            // System.out.printf("new best path %5.3f\n", newLink.get_pathDist());
             return newLink;
         }
 

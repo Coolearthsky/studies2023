@@ -185,7 +185,7 @@ public class RRTStar5<T extends KDModel & RobotModel> implements Solver {
                         // Util.matStr(x1), Util.matStr(x2), sol);
                         // TODO: do something with the solution u value
                         // add a node in a corresponding to the near node in b
-                        LocalLink newInA = new LocalLink(newNode, new Node(nearNode.node.getState()), sol.dt);
+                        LocalLink newInA = new LocalLink(newNode, new Node(nearNode.node.getState()), Math.abs(sol.dt));
                         // LocalLink link = new LocalLink(newNode, nearNode.node, sol.dt);
                         Node newNewNode = InsertNode(newInA, _T_a);
                         connections.put(newNode, nearNode.node);

@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "PendulumFrame",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.swingup.PendulumFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
         "name": "FullStateArenaFrame",
         "request": "launch",
         "mainClass": "edu.unc.robotics.prrts.example.full_state_arena.FullStateArenaFrame",
