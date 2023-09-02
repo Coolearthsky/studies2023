@@ -1,12 +1,13 @@
 package org.team100.lib.rrt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
@@ -20,6 +21,10 @@ import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
 
 /**
  * RRT* version 4. this is the BIDIRECTIONAL version.
@@ -54,33 +59,31 @@ import org.team100.lib.space.Sample;
  * 
  * https://arxiv.org/pdf/1703.08944.pdf
  */
-public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
+public class RRTStar4<States extends Num, T extends KDModel<States> & RobotModel<States>> implements Solver<States> {
     private final T _model;
     /** Initially, tree grown from initial, but is swapped repeatedly */
-    private KDNode<Node> _T_a;
+    private KDNode<Node<States>> _T_a;
     /** Initially, tree grown from goal, but is swapped repeatedly */
-    private KDNode<Node> _T_b;
-    private final Sample _sample;
+    private KDNode<Node<States>> _T_b;
+    private final Sample<States> _sample;
     private final double _gamma;
-    /** Lowest cost leaf leading to initial state. */
-    private LinkInterface _bestLeaf_a;
 
     // mutable loop variables to make the loop code cleaner
-    int stepNo;
-    double radius;
+    private int stepNo;
+    private double radius;
 
-    Path _sigma_best;
+    private Path<States> _sigma_best;
+    private Map<Node<States>, Node<States>> connections = new HashMap<>();
 
-    public RRTStar4(T model, Sample sample, double gamma) {
+    public RRTStar4(T model, Sample<States> sample, double gamma) {
         if (gamma < 1.0) {
             throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
         }
         _model = model;
-        _T_a = new KDNode<Node>(new Node(model.initial()));
-        _T_b = new KDNode<Node>(new Node(model.goal()));
+        _T_a = new KDNode<>(new Node<>(model.initial()));
+        _T_b = new KDNode<>(new Node<>(model.goal()));
         _sample = sample;
         _gamma = gamma;
-        _bestLeaf_a = null;
     }
 
     /**
@@ -93,20 +96,20 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     @Override
     public int step() {
         int edges = 0;
-        double[] x_rand = SampleFree();
-        KDNearNode<Node> x_nearest = Nearest(x_rand, _T_a);
-        double[] x_new = Steer(x_nearest, x_rand);
+        Matrix<States, N1> x_rand = SampleFree();
+        KDNearNode<Node<States>> x_nearest = Nearest(x_rand, _T_a);
+        Matrix<States, N1> x_new = Steer(x_nearest, x_rand);
         if (CollisionFree(x_nearest._nearest.getState(), x_new)) {
-            List<NearNode> X_near = Near(x_new, _T_a);
+            List<NearNode<States>> X_near = Near(x_new, _T_a);
             if (X_near.isEmpty())
-                X_near.add(new NearNode(x_nearest._nearest, x_nearest._dist));
-            Node x_min = ChooseParent(X_near, x_new);
+                X_near.add(new NearNode<>(x_nearest._nearest, x_nearest._dist));
+            Node<States> x_min = ChooseParent(X_near, x_new);
             if (x_min != null) {
-                Node newNode = InsertNode(x_min, x_new, _T_a);
+                Node<States> newNode = InsertNode(x_min, x_new, _T_a);
                 Rewire(X_near, newNode);
                 edges += 1;
-                KDNearNode<Node> x_conn = Nearest(x_new, _T_b);
-                Path sigma_new = Connect(newNode, x_conn, _T_b);
+                KDNearNode<Node<States>> x_conn = Nearest(x_new, _T_b);
+                Path<States> sigma_new = Connect(newNode, x_conn, _T_b);
                 if (sigma_new != null) {
                     edges += 1;
                     if (_sigma_best == null) {
@@ -124,7 +127,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     }
 
     void SwapTrees() {
-        KDNode<Node> tmp = _T_a;
+        KDNode<Node<States>> tmp = _T_a;
         _T_a = _T_b;
         _T_b = tmp;
     }
@@ -137,14 +140,15 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * @param x_1 newly inserted node
      * @param x_2 near node in the other tree
      */
-    Path Connect(Node x_1, KDNearNode<Node> x_2, KDNode<Node> rootNode) {
+    Path<States> Connect(Node<States> x_1, KDNearNode<Node<States>> x_2, KDNode<Node<States>> rootNode) {
         if (CollisionFree(x_2._nearest.getState(), x_1.getState())) {
-            List<NearNode> X_near = Near(x_1.getState(), rootNode);
+            List<NearNode<States>> X_near = Near(x_1.getState(), rootNode);
             if (X_near.isEmpty())
-                X_near.add(new NearNode(x_2._nearest, x_2._dist));
-            Node x_min = ChooseParent(X_near, x_1.getState());
+                X_near.add(new NearNode<>(x_2._nearest, x_2._dist));
+            Node<States> x_min = ChooseParent(X_near, x_1.getState());
             if (x_min != null) {
-                Node newNode = InsertNode(x_min, x_1.getState(), rootNode);
+                Node<States> newNode = InsertNode(x_min, x_1.getState(), rootNode);
+                connections.put(x_1, newNode);
                 Rewire(X_near, newNode);
                 return GeneratePath(x_1, newNode);
             }
@@ -156,31 +160,25 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * the parameters describe a link between initial and goal trees, the same
      * state in both cases.
      */
-    Path GeneratePath(Node x_1, Node x_2) {
-        for (int i = 0; i < _model.dimensions(); ++i) {
-            if (x_1.getState()[i] != x_2.getState()[i])
-                throw new IllegalArgumentException(
-                        "x1 " + Arrays.toString(x_1.getState()) + " x2 " + Arrays.toString(x_2.getState()));
-        }
-
-        Path p_1 = walkParents(x_1);
-        Path p_2 = walkParents(x_2);
-        List<double[]> states_2 = p_2.getStates();
+    Path<States> GeneratePath(Node<States> x_1, Node<States> x_2) {
+        if (!x_1.getState().isEqual(x_2.getState(), 0.001))
+            throw new IllegalArgumentException(
+                    "x1 " + x_1.getState().toString() + " != x2 " + x_2.getState().toString());
+        Path<States> p_1 = walkParents(x_1);
+        Path<States> p_2 = walkParents(x_2);
+        List<Matrix<States, N1>> states_2 = p_2.getStatesA();
         Collections.reverse(states_2);
-        List<double[]> fullStates = new ArrayList<double[]>();
-        fullStates.addAll(p_1.getStates());
-        fullStates.addAll(states_2);
-        return new Path(p_1.getDistance() + p_2.getDistance(), fullStates);
+        return new Path<>(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
     }
 
-    boolean CollisionFree(double[] from, double[] to) {
+    boolean CollisionFree(Matrix<States, N1> from, Matrix<States, N1> to) {
         return _model.link(from, to);
     }
 
     /** Return a state not within an obstacle. */
-    double[] SampleFree() {
+    Matrix<States, N1> SampleFree() {
         while (true) {
-            double[] newConfig = _sample.get();
+            Matrix<States, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
                 return newConfig;
         }
@@ -193,7 +191,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * @param x_rand   the random sample
      * @param rootNode the tree to look through
      */
-    KDNearNode<Node> Nearest(double[] x_rand, KDNode<Node> rootNode) {
+    KDNearNode<Node<States>> Nearest(Matrix<States, N1> x_rand, KDNode<Node<States>> rootNode) {
         return KDTree.nearest(_model, rootNode, x_rand);
     }
 
@@ -205,14 +203,13 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * 
      * @param x_nearest containts distance to x_rand
      */
-    double[] Steer(KDNearNode<Node> x_nearest, double[] x_rand) {
+    Matrix<States, N1> Steer(KDNearNode<Node<States>> x_nearest, Matrix<States, N1> x_rand) {
         if (x_nearest._dist < radius) {
             return x_rand;
         }
         _model.setStepNo(stepNo);
         _model.setRadius(radius);
-        double[] x_new = _model.steer(x_nearest, x_rand);
-        return x_new;
+        return _model.steer(x_nearest, x_rand);
     }
 
     /**
@@ -221,10 +218,10 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * single
      * nearest node if there are no other near nodes.
      */
-    List<NearNode> Near(double[] x_new, KDNode<Node> rootNode) {
-        List<NearNode> nearNodes = new ArrayList<>();
+    List<NearNode<States>> Near(Matrix<States, N1> x_new, KDNode<Node<States>> rootNode) {
+        List<NearNode<States>> nearNodes = new ArrayList<>();
         KDTree.near(_model, rootNode, x_new, radius, (node, dist) -> {
-            nearNodes.add(new NearNode(node, dist));
+            nearNodes.add(new NearNode<>(node, dist));
         });
         return nearNodes;
     }
@@ -233,11 +230,11 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * Returns a member of X_near resulting in the lowest-cost path to x_new.
      * Removes infeasible nodes from X_near so we don't look at them again later.
      */
-    Node ChooseParent(List<NearNode> X_near, double[] x_new) {
+    Node<States> ChooseParent(List<NearNode<States>> X_near, Matrix<States, N1> x_new) {
         Collections.sort(X_near);
-        Iterator<NearNode> ni = X_near.iterator();
+        Iterator<NearNode<States>> ni = X_near.iterator();
         while (ni.hasNext()) {
-            NearNode nearNode = ni.next();
+            NearNode<States> nearNode = ni.next();
             ni.remove();
             if (CollisionFree(nearNode.node.getState(), x_new)) {
                 return nearNode.node;
@@ -247,50 +244,64 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
     }
 
     /** Add the node x_new to the tree, with an edge from x_min. */
-    Node InsertNode(Node x_min, double[] x_new, KDNode<Node> rootNode) {
-        Node newNode = new Node(x_new);
-        LinkInterface newLink = Graph.newLink(_model, x_min, newNode);
-        _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newLink);
+    Node<States> InsertNode(Node<States> x_min, Matrix<States, N1> x_new, KDNode<Node<States>> rootNode) {
+        Node<States> newNode = new Node<>(x_new);
+        Graph.newLink(_model, x_min, newNode);
         KDTree.insert(_model, rootNode, newNode);
         return newNode;
     }
 
-    void Rewire(List<NearNode> X_near, Node newNode) {
-        ListIterator<NearNode> li = X_near.listIterator(X_near.size());
+    /**
+     * look through the nodes in X_near to see if any should be new children of
+     * newNode.
+     */
+    void Rewire(List<NearNode<States>> X_near, Node<States> newNode) {
+        ListIterator<NearNode<States>> li = X_near.listIterator(X_near.size());
         while (li.hasPrevious()) {
-            NearNode jn = li.previous();
+            NearNode<States> jn = li.previous();
             if (jn.node.getIncoming() != null) {
-                if (Graph.rewire(_model, newNode, jn.node, jn.linkDist)) {
-                    _bestLeaf_a = Graph.chooseBestPath(_model, _bestLeaf_a, newNode.getIncoming());
-                }
+                Graph.rewire(_model, newNode, jn.node, jn.linkDist);
             }
         }
     }
 
-    /** Return all nodes in both trees. TODO: this is probably wrong */
     @Override
-    public Iterable<Node> getNodes() {
-        List<Node> allNodes = new ArrayList<Node>();
+    public List<Node<States>> getNodesA() {
+        List<Node<States>> allNodes = new ArrayList<>();
         allNodes.addAll(KDTree.values(_T_a));
-        allNodes.addAll(KDTree.values(_T_b));
         return allNodes;
     }
 
     @Override
-    public Path getBestPath() {
-        return _sigma_best;
+    public List<Node<States>> getNodesB() {
+        List<Node<States>> allNodes = new ArrayList<>();
+        allNodes.addAll(KDTree.values(_T_b));
+        return allNodes;
     }
 
-    // @Override
-    // public Path getBestPath() {
-    // LinkInterface link = _bestLeaf_a;
-    // if (link == null) {
-    // return null;
-    // }
-    // Node node = link.get_target();
+    /**
+     * the path distance may have been changed by rewiring. does this actually
+     * matter? experiment says no.
+     * TODO: remove this
+     */
+    public Path<States> getFullBestPath() {
+        Path<States> bestPath = null;
+        for (Map.Entry<Node<States>, Node<States>> entry : connections.entrySet()) {
+            Path<States> aPath = GeneratePath(entry.getKey(), entry.getValue());
+            if (bestPath == null) {
+                bestPath = aPath;
+            } else {
+                if (aPath.getDistance() < bestPath.getDistance())
+                    bestPath = aPath;
+            }
+        }
+        return bestPath;
+    }
 
-    // return walkParents(node);
-    // }
+    @Override
+    public Path<States> getBestPath() {
+        return _sigma_best;
+    }
 
     /**
      * Starting from leaf node, walk the parent links to accumulate
@@ -298,15 +309,15 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
      * 
      * @param node leaf node
      */
-    Path walkParents(Node node) {
+    Path<States> walkParents(Node<States> node) {
         // Collect the states along the path (backwards)
-        List<double[]> configs = new LinkedList<double[]>();
+        List<Matrix<States, N1>> configs = new LinkedList<>();
         // Since we're visiting all the nodes it's very cheap to verify the total
         // distance
         double totalDistance = 0;
         while (true) {
             configs.add(node.getState());
-            LinkInterface incoming = node.getIncoming();
+            LinkInterface<States> incoming = node.getIncoming();
             if (incoming == null)
                 break;
             totalDistance += incoming.get_linkDist();
@@ -315,7 +326,7 @@ public class RRTStar4<T extends KDModel & RobotModel> implements Solver {
         // now we have the forwards list of states
         Collections.reverse(configs);
 
-        return new Path(totalDistance, configs);
+        return new Path<>(totalDistance, configs, new LinkedList<>());
     }
 
     @Override

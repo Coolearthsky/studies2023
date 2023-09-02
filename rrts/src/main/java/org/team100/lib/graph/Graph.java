@@ -5,6 +5,8 @@ import java.util.Iterator;
 import org.team100.lib.index.KDModel;
 import org.team100.lib.planner.RobotModel;
 
+import edu.wpi.first.math.Num;
+
 public class Graph {
     /** use the caching link type? */
     public static boolean linkTypeCaching = true;
@@ -13,8 +15,13 @@ public class Graph {
      * Create a link from source to target, using the model distance from the source
      * to target.
      */
-    public static LinkInterface newLink(KDModel model, Node source, Node target) {
-        return newLink(source, target, model.dist(source.getState(), target.getState()));
+    public static <States extends Num> LinkInterface<States> newLink(KDModel<States> model, Node<States> source,
+            Node<States> target) {
+        double dist = model.dist(source.getState(), target.getState());
+        // System.out.printf("newLink from [%5.3f %5.3f] to [%5.3f %5.3f] d %5.3f\n",
+        // source.getState()[0], source.getState()[1], target.getState()[0],
+        // target.getState()[1], dist);
+        return newLink(source, target, dist);
     }
 
     /**
@@ -24,7 +31,8 @@ public class Graph {
      * 
      * @return the newly created link, never null.
      */
-    public static LinkInterface newLink(Node source, Node target, double dist) {
+    public static <States extends Num> LinkInterface<States> newLink(Node<States> source, Node<States> target,
+            double dist) {
         if (source == null)
             throw new IllegalArgumentException("source may not be null");
         if (target == null)
@@ -32,15 +40,15 @@ public class Graph {
         if (dist < 0)
             throw new IllegalArgumentException("dist may not be negative");
 
-        LinkInterface oldLink = target.getIncoming();
+        LinkInterface<States> oldLink = target.getIncoming();
         if (oldLink != null)
             oldLink.get_source().removeOutgoing(oldLink);
 
-        LinkInterface link;
+        LinkInterface<States> link;
         if (linkTypeCaching) {
-            link = new PathDistanceCachingLink(source, target, dist);
+            link = new PathDistanceCachingLink<>(source, target, dist);
         } else {
-            link = new LocalLink(source, target, dist);
+            link = new LocalLink<>(source, target, dist);
         }
         target.setIncoming(link);
         source.addOutgoing(link);
@@ -51,10 +59,10 @@ public class Graph {
      * Walks the incoming path to calculate the total path distance to the specified
      * node.
      */
-    public static double getPathDist(Node node) {
+    public static <States extends Num> double getPathDist(Node<States> node) {
         double pathDist = 0;
         while (true) {
-            LinkInterface incoming = node.getIncoming();
+            LinkInterface<States> incoming = node.getIncoming();
             if (incoming == null)
                 return pathDist;
             pathDist += incoming.get_linkDist();
@@ -63,11 +71,11 @@ public class Graph {
     }
 
     /** Walks the outgoing subtree and updates the path lengths of each link. */
-    public static void updatePathLengths(LinkInterface link) {
-        Node node = link.get_target();
-        Iterator<LinkInterface> iter = node.getOutgoing();
+    public static <States extends Num> void updatePathLengths(LinkInterface<States> link) {
+        Node<States> node = link.get_target();
+        Iterator<LinkInterface<States>> iter = node.getOutgoing();
         while (iter.hasNext()) {
-            LinkInterface child = iter.next();
+            LinkInterface<States> child = iter.next();
             child.set_PathDist(child.get_linkDist() + link.get_pathDist());
             updatePathLengths(child);
         }
@@ -76,8 +84,11 @@ public class Graph {
     /**
      * @return best path (link or bestpath, whichever is shorter)
      */
-    public static LinkInterface chooseBestPath(RobotModel model, final LinkInterface oldLink,
-            final LinkInterface newLink) {
+    public static <States extends Num> LinkInterface<States> chooseBestPath(
+            RobotModel<States> model,
+            final LinkInterface<States> oldLink,
+            final LinkInterface<States> newLink) {
+        // System.out.println("try new best path");
         if (newLink == null)
             throw new IllegalArgumentException();
 
@@ -87,8 +98,10 @@ public class Graph {
         if (oldLink == null)
             return newLink;
 
-        if (newLink.get_pathDist() < oldLink.get_pathDist())
+        if (newLink.get_pathDist() < oldLink.get_pathDist()) {
+            // System.out.printf("new best path %5.3f\n", newLink.get_pathDist());
             return newLink;
+        }
 
         return oldLink;
     }
@@ -98,7 +111,7 @@ public class Graph {
      * 
      * @return true if it actually changed anything
      */
-    public static boolean rewire(RobotModel _robotModel, Node source, Node target, double linkDist) {
+    public static <States extends Num> boolean rewire(RobotModel<States> _robotModel, Node<States> source, Node<States> target, double linkDist) {
         if (target.getIncoming() == null)
             throw new IllegalArgumentException("cannot rewire the root");
 
@@ -118,9 +131,9 @@ public class Graph {
         }
 
         // actually make and set the new link
-        LinkInterface oldLink = target.getIncoming();
+        LinkInterface<States> oldLink = target.getIncoming();
         oldLink.get_source().removeOutgoing(oldLink);
-        LinkInterface newLink = newLink(source, target, linkDist);
+        LinkInterface<States> newLink = newLink(source, target, linkDist);
 
         // Update all the child path lengths for consistency.
         // but only for the link types that need it.

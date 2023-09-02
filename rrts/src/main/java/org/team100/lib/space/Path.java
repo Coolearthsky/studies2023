@@ -1,23 +1,27 @@
 package org.team100.lib.space;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.team100.lib.index.KDModel;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
 
 
-public class Path implements Comparable<Path> {
+public class Path<States extends Num> implements Comparable<Path<States>> {
 
     /** The total length of the computed path     */
     private final double distance;
 
-    /** The states along the path.   */
-    private final List<double[]> states;
+    /** The states along the path.  It's two lists so i can see where the join is. */
+    private final List<Matrix<States, N1>> states_A;
+    private final List<Matrix<States, N1>> states_B;
 
-    public Path(double distance, List<double[]> states) {
+    public Path(double distance, List<Matrix<States, N1>> states_A, List<Matrix<States, N1>> states_B) {
         this.distance = distance;
-        this.states = states;
+        this.states_A = states_A;
+        this.states_B = states_B;
     }
 
     /**
@@ -28,36 +32,11 @@ public class Path implements Comparable<Path> {
      * than the argument path.
      */
     @Override
-    public int compareTo(Path that) {
+    public int compareTo(Path<States> that) {
         return Double.compare(distance, that.distance);
     }
 
-    public void interpolate(double[] outConfig, double offset, KDModel kdModel) {
-        Iterator<double[]> pathIter = states.iterator();
-        double[] from = pathIter.next();
-        double[] dest = pathIter.next();
-        double distToFrom = 0;
-        double distToDest = kdModel.dist(from, dest);
-
-        while (pathIter.hasNext() && distToDest < offset) {
-            from = dest;
-            distToFrom = distToDest;
-            dest = pathIter.next();
-            distToDest += kdModel.dist(from, dest);
-        }
-        double distBetween = distToDest - distToFrom;
-        offset -= distToFrom;
-        offset /= distBetween;
-
-        double s = offset;
-        double p = 1.0 - s;
-
-        for (int i=0 ; i<kdModel.dimensions() ; ++i) {
-            outConfig[i] = from[i] * p + dest[i] * s;
-        }
-    }
-
-    public static boolean isBetter(Path a, Path b) {
+    public static <States extends Num> boolean isBetter(Path<States> a, Path<States> b) {
         if (a == null) {
             return false;
         }
@@ -70,16 +49,22 @@ public class Path implements Comparable<Path> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Path)) return false;
+        if (!(o instanceof Path<?>)) return false;
 
-        Path path = (Path) o;
+        // wildcard here since we don't actually care what the parameter is
+        Path<?> path = (Path<?>) o;
 
         if (Double.compare(path.distance, distance) != 0) return false;
-        if (states.size() != path.states.size()) return false;
-        Iterator<double[]> i1 = states.iterator();
-        Iterator<double[]> i2 = path.states.iterator();
+        return statesEqual(states_A, path.states_A) && statesEqual(states_B, path.states_B);
+    }
+
+    // wildcard type here accommodates the cast above
+    private boolean statesEqual(List<? extends Matrix<?,?>> states, List<? extends Matrix<?, ?>> otherstates) {
+        if (states.size() != otherstates.size()) return false;
+        Iterator<? extends Matrix<?, ?>> i1 = states.iterator();
+        Iterator<? extends Matrix<?, ?>> i2 = otherstates.iterator();
         while (i1.hasNext()) {
-            if (!Arrays.equals(i1.next(), i2.next())) {
+            if (! i1.next().equals(i2.next())) {
                  return false;
             }
         }
@@ -92,8 +77,11 @@ public class Path implements Comparable<Path> {
         long temp;
         temp = distance != +0.0d ? Double.doubleToLongBits(distance) : 0L;
         result = (int) (temp ^ (temp >>> 32));
-        for (double[] config : states) {
-            result = 31 * result + Arrays.hashCode(config);
+        for (Matrix<States, N1> config : states_A) {
+            result = 31 * result + config.hashCode();
+        }
+        for (Matrix<States, N1> config : states_B) {
+            result = 31 * result + config.hashCode();
         }
         return result;
     }
@@ -102,12 +90,32 @@ public class Path implements Comparable<Path> {
         return distance;
     }
 
-    public List<double[]> getStates() {
-        return states;
+    public List<Matrix<States, N1>> getStatesA() {
+        List<Matrix<States, N1>> allStates = new ArrayList<>();
+        allStates.addAll(states_A);
+        return allStates;
+    }
+    
+    public List<Matrix<States, N1>> getStatesB() {
+        List<Matrix<States, N1>> allStates = new ArrayList<>();
+        allStates.addAll(states_B);
+        return allStates;
     }
 
     @Override
     public String toString() {
-        return "Path [_dist=" + String.format("%8.5f", distance) + ", _configs=" + states + "]";
+        String result="";
+        result += "Path [_dist=" + String.format("%8.5f", distance);
+        result += " states_A=[\n";
+        for (Matrix<States, N1> d : states_A) {
+            result += d.toString() + "\n";
+        } 
+        result += "]\n";
+        result += " states_B=[\n";
+        for (Matrix<States, N1> d : states_B) {
+            result += d.toString() + "\n";
+        } 
+        result += "]]";
+    return result;
     }
 }

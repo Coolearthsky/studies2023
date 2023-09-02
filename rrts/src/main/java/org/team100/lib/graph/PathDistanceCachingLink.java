@@ -1,10 +1,6 @@
 package org.team100.lib.graph;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.team100.lib.space.Path;
+import edu.wpi.first.math.Num;
 
 /**
  * This link type keeps a consistent "path distance" and must be
@@ -13,11 +9,11 @@ import org.team100.lib.space.Path;
  * Walking the children to update the cache turns out to be faster
  * than walking the parents on every query.
  */
-public class PathDistanceCachingLink implements LinkInterface {
+public class PathDistanceCachingLink<States extends Num> implements LinkInterface<States> {
     /** nullable for root */
-    private final Node _source;
+    private final Node<States> _source;
     /** nonnull */
-    private final Node _target;
+    private final Node<States> _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
     /** Total path length, i.e. cost, so far. This is updated by rewiring. */
@@ -30,7 +26,7 @@ public class PathDistanceCachingLink implements LinkInterface {
      * @param target
      * @param linkDist distance to the parent
      */
-    public PathDistanceCachingLink(Node source, Node target, double linkDist) {
+    public PathDistanceCachingLink(Node<States> source, Node<States> target, double linkDist) {
         if (source == null)
             throw new IllegalArgumentException();
         if (target == null)
@@ -47,29 +43,13 @@ public class PathDistanceCachingLink implements LinkInterface {
     }
 
     @Override
-    public Path path() {
-        Node node = get_target();
-        List<double[]> configs = new LinkedList<double[]>();
-        double pathDist = get_pathDist();
-        while (true) {
-            configs.add(node.getState());
-            LinkInterface incoming = node.getIncoming();
-            if (incoming == null)
-                break;
-            node = incoming.get_source();
-        }
-        Collections.reverse(configs);
-        return new Path(pathDist, configs);
-    }
-
-    @Override
-    public Node get_source() {
+    public Node<States> get_source() {
         return _source;
     }
 
     /** nonnull */
     @Override
-    public Node get_target() {
+    public Node<States> get_target() {
         return _target;
     }
 
@@ -87,5 +67,11 @@ public class PathDistanceCachingLink implements LinkInterface {
     @Override
     public double get_pathDist() {
         return _pathDist;
+    }
+
+    @Override
+    public String toString() {
+        return "PathDistanceCachingLink [_source=" + _source + ", _target=" + _target + ", _linkDist=" + _linkDist
+                + ", _pathDist=" + _pathDist + "]";
     }
 }

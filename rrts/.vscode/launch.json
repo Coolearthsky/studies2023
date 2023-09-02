@@ -8,6 +8,41 @@
         "type": "java",
         "name": "ArenaFrame",
         "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.arena.ArenaFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "FullStateArenaFrame",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.full_state_arena.FullStateArenaFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "PendulumFrame",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.swingup.PendulumFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "FullStateArenaFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.full_state_arena.FullStateArenaFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "Launch PendulumFrame",
+        "request": "launch",
+        "mainClass": "edu.unc.robotics.prrts.example.swingup.PendulumFrame",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "ArenaFrame",
+        "request": "launch",
         "mainClass": "edu.unc.robotics.prrts.example.arena.ArenaFrame",
         "projectName": "rrts"
     },

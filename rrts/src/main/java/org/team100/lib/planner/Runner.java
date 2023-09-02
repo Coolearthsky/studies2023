@@ -1,16 +1,22 @@
 package org.team100.lib.planner;
 
+import java.util.List;
+
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
+
+import edu.wpi.first.math.Num;
 
 /**
  * Runs the specified steps or time.
  */
-public class Runner {
-    private final Solver _solver;
+public class Runner<States extends Num> {
+    private static final boolean DEBUG = false;
+
+    private final Solver<States> _solver;
     private int _stepNo;
 
-    public Runner(Solver solver) {
+    public Runner(Solver<States> solver) {
         _solver = solver;
         // since we use stepNo for radius, it can't be zero
         _stepNo = 1;
@@ -36,12 +42,17 @@ public class Runner {
     }
 
     /** For listeners. */
-    public Iterable<Node> getNodes() {
-        return _solver.getNodes();
+    public List<Node<States>> getNodesA() {
+        return _solver.getNodesA();
     }
 
     /** For listeners. */
-    public Path getBestPath() {
+    public List<Node<States>> getNodesB() {
+        return _solver.getNodesB();
+    }
+
+    /** For listeners. */
+    public Path<States> getBestPath() {
         return _solver.getBestPath();
     }
 
@@ -49,7 +60,13 @@ public class Runner {
 
     private void run(int sampleLimit, long timeLimitNS) {
         long startTime = System.nanoTime();
+        int actualLimit = 0;
         while (true) {
+            if (DEBUG)
+                System.out.println("counter: " + actualLimit);
+            actualLimit += 1;
+            if (actualLimit > 10000)
+                break;
             _solver.setStepNo(_stepNo);
             if (_solver.step() > 0) {
                 _stepNo++;

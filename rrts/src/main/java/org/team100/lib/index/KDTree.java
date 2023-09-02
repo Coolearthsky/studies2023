@@ -6,16 +6,20 @@ import java.util.function.BiConsumer;
 
 import org.team100.lib.space.Point;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
+
 public class KDTree {
 
     /** Returns all the values in the subtree. */
-    public static <V extends Point> List<V> values(KDNode<V> root) {
-        List<V> list = new ArrayList<V>();
+    public static <States extends Num, V extends Point<States>> List<V> values(KDNode<V> root) {
+        List<V> list = new ArrayList<>();
         buildList(list, root);
         return list;
     }
 
-    private static <V extends Point> void buildList(List<V> list, KDNode<V> node) {
+    private static <States extends Num, V extends Point<States>> void buildList(List<V> list, KDNode<V> node) {
         if (node == null)
             return;
         list.add(node.getValue());
@@ -24,18 +28,18 @@ public class KDTree {
     }
 
     /** Inserts the value into the KD Tree. */
-    public static <V extends Point> void insert(KDModel model, KDNode<V> root, V value) {
-        double[] min = model.getMin();
-        double[] max = model.getMax();
+    public static <States extends Num, V extends Point<States>> void insert(KDModel<States> model, KDNode<V> root, V value) {
+        Matrix<States,N1> min = model.getMin();
+        Matrix<States,N1> max = model.getMax();
 
-        KDNode<V> newNode = new KDNode<V>(value);
+        KDNode<V> newNode = new KDNode<>(value);
         KDNode<V> n = root;
         int depth = 0;
 
         for (;; ++depth) {
             int axis = depth % model.dimensions();
-            double mp = (min[axis] + max[axis]) / 2;
-            double v = value.getState()[axis];
+            double mp = (min.get(axis,0) + max.get(axis,0)) / 2;
+            double v = value.getState().get(axis,0);
 
             if (v < mp) {
                 // a-side
@@ -43,7 +47,7 @@ public class KDTree {
                     n.setA(newNode);
                     break;
                 }
-                max[axis] = mp;
+                max.set(axis,0, mp);
                 n = n.getA();
             } else {
                 // b-side
@@ -51,7 +55,7 @@ public class KDTree {
                     n.setB(newNode);
                     break;
                 }
-                min[axis] = mp;
+                min.set(axis,0, mp);
                 n = n.getB();
             }
         }
@@ -60,124 +64,126 @@ public class KDTree {
     /**
      * @param consumer Consumes possible parents for target.
      */
-    public static <V extends Point> void near(
-            KDModel model,
+    public static <States extends Num, V extends Point<States>> void near(
+            KDModel<States> model,
             KDNode<V> root,
-            double[] target,
+            Matrix<States, N1> target,
             double radius,
             BiConsumer<V, Double> consumer) {
-        double[] min = model.getMin();
-        double[] max = model.getMax();
+        Matrix<States,N1> min = model.getMin();
+        Matrix<States,N1> max = model.getMax();
         KDTree.near(model, min, max, consumer, root, target, radius, 0);
     }
 
     /**
      * @param consumer Consumes possible parents for target.
      */
-    private static <V extends Point> void near(
-            KDModel model,
-            double[] min,
-            double[] max,
+    private static <States extends Num, V extends Point<States>> void near(
+            KDModel<States> model,
+            Matrix<States, N1> min,
+            Matrix<States, N1> max,
             BiConsumer<V, Double> consumer,
             KDNode<V> kdNode,
-            double[] target,
+            Matrix<States, N1> target,
             double radius,
             int depth) {
-        final double dist = model.dist(kdNode.getConfig(), target);
-      //  System.out.println("dist " + dist + " radius " + radius);
+        final double dist = model.dist(kdNode.getValue().getState(), target);
         if (dist < radius) {
             consumer.accept(kdNode.getValue(), dist);
         }
         final int axis = depth % model.dimensions();
-        final double mp = (min[axis] + max[axis]) / 2;
-        final double dm = Math.abs(mp - target[axis]);
+        final double mp = (min.get(axis,0) + max.get(axis,0)) / 2;
+        final double dm = Math.abs(mp - target.get(axis,0));
 
         KDNode<V> a = kdNode.getA();
 
-        if (a != null && (target[axis] < mp || dm < radius)) {
+        if (a != null && (target.get(axis,0) < mp || dm < radius)) {
             // in or near a-side
-            double tmp = max[axis];
-            max[axis] = mp;
+            double tmp = max.get(axis,0);
+            max.set(axis,0, mp);
             near(model, min, max, consumer, a, target, radius, depth + 1);
-            max[axis] = tmp;
+            max.set(axis,0, tmp);
         }
 
         KDNode<V> b = kdNode.getB();
 
-        if (b != null && (mp <= target[axis] || dm < radius)) {
+        if (b != null && (mp <= target.get(axis,0) || dm < radius)) {
             // in or near b-side
-            double tmp = min[axis];
-            min[axis] = mp;
-            near(model, min, max, consumer, b, target, radius, depth + 1);
-            min[axis] = tmp;
+            double tmp = min.get(axis,0);
+            min.set(axis,0, mp);
+            near(model, min, max, consumer,b, target, radius, depth + 1);
+            min.set(axis,0, tmp);
         }
     }
 
-    public static <V extends Point> KDNearNode<V> nearest(KDModel model, KDNode<V> root, double[] target) {
-        double[] min = model.getMin();
-        double[] max = model.getMax();
+    public static <States extends Num, V extends Point<States>> KDNearNode<V> nearest(KDModel<States> model, KDNode<V> root, Matrix<States,N1> target) {
+        Matrix<States,N1> min = model.getMin();
+        Matrix<States,N1> max = model.getMax();
         return KDTree.nearest(new KDNearNode<V>(Double.MAX_VALUE, null), model, root, min, max, target, 0);
     }
 
-    public static <V extends Point> KDNearNode<V> nearest(
+    public static <States extends Num, V extends Point<States>> KDNearNode<V> nearest(
             KDNearNode<V> best,
-            KDModel model,
+            KDModel<States> model,
             KDNode<V> n,
-            double[] min,
-            double[] max,
-            double[] target,
+            Matrix<States,N1> min,
+            Matrix<States,N1> max,
+            Matrix<States,N1> target,
             int depth) {
         final int axis = depth % model.dimensions();
-        final double d = model.dist(n.getConfig(), target);
+        final double d = model.dist(n.getValue().getState(), target);
 
         if (d < best._dist) {
-            best = new KDNearNode<V>(d, n.getValue());
+            best = new KDNearNode<>(d, n.getValue());
         }
 
-        final double mp = (min[axis] + max[axis]) / 2;
+        final double mp = (min.get(axis,0) + max.get(axis,0)) / 2;
 
-        if (target[axis] < mp) {
+        if (target.get(axis,0) < mp) {
             // a-side
             KDNode<V> a = n.getA();
             if (a != null) {
-                double tmp = max[axis];
-                max[axis] = mp;
+                double tmp = max.get(axis,0);
+                max.set(axis,0, mp);
                 best = nearest(best, model, a, min, max, target, depth + 1);
-                max[axis] = tmp;
+                max.set(axis,0, tmp);
             }
 
             KDNode<V> b = n.getB();
             if (b != null) {
-                double tmp = Math.abs(mp - target[axis]);
+                double tmp = Math.abs(mp - target.get(axis,0));
                 if (tmp < best._dist) {
-                    tmp = min[axis];
-                    min[axis] = mp;
+                    tmp = min.get(axis,0);
+                    min.set(axis,0, mp);
                     best = nearest(best, model, b, min, max, target, depth + 1);
-                    min[axis] = tmp;
+                    min.set(axis,0, tmp);
                 }
             }
         } else {
             // b-side
             KDNode<V> b = n.getB();
             if (b != null) {
-                double tmp = min[axis];
-                min[axis] = mp;
+                double tmp = min.get(axis,0);
+                min.set(axis,0, mp);
                 best = nearest(best, model, b, min, max, target, depth + 1);
-                min[axis] = tmp;
+                min.set(axis,0, tmp);
             }
 
             KDNode<V> a = n.getA();
             if (a != null) {
-                double tmp = Math.abs(mp - target[axis]);
+                double tmp = Math.abs(mp - target.get(axis,0));
                 if (tmp < best._dist) {
-                    tmp = max[axis];
-                    max[axis] = mp;
+                    tmp = max.get(axis,0);
+                    max.set(axis,0, mp);
                     best = nearest(best, model, a, min, max, target, depth + 1);
-                    max[axis] = tmp;
+                    max.set(axis,0, tmp);
                 }
             }
         }
         return best;
+    }
+
+    private KDTree() {
     }
 
 }

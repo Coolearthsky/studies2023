@@ -2,7 +2,9 @@ package org.team100.lib.index;
 
 import org.team100.lib.space.Point;
 
-public final class KDNode<V extends Point> {
+import edu.wpi.first.math.Num;
+
+public final class KDNode<V extends Point<? extends Num>> {
     private final V value;
     private KDNode<V> a;
     private KDNode<V> b;
@@ -27,10 +29,6 @@ public final class KDNode<V extends Point> {
 
     public KDNode<V> getB() {
         return b;
-    }
-
-    public double[] getConfig() {
-        return value.getState();
     }
 
     public V getValue() {
