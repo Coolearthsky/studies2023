@@ -9,79 +9,83 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Point;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 
 public class TestTrees {
-    private static class MyKDModel implements KDModel {
+    private static class MyKDModel implements KDModel<N2> {
         @Override
         public int dimensions() {
             return 2;
         }
 
         @Override
-        public double[] getMin() {
-            return new double[] { 0, 0 };
+        public Matrix<N2, N1> getMin() {
+            return VecBuilder.fill(0, 0);
         }
 
         @Override
-        public double[] getMax() {
-            return new double[] { 1, 1 };
+        public Matrix<N2, N1> getMax() {
+            return VecBuilder.fill(1, 1);
         }
 
         @Override
-        public double dist(double[] start, double[] end) {
-            return Math.sqrt(Math.pow(start[0] - end[0], 2) + Math.pow(start[1] - end[1], 2));
+        public double dist(Matrix<N2, N1> start, Matrix<N2, N1> end) {
+            return Math.sqrt(Math.pow(start.get(0, 0) - end.get(0, 0), 2)
+                    + Math.pow(start.get(1, 0) - end.get(1, 0), 2));
         }
 
         @Override
-        public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
+        public Matrix<N2, N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2, N1> newConfig) {
             throw new UnsupportedOperationException("Unimplemented method 'steer'");
         }
 
         @Override
         public void setStepNo(int stepNo) {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void setRadius(double radius) {
-            // TODO Auto-generated method stub
-            
         }
     }
 
-    static class StringPoint implements Point {
+    static class StringPoint implements Point<N2> {
         private final String v;
-        private final double[] _config;
+        private final Matrix<N2, N1> _config;
 
-        public StringPoint(String v, double[] _config) {
+        public StringPoint(String v, Matrix<N2, N1> _config) {
             this.v = v;
             this._config = _config;
         }
 
         @Override
-        public double[] getState() {
+        public Matrix<N2, N1> getState() {
             return _config;
         }
 
         public String get_v() {
             return v;
-
         }
     }
 
     @Test
     void treeTest() {
-        KDModel m = new MyKDModel();
-        double[] init = new double[] { 0, 0 };
+        KDModel<N2> m = new MyKDModel();
+        Matrix<N2, N1> init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
-        KDTree.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child1", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.5 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child2", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.75 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child3", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.25 })));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
-        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.5, (value, dist) -> {
+        KDTree.near(m, rootNode, new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }), 0.5, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
@@ -96,23 +100,27 @@ public class TestTrees {
 
     @Test
     void treeTest2() {
-        KDModel m = new MyKDModel();
-        double[] init = new double[] { 0, 0 };
+        KDModel<N2> m = new MyKDModel();
+        Matrix<N2, N1> init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
-        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        KDTree.insert(m, rootNode, new StringPoint("child2", new double[] { 0.5, 0.75 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child1", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.5 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child2", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.75 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child3", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.25 })));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // small radius
-        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+        KDTree.near(m, rootNode, new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }), 0.1, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode,
+                new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }));
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -120,26 +128,30 @@ public class TestTrees {
     @Test
     void treeTest3() {
         // are these asserts actually valid?
-        KDModel m = new MyKDModel();
-        double[] init = new double[] { 0, 0 };
+        KDModel<N2> m = new MyKDModel();
+        Matrix<N2, N1> init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 0.75 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child1", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.5 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child2", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.75 })));
 
         // if the other view does the insert, the child is still found
-        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child3", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.25 })));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // small radius
-        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.1, (value, dist) -> {
+        KDTree.near(m, rootNode, new Matrix<>(Nat.N2(),Nat.N1(), new double[] { 0.25, 0.25 }), 0.1, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
-        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode,
+                new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }));
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -147,20 +159,23 @@ public class TestTrees {
     @Test
     void treeTest4() {
         // are these asserts actually valid?
-        KDModel m = new MyKDModel();
-        double[] init = new double[] { 0, 0 };
+        KDModel<N2> m = new MyKDModel();
+        Matrix<N2, N1> init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        KDTree.insert(m, rootNode, new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child1", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.5 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child2", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 075 })));
 
         // if the other view does the insert, the child is still found
-        KDTree.insert(m, rootNode,  new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child3", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.25 })));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // now it should find it
-        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+        KDTree.near(m, rootNode, new Matrix<>(Nat.N2(),Nat.N1(), new double[] { 0.25, 0.25 }), 0.26, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
@@ -169,7 +184,8 @@ public class TestTrees {
         assertEquals(0.25, distList.get(0), 0.001);
 
         // and it should still find it
-        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode,
+                new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }));
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }
@@ -177,27 +193,31 @@ public class TestTrees {
     @Test
     void treeTest5() {
         // are these asserts actually valid?
-        KDModel m = new MyKDModel();
-        double[] init = new double[] { 0, 0 };
+        KDModel<N2> m = new MyKDModel();
+        Matrix<N2, N1> init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         KDNode<StringPoint> rootNode = new KDNode<>(new StringPoint("root", init));
 
-        KDTree.insert(m, rootNode,  new StringPoint("child1", new double[] { 0.5, 0.5 }));
-        KDTree.insert(m, rootNode,  new StringPoint("child2", new double[] { 0.5, 075 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child1", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.5 })));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child2", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 075 })));
 
         List<StringPoint> nearList = new ArrayList<>();
         List<Double> distList = new ArrayList<>();
         // now it should find it
-        KDTree.near(m, rootNode, new double[] { 0.25, 0.25 }, 0.26, (value, dist) -> {
+        KDTree.near(m, rootNode, new Matrix<>(Nat.N2(),Nat.N1(), new double[] { 0.25, 0.25 }), 0.26, (value, dist) -> {
             nearList.add(value);
             distList.add(dist);
         });
         assertEquals(0, nearList.size());
 
         // do the insert *after* it would have been found...
-        KDTree.insert(m, rootNode, new StringPoint("child3", new double[] { 0.5, 0.25 }));
+        KDTree.insert(m, rootNode,
+                new StringPoint("child3", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0.25 })));
 
         // and it should still find it
-        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode, new double[] { 0.25, 0.25 });
+        KDNearNode<StringPoint> nearest = KDTree.nearest(m, rootNode,
+                new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.25, 0.25 }));
         assertEquals("child3", nearest._nearest.get_v());
         assertEquals(0.25, nearest._dist, 0.001);
     }

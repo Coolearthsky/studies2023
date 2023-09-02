@@ -8,18 +8,22 @@ import org.team100.lib.geom.Polygon;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 
-
-public class HolonomicArena implements Arena {
+/** Two dimensional Euclidean */
+public class HolonomicArena implements Arena<N2> {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;
     private static final int DIMENSIONS = 2;
 
-    private static final double[] _init = { 15.5, 6.75 };
-    private static final double[] _goal = { 1.93, 2.748 };
-    private static final double[] _min = { 0, 0 };
-    private static final double[] _max = { 16, 8 };
+    private static final Matrix<N2, N1> _init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 15.5, 6.75 });
+    private static final Matrix<N2, N1> _goal = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 1.93, 2.748 });
+    private static final Matrix<N2, N1> _min = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
+    private static final Matrix<N2, N1> _max = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 16, 8 });
 
     // used for steering
     // private final double _gamma;
@@ -57,21 +61,21 @@ public class HolonomicArena implements Arena {
     }
 
     @Override
-    public double[] getMin() {
-        return _min.clone();
+    public Matrix<N2, N1> getMin() {
+        return _min.copy();
     }
 
     @Override
-    public double[] getMax() {
-        return _max.clone();
+    public Matrix<N2, N1> getMax() {
+        return _max.copy();
     }
 
     @Override
-    public double dist(double[] start, double[] end) {
+    public double dist(Matrix<N2, N1> start, Matrix<N2, N1> end) {
         double dist = 0;
         for (int i = 0; i < DIMENSIONS; i += 2) {
-            double dx = start[i] - end[i];
-            double dy = start[i + 1] - end[i + 1];
+            double dx = start.get(i, 0) - end.get(i, 0);
+            double dy = start.get(i + 1, 0) - end.get(i + 1, 0);
             dist += dx * dx + dy * dy;
         }
         return Math.sqrt(dist);
@@ -88,28 +92,29 @@ public class HolonomicArena implements Arena {
     }
 
     @Override
-    public double[] steer(KDNearNode<Node> x_nearest, double[] x_rand) {
+    public Matrix<N2, N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2, N1> x_rand) {
         double dist = radius / x_nearest._dist;
 
         // if it's close enough then just return it
         if (x_nearest._dist < radius)
             return x_rand;
 
-        double[] nearConfig = x_nearest._nearest.getState();
-        double[] result = new double[DIMENSIONS];
+        Matrix<N2, N1> nearConfig = x_nearest._nearest.getState();
+        Matrix<N2, N1> result = getMin();
+        result.fill(0);
         for (int i = 0; i < DIMENSIONS; ++i) {
-            result[i] = nearConfig[i] + (x_rand[i] - nearConfig[i]) * dist;
+            result.set(i, 0, nearConfig.get(i, 0) + (x_rand.get(i, 0) - nearConfig.get(i, 0)) * dist);
         }
         return result;
 
     }
 
     @Override
-    public boolean clear(double[] config) {
+    public boolean clear(Matrix<N2, N1> config) {
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
             for (int j = 0; j < DIMENSIONS; j += 2) {
-                if (obstacle.distToPoint(config[j], config[j + 1]) < ROBOT_RADIUS) {
+                if (obstacle.distToPoint(config.get(j, 0), config.get(j + 1, 0)) < ROBOT_RADIUS) {
                     return false;
                 }
             }
@@ -118,11 +123,11 @@ public class HolonomicArena implements Arena {
     }
 
     @Override
-    public boolean link(double[] a, double[] b) {
+    public boolean link(Matrix<N2, N1> a, Matrix<N2, N1> b) {
         double[] dx = new double[DIMENSIONS];
         double dist = 0;
         for (int i = 0; i < DIMENSIONS; ++i) {
-            dx[i] = b[i] - a[i];
+            dx[i] = b.get(i, 0) - a.get(i, 0);
             dist += dx[i] * dx[i];
         }
 
@@ -130,11 +135,12 @@ public class HolonomicArena implements Arena {
 
         int steps = (int) Math.floor(dist / DISCRETIZATION) + 2;
 
-        double[] p = new double[DIMENSIONS];
+        Matrix<N2, N1> p = getMin();
+        p.fill(0);
 
         for (int i = 0; i <= steps; ++i) {
             for (int j = 0; j < DIMENSIONS; ++j) {
-                p[j] = (a[j] * (steps - i) + b[j] * i) / steps;
+                p.set(j, 0, (a.get(j, 0) * (steps - i) + b.get(j, 0) * i) / steps);
             }
             if (!clear(p)) {
                 return false;
@@ -145,17 +151,17 @@ public class HolonomicArena implements Arena {
     }
 
     @Override
-    public double[] initial() {
+    public Matrix<N2, N1> initial() {
         return _init;
     }
 
     @Override
-    public double[] goal() {
+    public Matrix<N2, N1> goal() {
         return _goal;
     }
 
     @Override
-    public boolean goal(double[] conf) {
+    public boolean goal(Matrix<N2, N1> conf) {
         return dist(conf, _goal) < GOAL_RADIUS;
     }
 

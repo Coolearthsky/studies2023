@@ -9,6 +9,8 @@ import org.team100.lib.rrt.example.arena.HolonomicArena;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
+import edu.wpi.first.math.numbers.N2;
+
 
 @SuppressWarnings("unused")
 public class TestBestPath {
@@ -17,8 +19,8 @@ public class TestBestPath {
     @Test
     public void testTime() {
         final HolonomicArena arena = new HolonomicArena(6);
-        final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
-        final Runner rrtStar = new Runner(worker);
+        final RRTStar<N2, HolonomicArena> worker = new RRTStar<>(arena, new Sample<>(arena), 6);
+        final Runner<N2> rrtStar = new Runner<>(worker);
 
         rrtStar.runForDurationMS(20);
 
@@ -33,15 +35,15 @@ public class TestBestPath {
             nodes++;
         }
         assertEquals(2400, nodes, 1200);
-        Path bestPath = rrtStar.getBestPath();
+        Path<N2> bestPath = rrtStar.getBestPath();
         assertEquals(16.5, bestPath.getDistance(), 1.5);
     }
 
     @Test
     public void testSteps() {
         final HolonomicArena arena = new HolonomicArena(6);
-        final RRTStar<HolonomicArena> worker = new RRTStar<>(arena, new Sample(arena), 6);
-        final Runner rrtStar = new Runner(worker);
+        final RRTStar<N2, HolonomicArena> worker = new RRTStar<>(arena, new Sample<>(arena), 6);
+        final Runner<N2> rrtStar = new Runner<>(worker);
 
         rrtStar.runSamples(500);
 
@@ -55,7 +57,7 @@ public class TestBestPath {
             nodes++;
         }
         assertEquals(500, nodes, 10);
-        Path bestPath = rrtStar.getBestPath();
+        Path<N2> bestPath = rrtStar.getBestPath();
         assertEquals(17.5, bestPath.getDistance(), 2);
     }
 

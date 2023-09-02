@@ -10,9 +10,7 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -28,27 +26,30 @@ import org.team100.lib.index.KDTree;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.space.Path;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N4;
+
 /**
- * note this ignores model.dimensions since the plotted dimensions and model
- * dimensions aren't the same.
+ * Four-dimensional model, plot spatial dimensions which are indices 0 and 2.
  * 
  * TODO: make both x/y and xdot/ydot pics
  */
 public class FullStateArenaView extends JComponent {
     private static final boolean DEBUG = false;
 
-    private final Runner _rrtStar;
-    private final Arena _robotModel;
+    private final Runner<N4> _rrtStar;
+    private final Arena<N4> _robotModel;
     private int framecounter;
 
     private Image _backgroundImage;
 
-    private final NumberFormat _integerFormat = DecimalFormat.getIntegerInstance();
+    private final NumberFormat _integerFormat = NumberFormat.getIntegerInstance();
 
-    private KDNode<Node> _T_a;
-    private KDNode<Node> _T_b;
+    private KDNode<Node<N4>> _T_a;
+    private KDNode<Node<N4>> _T_b;
 
-    public FullStateArenaView(Arena arena, Runner rrtStar, KDNode<Node> T_a, KDNode<Node> T_b) {
+    public FullStateArenaView(Arena<N4> arena, Runner<N4> rrtStar, KDNode<Node<N4>> T_a, KDNode<Node<N4>> T_b) {
         _rrtStar = rrtStar;
         _robotModel = arena;
         _T_a = T_a;
@@ -70,11 +71,11 @@ public class FullStateArenaView extends JComponent {
     public void doPaint(Graphics2D g, Dimension size) {
         if (DEBUG)
             System.out.println("doPaint");
-        Arena robotModel = _robotModel;
-        double[] min = robotModel.getMin();
-        double[] max = robotModel.getMax();
+        Arena<N4> robotModel = _robotModel;
+        Matrix<N4,N1> min = robotModel.getMin();
+        Matrix<N4,N1> max = robotModel.getMax();
 
-        Path bestPath = _rrtStar.getBestPath();
+        Path<N4> bestPath = _rrtStar.getBestPath();
 
         framecounter += 1;
         if (framecounter > 100) {
@@ -97,7 +98,7 @@ public class FullStateArenaView extends JComponent {
     }
 
     /** min and max are (x xdot y ydot) */
-    private void createBGImage(double[] min, double[] max, Dimension size, Path link) {
+    private void createBGImage(Matrix<N4,N1> min, Matrix<N4,N1> max, Dimension size, Path<N4> link) {
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
@@ -132,37 +133,37 @@ public class FullStateArenaView extends JComponent {
             System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
 
-        for (Node node : KDTree.values(_T_a)) {
-            LinkInterface incoming = node.getIncoming();
+        for (Node<N4> node : KDTree.values(_T_a)) {
+            LinkInterface<N4> incoming = node.getIncoming();
             if (incoming != null) {
-                Node parent = incoming.get_source();
-                double[] n = node.getState();
-                double[] p = parent.getState();
+                Node<N4> parent = incoming.get_source();
+                Matrix<N4,N1> n = node.getState();
+                Matrix<N4,N1> p = parent.getState();
                 if (DEBUG)
                     System.out.printf("A node %s parent %s\n"
-                            + Arrays.toString(n), Arrays.toString(p));
+                            + n.toString(), p.toString());
                 g.setColor(Color.GREEN);
-                line.setLine(n[0], n[2], p[0], p[2]);
+                line.setLine(n.get(0,0), n.get(2,0), p.get(0,0), p.get(2,0));
                 g.draw(line);
             }
         }
-        for (Node node : KDTree.values(_T_b)) {
-            LinkInterface incoming = node.getIncoming();
+        for (Node<N4> node : KDTree.values(_T_b)) {
+            LinkInterface<N4> incoming = node.getIncoming();
             if (incoming != null) {
-                Node parent = incoming.get_source();
-                double[] n = node.getState();
-                double[] p = parent.getState();
+                Node<N4> parent = incoming.get_source();
+                Matrix<N4,N1> n = node.getState();
+                Matrix<N4,N1> p = parent.getState();
                 if (DEBUG)
                     System.out.printf("B node %s parent %s\n"
-                            + Arrays.toString(n), Arrays.toString(p));
+                            + n.toString(), p.toString());
                 g.setColor(Color.RED);
-                line.setLine(n[0], n[2], p[0], p[2]);
+                line.setLine(n.get(0,0), n.get(2,0), p.get(0,0), p.get(2,0));
                 g.draw(line);
             }
         }
     }
 
-    private void renderPaths(Path path, Graphics2D g, double scale) {
+    private void renderPaths(Path<N4> path, Graphics2D g, double scale) {
         if (path == null) {
             return;
         }
@@ -170,36 +171,36 @@ public class FullStateArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
-        List<double[]> statesA = path.getStatesA();
+        List<Matrix<N4,N1>> statesA = path.getStatesA();
         if (statesA.size() > 1) {
-            Iterator<double[]> pathIter = statesA.iterator();
-            double[] prev = pathIter.next();
+            Iterator<Matrix<N4,N1>> pathIter = statesA.iterator();
+            Matrix<N4,N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
-                double[] curr = pathIter.next();
+                Matrix<N4,N1>  curr = pathIter.next();
                 g.setColor(Color.GREEN);
-                line.setLine(prev[0], prev[2], curr[0], curr[2]);
+                line.setLine(prev.get(0,0), prev.get(2,0), curr.get(0,0), curr.get(2,0));
                 g.draw(line);
                 prev = curr;
             }
         }
-        List<double[]> statesB = path.getStatesB();
+        List<Matrix<N4,N1>> statesB = path.getStatesB();
         if (statesB.size() > 1) {
-            Iterator<double[]> pathIter = statesB.iterator();
-            double[] prev = pathIter.next();
+            Iterator<Matrix<N4,N1>> pathIter = statesB.iterator();
+            Matrix<N4,N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
-                double[] curr = pathIter.next();
+                Matrix<N4,N1> curr = pathIter.next();
                 g.setColor(Color.RED);
-                line.setLine(prev[0], prev[2], curr[0], curr[2]);
+                line.setLine(prev.get(0,0), prev.get(2,0), curr.get(0,0), curr.get(2,0));
                 g.draw(line);
                 prev = curr;
             }
         }
 
-        double[] nA = statesA.get(statesA.size() - 1);
-        double[] nB = statesB.get(0);
+        Matrix<N4,N1> nA = statesA.get(statesA.size() - 1);
+        Matrix<N4,N1> nB = statesB.get(0);
         if (nA != null && nB != null) {
             g.setColor(Color.BLACK);
-            line.setLine(nA[0], nA[2], nB[0], nB[2]);
+            line.setLine(nA.get(0,0), nA.get(2,0), nB.get(0,0), nB.get(2,0));
             g.draw(line);
         } else {
             System.out.println("NULLS");
@@ -208,15 +209,15 @@ public class FullStateArenaView extends JComponent {
     }
 
     /** min and max are (x xdot y ydot) */
-    private double setupGraphics(double[] min, double[] max, Dimension size, Graphics2D g) {
+    private double setupGraphics(Matrix<N4,N1> min, Matrix<N4,N1> max, Dimension size, Graphics2D g) {
         g.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
 
-        g.translate(min[0], min[2]);
+        g.translate(min.get(0,0), min.get(2,0));
         double scale = Math.min(
-                size.width / (max[0] - min[0]),
-                size.height / (max[2] - min[2]));
+                size.width / (max.get(0,0) - min.get(0,0)),
+                size.height / (max.get(2,0) - min.get(2,0)));
         g.scale(scale, scale);
         g.setStroke(new BasicStroke((float) (0.25 / scale)));
         return scale;

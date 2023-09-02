@@ -5,16 +5,18 @@ import java.util.List;
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
 
+import edu.wpi.first.math.Num;
+
 /**
  * Runs the specified steps or time.
  */
-public class Runner {
+public class Runner<States extends Num> {
     private static final boolean DEBUG = false;
 
-    private final Solver _solver;
+    private final Solver<States> _solver;
     private int _stepNo;
 
-    public Runner(Solver solver) {
+    public Runner(Solver<States> solver) {
         _solver = solver;
         // since we use stepNo for radius, it can't be zero
         _stepNo = 1;
@@ -40,17 +42,17 @@ public class Runner {
     }
 
     /** For listeners. */
-    public List<Node> getNodesA() {
+    public List<Node<States>> getNodesA() {
         return _solver.getNodesA();
     }
 
     /** For listeners. */
-    public List<Node> getNodesB() {
+    public List<Node<States>> getNodesB() {
         return _solver.getNodesB();
     }
 
     /** For listeners. */
-    public Path getBestPath() {
+    public Path<States> getBestPath() {
         return _solver.getBestPath();
     }
 

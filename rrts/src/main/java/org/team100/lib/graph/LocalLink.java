@@ -1,15 +1,17 @@
 package org.team100.lib.graph;
 
+import edu.wpi.first.math.Num;
+
 /**
  * This link type does not keep any information about path distance,
  * just local link distance; it calculates path distance on the fly every time
  * and need not be updated by rewiring.
  */
-public class LocalLink implements LinkInterface {
+public class LocalLink<States extends Num> implements LinkInterface<States> {
     /** nullable for root */
-    private final Node _source;
+    private final Node<States> _source;
     /** nonnull */
-    private final Node _target;
+    private final Node<States> _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
     /** Total path length, i.e. cost, so far. This is updated by rewiring. */
@@ -22,7 +24,7 @@ public class LocalLink implements LinkInterface {
      * @param target
      * @param linkDist distance to the parent
      */
-    public LocalLink(Node source, Node target, double linkDist) {
+    public LocalLink(Node<States> source, Node<States> target, double linkDist) {
         if (source == null)
             throw new IllegalArgumentException();
         if (target == null)
@@ -55,13 +57,13 @@ public class LocalLink implements LinkInterface {
     // }
 
     @Override
-    public Node get_source() {
+    public Node<States> get_source() {
         return _source;
     }
 
     /** nonnull */
     @Override
-    public Node get_target() {
+    public Node<States> get_target() {
         return _target;
     }
 

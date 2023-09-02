@@ -4,6 +4,11 @@ import org.team100.lib.geom.Obstacle;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+
 /**
  * 
  * This version does not use LQR math.
@@ -25,7 +30,7 @@ import org.team100.lib.index.KDNearNode;
  * 
  * the general idea is
  */
-public class PendulumArena2 implements Arena {
+public class PendulumArena2 implements Arena<N2> {
     /**
      * zeroth dimension is position (radians, down is zero).
      * first dimension is velocity (radians per second).
@@ -40,11 +45,11 @@ public class PendulumArena2 implements Arena {
     private static final double POSITION_TOLERANCE = 0.25;
     private static final double VELOCITY_TOLERANCE = 0.25;
 
-    private final double[] _init;
-    private final double[] _goal;
+    private final Matrix<N2,N1> _init;
+    private final Matrix<N2,N1> _goal;
     /** same as the paper */
-    private static final double[] _min = { -4, -8 };
-    private static final double[] _max = { 4, 8 };
+    private static final Matrix<N2,N1> _min =  new Matrix<>(Nat.N2(),Nat.N1(), new double[] { -4, -8 });
+    private static final Matrix<N2,N1> _max = new Matrix<>(Nat.N2(),Nat.N1(), new double[]  { 4, 8 });
 
     Obstacle[] _obstacles = new Obstacle[] {};
 
@@ -61,7 +66,7 @@ public class PendulumArena2 implements Arena {
     private boolean timeForward = true;
 
 
-    public PendulumArena2(double[] init, double[] goal, double gravity) {
+    public PendulumArena2(Matrix<N2,N1> init, Matrix<N2,N1> goal, double gravity) {
         _init = init;
         _goal = goal;
         _g = gravity;
@@ -74,13 +79,13 @@ public class PendulumArena2 implements Arena {
     }
 
     @Override
-    public double[] getMin() {
-        return _min.clone();
+    public Matrix<N2,N1> getMin() {
+        return _min.copy();
     }
 
     @Override
-    public double[] getMax() {
-        return _max.clone();
+    public Matrix<N2,N1> getMax() {
+        return _max.copy();
     }
 
     /**
@@ -92,12 +97,12 @@ public class PendulumArena2 implements Arena {
      * 
      */
     @Override
-    public double dist(double[] start, double[] end) {
+    public double dist(Matrix<N2,N1> start, Matrix<N2,N1> end) {
 
-        double x_start1 = start[0];
-        double x_start2 = start[1];
-        double x_end1 = end[0];
-        double x_end2 = end[1];
+        double x_start1 = start.get(0,0);
+        double x_start2 = start.get(1,0);
+        double x_end1 = end.get(0,0);
+        double x_end2 = end.get(1,0);
         // TODO: what should x1dot actually be?
         double x1dot = (x_start2 + x_end2)/2;
         double dx1 = x_end1 - x_start1;
@@ -142,17 +147,17 @@ public class PendulumArena2 implements Arena {
      * @return x_new a feasible state
      */
     @Override
-    public double[] steer(KDNearNode<Node> x_nearest, double[] x_rand) {
+    public Matrix<N2,N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2,N1> x_rand) {
 
         if (x_nearest._nearest == null) {
             return null;
         }
-        double[] x_nearest_state = x_nearest._nearest.getState();
-        double x_nearest1 = x_nearest_state[0];
-        double x_nearest2 = x_nearest_state[1];
+        Matrix<N2,N1> x_nearest_state = x_nearest._nearest.getState();
+        double x_nearest1 = x_nearest_state.get(0,0);
+        double x_nearest2 = x_nearest_state.get(1,0);
 
-        double x_rand1 = x_rand[0];
-        double x_rand2 = x_rand[1];
+        double x_rand1 = x_rand.get(0,0);
+        double x_rand2 = x_rand.get(1,0);
 
         // from system dynamics
         double x1dot = x_nearest2;
@@ -208,7 +213,7 @@ public class PendulumArena2 implements Arena {
 
         System.out.printf("from [%5.3f %5.3f] to [%5.3f %5.3f] xdot [%5.3f %5.3f] dt %5.3f u %5.3f\n",
                 x_nearest1, x_nearest2, x_new1, x_new2, x1dot, x2dot, dt, u);
-        return new double[] { x_new1, x_new2 };
+        return new Matrix<>(Nat.N2(),Nat.N1(), new double[] { x_new1, x_new2 });
 
         // see pend_rrt.m
         // Matrix<N2, N1> x_near = VecBuilder.fill(nearConfig[0], nearConfig[1]);
@@ -229,27 +234,27 @@ public class PendulumArena2 implements Arena {
     }
 
     @Override
-    public double[] initial() {
+    public Matrix<N2,N1> initial() {
         return _init;
     }
 
     @Override
-    public double[] goal() {
+    public Matrix<N2,N1> goal() {
         return _goal;
     }
 
     @Override
-    public boolean goal(double[] config) {
-        if (Math.abs(config[0] - _goal[0]) > POSITION_TOLERANCE)
+    public boolean goal(Matrix<N2,N1> config) {
+        if (Math.abs(config.get(0,0) - _goal.get(0,0)) > POSITION_TOLERANCE)
             return false;
-        if (Math.abs(config[1] - _goal[1]) > VELOCITY_TOLERANCE)
+        if (Math.abs(config.get(1,0) - _goal.get(1,0)) > VELOCITY_TOLERANCE)
             return false;
         return true;
     }
 
     /** There aren't really obstacles, but this will come in handy later. */
     @Override
-    public boolean clear(double[] config) {
+    public boolean clear(Matrix<N2,N1> config) {
         return true;
     }
 
@@ -258,7 +263,7 @@ public class PendulumArena2 implements Arena {
      * aren't any obstacles.
      */
     @Override
-    public boolean link(double[] a, double[] b) {
+    public boolean link(Matrix<N2,N1> a, Matrix<N2,N1> b) {
         return true;
     }
 

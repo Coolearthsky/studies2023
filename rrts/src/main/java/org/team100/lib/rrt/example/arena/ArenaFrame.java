@@ -13,9 +13,11 @@ import org.team100.lib.rrt.RRTStar3;
 import org.team100.lib.rrt.RRTStar4;
 import org.team100.lib.space.Sample;
 
+import edu.wpi.first.math.numbers.N2;
+
 public class ArenaFrame extends JFrame {
 
-    public ArenaFrame(HolonomicArena arena, Runner rrtStar) {
+    public ArenaFrame(HolonomicArena arena, Runner<N2> rrtStar) {
         super("RRT*");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout());
@@ -42,15 +44,15 @@ public class ArenaFrame extends JFrame {
             // tree on every update. updates are rare compared to queries, i guess?
 
             final HolonomicArena arena = new HolonomicArena(6);
-            final Solver rrtstar = new RRTStar3<>(arena, new Sample(arena), 6);
-            final Runner runner = new Runner(rrtstar);
+            final Solver<N2> rrtstar = new RRTStar3<>(arena, new Sample<>(arena), 6);
+            final Runner<N2> runner = new Runner<>(rrtstar);
             Graph.linkTypeCaching = true;
             run(arena, runner, rrtstar);
 
             // final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new
             // Sample(arena), 6);
-            final RRTStar4<HolonomicArena> rrtstar4 = new RRTStar4<>(arena, new Sample(arena), 6);
-            final Runner runner2 = new Runner(rrtstar4);
+            final RRTStar4<N2, HolonomicArena> rrtstar4 = new RRTStar4<>(arena, new Sample<>(arena), 6);
+            final Runner<N2> runner2 = new Runner<>(rrtstar4);
             Graph.linkTypeCaching = true;
             run(arena, runner2, rrtstar4);
 
@@ -70,7 +72,7 @@ public class ArenaFrame extends JFrame {
                 steps / ct, dist / ct, steps2 / ct, dist2 / ct);
     }
 
-    private static void run(HolonomicArena arena, Runner runner, Solver rrtstar)
+    private static void run(HolonomicArena arena, Runner<N2> runner, Solver<N2> rrtstar)
             throws InvocationTargetException, InterruptedException {
 
         SwingUtilities.invokeAndWait(new Runnable() {

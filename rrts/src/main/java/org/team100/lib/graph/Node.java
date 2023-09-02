@@ -1,49 +1,52 @@
 package org.team100.lib.graph;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 import org.team100.lib.space.Point;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
+
 /** TODO: add u value */
-public class Node implements Point {
-    private final double[] state;
+public class Node<States extends Num> implements Point<States> {
+    private final Matrix<States, N1> state;
 
     /** Nullable for root, can be updated. */
-    private LinkInterface incoming;
+    private LinkInterface<States> incoming;
 
-    private Set<LinkInterface> outgoing;
+    private Set<LinkInterface<States>> outgoing;
 
-    public Node(double[] state) {
+    public Node(Matrix<States, N1> state) {
         this.state = state;
-        this.outgoing = new HashSet<LinkInterface>();
+        this.outgoing = new HashSet<>();
     }
 
     @Override
-    public double[] getState() {
+    public Matrix<States, N1> getState() {
         return state;
     }
 
-    public void setIncoming(LinkInterface link) {
+    public void setIncoming(LinkInterface<States> link) {
         incoming = link;
     }
 
     /** Nullable for root (i.e. start). */
-    public LinkInterface getIncoming() {
+    public LinkInterface<States> getIncoming() {
         return incoming;
     }
 
-    public void addOutgoing(LinkInterface link) {
+    public void addOutgoing(LinkInterface<States> link) {
         outgoing.add(link);
     }
 
-    public void removeOutgoing(LinkInterface link) {
+    public void removeOutgoing(LinkInterface<States> link) {
         outgoing.remove(link);
     }
 
-    public Iterator<LinkInterface> getOutgoing() {
+    public Iterator<LinkInterface<States>> getOutgoing() {
         return outgoing.iterator();
     }
 
@@ -60,6 +63,6 @@ public class Node implements Point {
 
     @Override
     public String toString() {
-        return "Node [state=" + Arrays.toString(state) + "]";
+        return "Node [state=" + state.toString() + "]";
     }
 }

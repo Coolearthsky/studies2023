@@ -1,5 +1,7 @@
 package org.team100.lib.graph;
 
+import edu.wpi.first.math.Num;
+
 /**
  * This link type keeps a consistent "path distance" and must be
  * updated by the rewiring process to keep it consistent.
@@ -7,11 +9,11 @@ package org.team100.lib.graph;
  * Walking the children to update the cache turns out to be faster
  * than walking the parents on every query.
  */
-public class PathDistanceCachingLink implements LinkInterface {
+public class PathDistanceCachingLink<States extends Num> implements LinkInterface<States> {
     /** nullable for root */
-    private final Node _source;
+    private final Node<States> _source;
     /** nonnull */
-    private final Node _target;
+    private final Node<States> _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
     /** Total path length, i.e. cost, so far. This is updated by rewiring. */
@@ -24,7 +26,7 @@ public class PathDistanceCachingLink implements LinkInterface {
      * @param target
      * @param linkDist distance to the parent
      */
-    public PathDistanceCachingLink(Node source, Node target, double linkDist) {
+    public PathDistanceCachingLink(Node<States> source, Node<States> target, double linkDist) {
         if (source == null)
             throw new IllegalArgumentException();
         if (target == null)
@@ -57,13 +59,13 @@ public class PathDistanceCachingLink implements LinkInterface {
     // }
 
     @Override
-    public Node get_source() {
+    public Node<States> get_source() {
         return _source;
     }
 
     /** nonnull */
     @Override
-    public Node get_target() {
+    public Node<States> get_target() {
         return _target;
     }
 

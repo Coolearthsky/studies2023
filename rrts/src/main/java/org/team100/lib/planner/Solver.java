@@ -5,11 +5,13 @@ import java.util.List;
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
 
+import edu.wpi.first.math.Num;
+
 /**
  * Interface for solvers, can be stepped and listeners can see incremental
  * results.
  */
-public interface Solver {
+public interface Solver<States extends Num> {
     /** Used to adjust radius. */
     void setStepNo(int stepNo);
 
@@ -17,9 +19,9 @@ public interface Solver {
     int step();
 
     /** Return the whole tree. */
-    List<Node> getNodesA();
-    List<Node> getNodesB();
+    List<Node<States>> getNodesA();
+    List<Node<States>> getNodesB();
 
     /** The best path so far, or null if no path spans the start and end states. */
-    Path getBestPath();
+    Path<States> getBestPath();
 }
