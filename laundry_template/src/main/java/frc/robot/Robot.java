@@ -9,7 +9,6 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.util.concurrent.Event;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -28,14 +27,14 @@ import frc.robot.subsystems.LaundryArm;
 public class Robot extends TimedRobot {
   private final Talon m_leftMotor = new Talon(0);
   private final Talon m_rightMotor = new Talon(1);
-  private final CANSparkMax m_armMotor = new CANSparkMax(2, MotorType.kBrushless);
+  // private final CANSparkMax m_armMotor = new CANSparkMax(2, MotorType.kBrushless);
   private final DifferentialDrive m_robotDrive = new DifferentialDrive(m_leftMotor, m_rightMotor);
-  private final Constraints m_constraints = new Constraints(5, 2);
-  private final ProfiledPIDController m_controller = new ProfiledPIDController(.1, .1, .1, m_constraints);
-  private final DigitalInput m_upperSwitch = new DigitalInput(3);
-  private final DigitalInput m_lowerSwitch = new DigitalInput(4);
-  private final LaundryArm m_arm = new LaundryArm(m_controller, m_armMotor, m_upperSwitch, m_lowerSwitch, false);
-  private final HomeCommand m_home = new HomeCommand(m_arm);
+  // private final Constraints m_constraints = new Constraints(5, 2);
+  // private final ProfiledPIDController m_controller = new ProfiledPIDController(.1, .1, .1, m_constraints);
+  // private final DigitalInput m_upperSwitch = new DigitalInput(3);
+  // private final DigitalInput m_lowerSwitch = new DigitalInput(4);
+  // private final LaundryArm m_arm = new LaundryArm(m_controller, m_armMotor, m_upperSwitch, m_lowerSwitch, false);
+  // private final HomeCommand m_home = new HomeCommand(m_arm);
   private final Joystick m_stick = new Joystick(0);
   private final EventLoop m_loop = new EventLoop();
   private final double up_degrees = 15;
@@ -46,17 +45,17 @@ public class Robot extends TimedRobot {
     m_leftMotor.setInverted(false);
     m_rightMotor.setInverted(true);
     BooleanEvent topButton = m_stick.button(2, m_loop);
-    topButton.ifHigh(() -> m_home.schedule());
+    // topButton.ifHigh(() -> m_home.schedule());
   }
 
   @Override
   public void teleopPeriodic() {
-    m_robotDrive.arcadeDrive(-m_stick.getY(), -m_stick.getX(), false);
-    if (m_stick.getTrigger()) {
-      m_arm.setDegrees(down_degrees);
-    } else {
-      m_arm.setDegrees(up_degrees);
-    }
+    m_robotDrive.arcadeDrive(-m_stick.getY(), m_stick.getX(), false);
+    // if (m_stick.getTrigger()) {
+    //   m_arm.setDegrees(down_degrees);
+    // } else {
+    //   m_arm.setDegrees(up_degrees);
+    // }
     m_loop.poll();
   }
 }
