@@ -1,0 +1,79 @@
+connectors:
+  RIO:
+    pinlabels: [SCL, SDA]
+  PWR: # distribution blocks
+    pinlabels: [VCC, VCC, VCC, VCC, VCC, GND, GND, GND, GND, GND]
+  MUX:
+    pinlabels: [VCC, GND, SCL, SDA, SCL0, SDA0, SCL1, SDA1, SCL2, SDA2, SCL3, SDA3]
+  FL:
+    pinlabels: [VCC, GND, SCL, SDA]
+  FR:
+    pinlabels: [VCC, GND, SCL, SDA]
+  RL:
+    pinlabels: [VCC, GND, SCL, SDA]
+  RR:
+    pinlabels: [VCC, GND, SCL, SDA]
+
+cables:
+  P1:
+    colors: [RD, BK]
+  P2:
+    colors: [RD, BK]
+  P3:
+    colors: [RD, BK]
+  P4:
+    colors: [RD, BK]
+  P5:
+    colors: [RD, BK]
+  S0:
+    colors: [BU, WH]
+  S1:
+    colors: [BU, WH]
+  S2:
+    colors: [BU, WH]
+  S3:
+    colors: [BU, WH]
+  S4:
+    colors: [BU, WH]
+
+connections:
+  -
+    - RIO: [1-2]
+    - S0: [1-2]
+    - MUX: [3-4]
+  -
+    - PWR: [1,6]
+    - P1: [1-2]
+    - MUX: [1-2]
+  -
+    - PWR: [2,7]
+    - P2: [1-2]
+    - FL: [1-2]
+  -
+    - PWR: [3,8]
+    - P3: [1-2]
+    - FR: [1-2]
+  -
+    - PWR: [4,9]
+    - P4: [1-2]
+    - RL: [1-2]
+  -
+    - PWR: [5,10]
+    - P5: [1-2]
+    - RR: [1-2]
+  -
+    - FL: [3-4]
+    - S1: [1-2]
+    - MUX: [5-6]
+  -
+    - FR: [3-4]
+    - S2: [1-2]
+    - MUX: [7-8]
+  -
+    - RL: [3-4]
+    - S3: [1-2]
+    - MUX: [9-10]
+  -
+    - RR: [3-4]
+    - S4: [1-2]
+    - MUX: [11-12]

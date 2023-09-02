@@ -1,6 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
 
@@ -9,9 +6,14 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.team100.frc2023.commands.DrivePositional;
+import org.team100.frc2023.commands.DriveWithHeading;
+import org.team100.frc2023.commands.ResetRotation;
+import org.team100.frc2023.control.ManualControl;
+import org.team100.frc2023.control.Pilot;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-// import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -26,13 +28,13 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 
 public class Robot extends TimedRobot {
-    private final CommandXboxController m_controller = new CommandXboxController(0);
-    private final Drivetrain m_swerve = new Drivetrain();
-    private final DriveManually driveManually = new DriveManually(m_swerve);
-    
+    private final ManualControl m_manualControl;
+    private final Drivetrain m_swerve;
+    private final Command m_driveCommand;
+    private final Command m_drivePositional;
+
     Command autoc;
     ProfiledPIDController m_rotationController;
     PIDController xController;
@@ -40,24 +42,53 @@ public class Robot extends TimedRobot {
 
     // private final NetworkTableInstance inst = NetworkTableInstance.getDefault();
     // private final NetworkTable m_table = inst.getTable("robot");
-    // private final DoublePublisher m_rotationSetpointPosition = m_table.getDoubleTopic("rotationSetpointPosition")
-    //         .publish();
-    // private final DoublePublisher m_rotationSetpointVelocity = m_table.getDoubleTopic("rotationSetpointVelocity")
-    //         .publish();
+    // private final DoublePublisher m_rotationSetpointPosition =
+    // m_table.getDoubleTopic("rotationSetpointPosition")
+    // .publish();
+    // private final DoublePublisher m_rotationSetpointVelocity =
+    // m_table.getDoubleTopic("rotationSetpointVelocity")
+    // .publish();
 
-    // private final DoublePublisher m_rotationPositionError = m_table.getDoubleTopic("rotationPositionError").publish();
-    // private final DoublePublisher m_rotationVelocityError = m_table.getDoubleTopic("rotationVelocityError").publish();
+    // private final DoublePublisher m_rotationPositionError =
+    // m_table.getDoubleTopic("rotationPositionError").publish();
+    // private final DoublePublisher m_rotationVelocityError =
+    // m_table.getDoubleTopic("rotationVelocityError").publish();
 
     // // controller errors
-    // private final DoublePublisher m_XErrorPub = m_table.getDoubleTopic("xError").publish();
-    // private final DoublePublisher m_YErrorPub = m_table.getDoubleTopic("yError").publish();
+    // private final DoublePublisher m_XErrorPub =
+    // m_table.getDoubleTopic("xError").publish();
+    // private final DoublePublisher m_YErrorPub =
+    // m_table.getDoubleTopic("yError").publish();
 
     public Robot() {
-
-        Command waypointCommand =  toWaypoint2();
-        m_controller.y().whileTrue(waypointCommand);
-
-        m_swerve.setDefaultCommand(driveManually);
+        m_swerve = new Drivetrain();
+        // m_manualControl = new XboxControl();
+        // m_manualControl = new LogitechExtreme3dControl();
+        m_manualControl = new Pilot();
+        m_manualControl.resetRotation0(new ResetRotation(m_swerve, new Rotation2d(0)));
+        // m_driveCommand = new DriveManually(m_swerve, m_manualControl);
+        m_driveCommand = new DriveWithHeading(
+                m_swerve,
+                m_manualControl::xSpeed,
+                m_manualControl::ySpeed,
+                m_manualControl::desiredRotation,
+                m_manualControl::rotSpeed,
+                "",
+                m_swerve.m_gyro);
+        m_drivePositional = new DrivePositional(
+                m_swerve,
+                m_manualControl::xSpeed,
+                m_manualControl::ySpeed,
+                m_manualControl::desiredRotation);
+        Command waypointCommand = toWaypoint2();
+        m_manualControl.topButton().whileTrue(waypointCommand);
+        // drive normally if the trigger is down but not the thumb
+        m_manualControl.trigger().and(m_manualControl.thumb().negate()).whileTrue(m_driveCommand);
+        // drive positional if the thumb is down
+        m_manualControl.thumb().whileTrue(m_drivePositional);
+        // m_swerve.setDefaultCommand(m_driveCommand);
+        // default is nothing
+        m_swerve.removeDefaultCommand();
     }
 
     @Override
@@ -96,7 +127,8 @@ public class Robot extends TimedRobot {
 
     public Command toWaypoint() {
         // fixed waypoint for now
-//        Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 4, new Rotation2d(-Math.PI / 2));
+        // Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 4, new
+        // Rotation2d(-Math.PI / 2));
         Supplier<Pose2d> waypointSupplier = () -> new Pose2d(8, 0, new Rotation2d());
         Supplier<Pose2d> poseSupplier = m_swerve::getPose;
         Consumer<SwerveModuleState[]> outputModuleStates = m_swerve::setModuleStates;
@@ -226,7 +258,7 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        //driveWithJoystick(true);
+        // driveWithJoystick(true);
     }
 
     @Override
@@ -249,6 +281,6 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testPeriodic() {
-       // m_swerve.test(getYSpeedInput1_1(), getRotSpeedInput1_1());
+        // m_swerve.test(getYSpeedInput1_1(), getRotSpeedInput1_1());
     }
 }
