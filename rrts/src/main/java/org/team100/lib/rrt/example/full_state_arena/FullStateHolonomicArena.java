@@ -130,11 +130,10 @@ public class FullStateHolonomicArena implements Arena<N4> {
 
     @Override
     public boolean link(Matrix<N4, N1> a, Matrix<N4, N1> b) {
-        double[] dx = new double[DIMENSIONS];
         double dist = 0;
         for (int i = 0; i < DIMENSIONS; ++i) {
-            dx[i] = b.get(i, 0) - a.get(i, 0);
-            dist += dx[i] * dx[i];
+            double dx = b.get(i, 0) - a.get(i, 0);
+            dist += dx * dx;
         }
 
         dist = Math.sqrt(dist);

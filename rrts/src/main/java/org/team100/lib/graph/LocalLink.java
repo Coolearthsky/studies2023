@@ -14,8 +14,6 @@ public class LocalLink<States extends Num> implements LinkInterface<States> {
     private final Node<States> _target;
     /** length, i.e. cost, of this edge */
     private final double _linkDist;
-    /** Total path length, i.e. cost, so far. This is updated by rewiring. */
-    // private double _pathDist;
 
     /**
      * Create a new link pointing at the node, linkDist away from parent.
@@ -32,29 +30,10 @@ public class LocalLink<States extends Num> implements LinkInterface<States> {
         if (linkDist < 0)
             throw new IllegalArgumentException();
 
-        // double pathDist = source.getPathDist() + linkDist;
-
         _target = target;
         _linkDist = linkDist;
-        // _pathDist = pathDist;
         _source = source;
     }
-
-    // @Override
-    // public Path path() {
-    //     Node node = get_target();
-    //     List<double[]> configs = new LinkedList<double[]>();
-    //     double pathDist = get_pathDist();
-    //     while (true) {
-    //         configs.add(node.getState());
-    //         LinkInterface incoming = node.getIncoming();
-    //         if (incoming == null)
-    //             break;
-    //         node = incoming.get_source();
-    //     }
-    //     Collections.reverse(configs);
-    //     return new Path(pathDist, configs);
-    // }
 
     @Override
     public Node<States> get_source() {
