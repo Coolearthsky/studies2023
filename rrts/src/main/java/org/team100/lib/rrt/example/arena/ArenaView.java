@@ -111,7 +111,6 @@ public class ArenaView extends JComponent {
     }
 
     private void renderRRTTree(Graphics2D g) {
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
 
         for (Node<N2> node : _rrtStar.getNodesA()) {
@@ -120,11 +119,9 @@ public class ArenaView extends JComponent {
                 Node<N2> parent = incoming.get_source();
                 Matrix<N2, N1> n = node.getState();
                 Matrix<N2, N1> p = parent.getState();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.GREEN);
-                    line.setLine(n.get(i, 0), n.get(i + 1, 0), p.get(i, 0), p.get(i + 1, 0));
-                    g.draw(line);
-                }
+                g.setColor(Color.GREEN);
+                line.setLine(n.get(0, 0), n.get(1, 0), p.get(0, 0), p.get(1, 0));
+                g.draw(line);
             }
         }
         for (Node<N2> node : _rrtStar.getNodesB()) {
@@ -133,11 +130,9 @@ public class ArenaView extends JComponent {
                 Node<N2> parent = incoming.get_source();
                 Matrix<N2, N1> n = node.getState();
                 Matrix<N2, N1> p = parent.getState();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.RED);
-                    line.setLine(n.get(i, 0), n.get(i + 1, 0), p.get(i, 0), p.get(i + 1, 0));
-                    g.draw(line);
-                }
+                g.setColor(Color.RED);
+                line.setLine(n.get(0, 0), n.get(1, 0), p.get(0, 0), p.get(1, 0));
+                g.draw(line);
             }
         }
     }
@@ -147,33 +142,28 @@ public class ArenaView extends JComponent {
             return;
         }
 
-        int dim = _robotModel.dimensions();
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (5 / scale)));
 
         if (path.getStatesA().size() > 1) {
-            Iterator<Matrix<N2,N1>> pathIter = path.getStatesA().iterator();
-            Matrix<N2,N1> prev = pathIter.next();
+            Iterator<Matrix<N2, N1>> pathIter = path.getStatesA().iterator();
+            Matrix<N2, N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
-                Matrix<N2,N1> curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.GREEN);
-                    line.setLine(prev.get(i,0), prev.get(i+1,0), curr.get(i,0), curr.get(i+1,0));
-                    g.draw(line);
-                }
+                Matrix<N2, N1> curr = pathIter.next();
+                g.setColor(Color.GREEN);
+                line.setLine(prev.get(0, 0), prev.get(1, 0), curr.get(0, 0), curr.get(1, 0));
+                g.draw(line);
                 prev = curr;
             }
         }
         if (path.getStatesB().size() > 1) {
-            Iterator<Matrix<N2,N1>> pathIter = path.getStatesB().iterator();
-            Matrix<N2,N1> prev = pathIter.next();
+            Iterator<Matrix<N2, N1>> pathIter = path.getStatesB().iterator();
+            Matrix<N2, N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
-                Matrix<N2,N1> curr = pathIter.next();
-                for (int i = 0; i < dim; i += 2) {
-                    g.setColor(Color.RED);
-                    line.setLine(prev.get(i,0), prev.get(i+1,0), curr.get(i,0), curr.get(i+1,0));
-                    g.draw(line);
-                }
+                Matrix<N2, N1> curr = pathIter.next();
+                g.setColor(Color.RED);
+                line.setLine(prev.get(0, 0), prev.get(1, 0), curr.get(0, 0), curr.get(1, 0));
+                g.draw(line);
                 prev = curr;
             }
         }
@@ -189,7 +179,7 @@ public class ArenaView extends JComponent {
                 size.width / (max.get(0, 0) - min.get(0, 0)),
                 size.height / (max.get(1, 0) - min.get(1, 0)));
         g.scale(scale, scale);
-        g.setStroke(new BasicStroke((float) (0.5 / scale / _robotModel.dimensions())));
+        g.setStroke(new BasicStroke((float) (0.25 / scale)));
         return scale;
     }
 

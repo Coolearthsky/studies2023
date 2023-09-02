@@ -114,7 +114,7 @@ public class RRTStar5<T extends KDModel<N2> & RobotModel<N2>> implements Solver<
 
         // the sample is now control-sampled, guaranteed feasible.
         boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
-        // double[] x_rand = SampleFree();
+
         LocalLink<N2> randLink = SampleFree(timeForward);
         if (DEBUG)
             System.out.println("randLink: " + randLink);
@@ -191,11 +191,9 @@ public class RRTStar5<T extends KDModel<N2> & RobotModel<N2>> implements Solver<
      * state in both cases.
      */
     Path<N2> GeneratePath(Node<N2> x_1, Node<N2> x_2) {
-        for (int i = 0; i < _model.dimensions(); ++i) {
-            if (x_1.getState().get(i, 0) != x_2.getState().get(i, 0))
-                throw new IllegalArgumentException(
-                        "x1 " + x_1.getState().toString() + " x2 " + x_2.getState().toString());
-        }
+        if (!x_1.getState().isEqual(x_2.getState(), 0.001))
+            throw new IllegalArgumentException(
+                    "x1 " + x_1.getState().toString() + " != x2 " + x_2.getState().toString());
         Path<N2> p_1 = walkParents(new HashSet<>(), x_1);
         Path<N2> p_2 = walkParents(new HashSet<>(), x_2);
         List<Matrix<N2, N1>> states_2 = p_2.getStatesA();
@@ -487,9 +485,7 @@ public class RRTStar5<T extends KDModel<N2> & RobotModel<N2>> implements Solver<
         if (stepNo < 1)
             throw new IllegalArgumentException();
         this.stepNo = stepNo;
-        this.radius = _gamma * Math.pow(
-                Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _model.dimensions());
+        this.radius = _gamma * Math.pow(Math.log(stepNo + 1) / (stepNo + 1), 0.5);
     }
 
     static boolean same(Matrix<N2, N1> a, Matrix<N2, N1> b) {

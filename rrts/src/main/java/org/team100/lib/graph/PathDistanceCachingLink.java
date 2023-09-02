@@ -42,22 +42,6 @@ public class PathDistanceCachingLink<States extends Num> implements LinkInterfac
         _source = source;
     }
 
-    // @Override
-    // public Path path() {
-    //     Node node = get_target();
-    //     List<double[]> configs = new LinkedList<double[]>();
-    //     double pathDist = get_pathDist();
-    //     while (true) {
-    //         configs.add(node.getState());
-    //         LinkInterface incoming = node.getIncoming();
-    //         if (incoming == null)
-    //             break;
-    //         node = incoming.get_source();
-    //     }
-    //     Collections.reverse(configs);
-    //     return new Path(pathDist, configs);
-    // }
-
     @Override
     public Node<States> get_source() {
         return _source;

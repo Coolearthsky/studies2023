@@ -161,12 +161,9 @@ public class RRTStar4<States extends Num, T extends KDModel<States> & RobotModel
      * state in both cases.
      */
     Path<States> GeneratePath(Node<States> x_1, Node<States> x_2) {
-        for (int i = 0; i < _model.dimensions(); ++i) {
-            if (x_1.getState().get(i,0) != x_2.getState().get(i,0))
-                throw new IllegalArgumentException(
-                        "x1 " + x_1.getState().toString() + " x2 " + x_2.getState().toString());
-        }
-
+        if (!x_1.getState().isEqual(x_2.getState(), 0.001))
+            throw new IllegalArgumentException(
+                    "x1 " + x_1.getState().toString() + " != x2 " + x_2.getState().toString());
         Path<States> p_1 = walkParents(x_1);
         Path<States> p_2 = walkParents(x_2);
         List<Matrix<States, N1>> states_2 = p_2.getStatesA();
