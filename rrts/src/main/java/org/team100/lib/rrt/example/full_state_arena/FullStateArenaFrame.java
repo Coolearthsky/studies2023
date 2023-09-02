@@ -14,6 +14,8 @@ import org.team100.lib.rrt.RRTStar6;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
+import edu.wpi.first.math.numbers.N4;
+
 public class FullStateArenaFrame extends JFrame {
     public FullStateArenaFrame(FullStateArenaView view) {
         super("RRT*");
@@ -24,10 +26,10 @@ public class FullStateArenaFrame extends JFrame {
 
     public static void main(String[] args) throws InterruptedException, InvocationTargetException {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
-        KDNode<Node> T_a = new KDNode<Node>(new Node(arena.initial()));
-        KDNode<Node> T_b = new KDNode<Node>(new Node(arena.goal()));
-        final Solver solver = new RRTStar6<>(arena, new Sample(arena), 3, T_a, T_b);
-        final Runner runner = new Runner(solver);
+        KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
+        KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
+        final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
         final FullStateArenaFrame frame = new FullStateArenaFrame(view);
 
@@ -43,7 +45,7 @@ public class FullStateArenaFrame extends JFrame {
         runner.runForDurationMS(100000);
         //runner.runSamples(5000);
 
-        Path bestPath = runner.getBestPath();
+        Path<N4> bestPath = runner.getBestPath();
         if (bestPath == null) {
             System.out.println("failed to find path");
         } else {

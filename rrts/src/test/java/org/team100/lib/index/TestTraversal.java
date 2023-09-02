@@ -9,9 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Point;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
+
 public class TestTraversal {
 
-    KDModel myModel = new KDModel() {
+    KDModel<N2> myModel = new KDModel<>() {
 
         @Override
         public int dimensions() {
@@ -19,54 +24,49 @@ public class TestTraversal {
         }
 
         @Override
-        public double[] getMin() {
-            return new double[]{0,0};
+        public Matrix<N2, N1> getMin() {
+            return new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });
         }
 
         @Override
-        public double[] getMax() {
-            return new double[]{1,1};
+        public Matrix<N2, N1> getMax() {
+            return new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 1, 1 });
         }
 
         @Override
-        public double dist(double[] start, double[] end) {
-            // TODO Auto-generated method stub
+        public double dist(Matrix<N2, N1> start, Matrix<N2, N1> end) {
             throw new UnsupportedOperationException("Unimplemented method 'dist'");
         }
 
         @Override
-        public double[] steer(KDNearNode<Node> x_nearest, double[] newConfig) {
-            // TODO Auto-generated method stub
+        public Matrix<N2, N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2, N1> newConfig) {
             throw new UnsupportedOperationException("Unimplemented method 'steer'");
         }
 
         @Override
         public void setStepNo(int stepNo) {
-            // TODO Auto-generated method stub
-            
         }
 
         @Override
         public void setRadius(double radius) {
-            // TODO Auto-generated method stub
-            
         }
 
     };
 
-    static class StringPoint implements Point {
+    static class StringPoint implements Point<N2> {
         private final String v;
-        private final double[] _config;
-        
-        public StringPoint(String v, double[] _config) {
+        private final Matrix<N2, N1> _config;
+
+        public StringPoint(String v, Matrix<N2, N1> _config) {
             this.v = v;
             this._config = _config;
         }
 
         @Override
-        public double[] getState() {
+        public Matrix<N2, N1> getState() {
             return _config;
         }
+
         public String get_v() {
             return v;
 
@@ -75,8 +75,9 @@ public class TestTraversal {
 
     @Test
     void testInsert() {
-        KDNode<StringPoint> n = new KDNode<>(new StringPoint( "n", new double[] { 0, 0 }));
-        KDTree.insert(myModel, n, new StringPoint("one",new double[] { 0.5, 0 }));
+        KDNode<StringPoint> n = new KDNode<>(
+                new StringPoint("n", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 })));
+        KDTree.insert(myModel, n, new StringPoint("one", new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0.5, 0 })));
         List<StringPoint> s = KDTree.values(n);
         assertEquals(2, s.size());
         KDNode<StringPoint> a = n.getA();

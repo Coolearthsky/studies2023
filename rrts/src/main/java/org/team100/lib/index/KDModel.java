@@ -2,12 +2,16 @@ package org.team100.lib.index;
 
 import org.team100.lib.graph.Node;
 
-public interface KDModel {
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
+
+public interface KDModel<States extends Num> {
     int dimensions();
 
-    double[] getMin();
+    Matrix<States, N1> getMin();
 
-    double[] getMax();
+    Matrix<States, N1> getMax();
 
     /**
      * Distance, i.e. cost, between states. Note that this function is not, in
@@ -15,9 +19,10 @@ public interface KDModel {
      * 
      * @return cost
      */
-    double dist(double[] start, double[] end);
+    double dist(Matrix<States, N1> start, Matrix<States, N1> end);
 
     void setStepNo(int stepNo);
+
     void setRadius(double radius);
 
     /**
@@ -30,12 +35,12 @@ public interface KDModel {
      * starting at nearconfig; ideally ending at newConfig (double boundary problem)
      * but any trajectory will do.
      * 
-     * @param stepNo adjusts steering, choosing progressively closer nodes
+     * @param stepNo     adjusts steering, choosing progressively closer nodes
      * @param nearConfig the nearest config
      * @param newConfig  the candidate config
      * @param dist       the fraction to go
      * @return steered new config
      */
-    double[] steer(KDNearNode<Node> x_nearest,  double[] newConfig);
+    Matrix<States, N1> steer(KDNearNode<Node<States>> x_nearest, Matrix<States, N1> newConfig);
 
 }

@@ -1,21 +1,24 @@
 package org.team100.lib.space;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
 
-public class Path implements Comparable<Path> {
+
+public class Path<States extends Num> implements Comparable<Path<States>> {
 
     /** The total length of the computed path     */
     private final double distance;
 
     /** The states along the path.  It's two lists so i can see where the join is. */
-    private final List<double[]> states_A;
-    private final List<double[]> states_B;
+    private final List<Matrix<States, N1>> states_A;
+    private final List<Matrix<States, N1>> states_B;
 
-    public Path(double distance, List<double[]> states_A, List<double[]> states_B) {
+    public Path(double distance, List<Matrix<States, N1>> states_A, List<Matrix<States, N1>> states_B) {
         this.distance = distance;
         this.states_A = states_A;
         this.states_B = states_B;
@@ -29,11 +32,11 @@ public class Path implements Comparable<Path> {
      * than the argument path.
      */
     @Override
-    public int compareTo(Path that) {
+    public int compareTo(Path<States> that) {
         return Double.compare(distance, that.distance);
     }
 
-    public static boolean isBetter(Path a, Path b) {
+    public static <States extends Num> boolean isBetter(Path<States> a, Path<States> b) {
         if (a == null) {
             return false;
         }
@@ -46,20 +49,22 @@ public class Path implements Comparable<Path> {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Path)) return false;
+        if (!(o instanceof Path<?>)) return false;
 
-        Path path = (Path) o;
+        // wildcard here since we don't actually care what the parameter is
+        Path<?> path = (Path<?>) o;
 
         if (Double.compare(path.distance, distance) != 0) return false;
         return statesEqual(states_A, path.states_A) && statesEqual(states_B, path.states_B);
     }
 
-    private boolean statesEqual(List<double[]> states, List<double[]> otherstates) {
+    // wildcard type here accommodates the cast above
+    private boolean statesEqual(List<? extends Matrix<?,?>> states, List<? extends Matrix<?, ?>> otherstates) {
         if (states.size() != otherstates.size()) return false;
-        Iterator<double[]> i1 = states.iterator();
-        Iterator<double[]> i2 = otherstates.iterator();
+        Iterator<? extends Matrix<?, ?>> i1 = states.iterator();
+        Iterator<? extends Matrix<?, ?>> i2 = otherstates.iterator();
         while (i1.hasNext()) {
-            if (!Arrays.equals(i1.next(), i2.next())) {
+            if (! i1.next().equals(i2.next())) {
                  return false;
             }
         }
@@ -72,11 +77,11 @@ public class Path implements Comparable<Path> {
         long temp;
         temp = distance != +0.0d ? Double.doubleToLongBits(distance) : 0L;
         result = (int) (temp ^ (temp >>> 32));
-        for (double[] config : states_A) {
-            result = 31 * result + Arrays.hashCode(config);
+        for (Matrix<States, N1> config : states_A) {
+            result = 31 * result + config.hashCode();
         }
-        for (double[] config : states_B) {
-            result = 31 * result + Arrays.hashCode(config);
+        for (Matrix<States, N1> config : states_B) {
+            result = 31 * result + config.hashCode();
         }
         return result;
     }
@@ -85,14 +90,14 @@ public class Path implements Comparable<Path> {
         return distance;
     }
 
-    public List<double[]> getStatesA() {
-        List<double[]> allStates = new ArrayList<double[]>();
+    public List<Matrix<States, N1>> getStatesA() {
+        List<Matrix<States, N1>> allStates = new ArrayList<>();
         allStates.addAll(states_A);
         return allStates;
     }
     
-    public List<double[]> getStatesB() {
-        List<double[]> allStates = new ArrayList<double[]>();
+    public List<Matrix<States, N1>> getStatesB() {
+        List<Matrix<States, N1>> allStates = new ArrayList<>();
         allStates.addAll(states_B);
         return allStates;
     }
@@ -102,21 +107,13 @@ public class Path implements Comparable<Path> {
         String result="";
         result += "Path [_dist=" + String.format("%8.5f", distance);
         result += " states_A=[\n";
-        for (double[] d : states_A) {
-            String[] fmtted = new String[d.length];
-            for (int i = 0; i < d.length; ++i) {
-                fmtted[i] = String.format("%7.3f", d[i]);
-            }
-            result += "  [" + String.join(", ", fmtted) + "]\n";
+        for (Matrix<States, N1> d : states_A) {
+            result += d.toString() + "\n";
         } 
         result += "]\n";
         result += " states_B=[\n";
-        for (double[] d : states_B) {
-            String[] fmtted = new String[d.length];
-            for (int i = 0; i < d.length; ++i) {
-                fmtted[i] = String.format("%7.3f", d[i]);
-            }
-            result += "  [" + String.join(", ", fmtted) + "]\n";
+        for (Matrix<States, N1> d : states_B) {
+            result += d.toString() + "\n";
         } 
         result += "]]";
     return result;

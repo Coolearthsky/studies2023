@@ -5,27 +5,32 @@ import java.util.Random;
 import org.team100.lib.index.KDModel;
 import org.team100.lib.random.MersenneTwister;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Num;
+import edu.wpi.first.math.numbers.N1;
+
 /**
  * Supplies samples drawn from a uniform distribution across the model bounds.
  */
-public class Sample {
-    private final KDModel _kdModel;
-    private final double[] _sampleMin;
-    private final double[] _sampleMax;
+public class Sample<States extends Num> {
+    private final KDModel<States> _kdModel;
+    private final Matrix<States, N1> _sampleMin;
+    private final Matrix<States, N1> _sampleMax;
     private final Random _random;
 
-    public Sample(KDModel kdModel) {
+    public Sample(KDModel<States> kdModel) {
         _kdModel = kdModel;
         _random = new MersenneTwister(0);
         _sampleMin = _kdModel.getMin();
         _sampleMax = _kdModel.getMax();
     }
 
-    public double[] get() {
-        double[] result = new double[_kdModel.dimensions()];
+    public Matrix<States, N1> get() {
+        Matrix<States, N1> result = _sampleMax.copy();
+        result.fill(0);
         for (int i = _kdModel.dimensions(); --i >= 0;) {
-            double range = _sampleMax[i] - _sampleMin[i];
-            result[i] = _sampleMin[i] + range * _random.nextDouble();
+            double range = _sampleMax.get(i, 0) - _sampleMin.get(i, 0);
+            result.set(i, 0, _sampleMin.get(i, 0) + range * _random.nextDouble());
         }
         return result;
     }
