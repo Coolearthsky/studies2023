@@ -37,7 +37,7 @@ public class KDTree {
         int depth = 0;
 
         for (;; ++depth) {
-            int axis = depth % model.dimensions();
+            int axis = depth % min.getNumRows();
             double mp = (min.get(axis,0) + max.get(axis,0)) / 2;
             double v = value.getState().get(axis,0);
 
@@ -91,7 +91,7 @@ public class KDTree {
         if (dist < radius) {
             consumer.accept(kdNode.getValue(), dist);
         }
-        final int axis = depth % model.dimensions();
+        final int axis = depth % min.getNumRows();
         final double mp = (min.get(axis,0) + max.get(axis,0)) / 2;
         final double dm = Math.abs(mp - target.get(axis,0));
 
@@ -130,7 +130,7 @@ public class KDTree {
             Matrix<States,N1> max,
             Matrix<States,N1> target,
             int depth) {
-        final int axis = depth % model.dimensions();
+        final int axis = depth % min.getNumRows();
         final double d = model.dist(n.getValue().getState(), target);
 
         if (d < best._dist) {

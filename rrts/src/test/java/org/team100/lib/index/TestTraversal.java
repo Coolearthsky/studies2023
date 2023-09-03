@@ -17,12 +17,6 @@ import edu.wpi.first.math.numbers.N2;
 public class TestTraversal {
 
     KDModel<N2> myModel = new KDModel<>() {
-
-        @Override
-        public int dimensions() {
-            return 2;
-        }
-
         @Override
         public Matrix<N2, N1> getMin() {
             return new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 0, 0 });

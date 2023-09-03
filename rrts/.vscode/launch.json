@@ -6,6 +6,13 @@
   "configurations": [
     {
         "type": "java",
+        "name": "PendulumView",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.swingup.PendulumView",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
         "name": "ArenaView",
         "request": "launch",
         "mainClass": "org.team100.lib.rrt.example.arena.ArenaView",

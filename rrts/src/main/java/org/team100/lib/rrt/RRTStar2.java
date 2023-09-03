@@ -233,6 +233,6 @@ public class RRTStar2<States extends Num, T extends KDModel<States> & RobotModel
         this.stepNo = stepNo;
         this.radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _model.dimensions());
+                1.0 / _rootNode.getValue().getState().getNumRows());
     }
 }

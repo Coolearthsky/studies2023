@@ -18,11 +18,6 @@ import edu.wpi.first.math.numbers.N2;
 public class TestTrees {
     private static class MyKDModel implements KDModel<N2> {
         @Override
-        public int dimensions() {
-            return 2;
-        }
-
-        @Override
         public Matrix<N2, N1> getMin() {
             return VecBuilder.fill(0, 0);
         }

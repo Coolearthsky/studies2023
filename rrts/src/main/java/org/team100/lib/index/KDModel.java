@@ -7,8 +7,6 @@ import edu.wpi.first.math.Num;
 import edu.wpi.first.math.numbers.N1;
 
 public interface KDModel<States extends Num> {
-    int dimensions();
-
     Matrix<States, N1> getMin();
 
     Matrix<States, N1> getMax();

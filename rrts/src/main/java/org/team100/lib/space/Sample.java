@@ -27,8 +27,7 @@ public class Sample<States extends Num> {
 
     public Matrix<States, N1> get() {
         Matrix<States, N1> result = _sampleMax.copy();
-        result.fill(0);
-        for (int i = _kdModel.dimensions(); --i >= 0;) {
+        for (int i = 0; i < result.getNumRows(); ++i) {
             double range = _sampleMax.get(i, 0) - _sampleMin.get(i, 0);
             result.set(i, 0, _sampleMin.get(i, 0) + range * _random.nextDouble());
         }

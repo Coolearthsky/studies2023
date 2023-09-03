@@ -71,7 +71,7 @@ public class RRTStar<States extends Num, T extends KDModel<States> & RobotModel<
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _model.dimensions());
+                1.0 /  _rootNode.getValue().getState().getNumRows());
 
         List<NearNode<States>> nearNodes = new ArrayList<>();
         KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
