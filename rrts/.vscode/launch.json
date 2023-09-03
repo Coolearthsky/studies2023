@@ -6,6 +6,20 @@
   "configurations": [
     {
         "type": "java",
+        "name": "ArenaView",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.arena.ArenaView",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
+        "name": "FullStateArenaView",
+        "request": "launch",
+        "mainClass": "org.team100.lib.rrt.example.full_state_arena.FullStateArenaView",
+        "projectName": "rrts"
+    },
+    {
+        "type": "java",
         "name": "ArenaFrame",
         "request": "launch",
         "mainClass": "org.team100.lib.rrt.example.arena.ArenaFrame",
