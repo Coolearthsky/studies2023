@@ -29,7 +29,7 @@ import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
 import org.team100.lib.planner.Runner;
 import org.team100.lib.planner.Solver;
-import org.team100.lib.rrt.RRTStar6;
+import org.team100.lib.rrt.RRTStar7;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 
@@ -69,7 +69,8 @@ public class FullStateArenaView extends JComponent {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
-        final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        //final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final Solver<N4> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 
