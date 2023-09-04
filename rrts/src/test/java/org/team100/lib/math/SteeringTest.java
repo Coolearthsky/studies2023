@@ -119,17 +119,25 @@ public class SteeringTest {
 
     @Test
     void testSolve2() {
-        double i = 0;
-        double idot = 0;
-        double g = 0.5;
-        double gdot = 1.0;
-        double umax = 2;
-        assertTrue(RRTStar7.goalRight(i, idot, g, gdot, umax));
+        assertTrue(RRTStar7.goalRight(0, 0, 0.5, 1.0, 2));
 
-        double t = RRTStar7.t(i, idot, g, gdot, umax);
-        assertEquals(0.724, t, 0.001);
+        assertEquals(0.724, RRTStar7.t(0, 0, 0.5, 1.0, 2), 0.001);
 
-        double slowU = RRTStar7.slowU(idot, gdot, 1.0);
-        assertEquals(1.0, slowU, 0.001);
+        assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
+
+        // try sweeping the possibilities
+
+        assertEquals(0.414, RRTStar7.t(0, 1, 0.5, 1, 2), 0.001);
+        assertEquals(0.732, RRTStar7.t(0, 1, 1, 1, 2), 0.001);
+        assertEquals(1.000, RRTStar7.t(0, 1, 1.5, 1, 2), 0.001);
+
+
+        assertEquals(0.449, RRTStar7.t(0, 2, 1, 2, 2), 0.001);
+        assertEquals(1.162, RRTStar7.t(0, 2, 3, 2, 2), 0.001);
+        assertEquals(1.742, RRTStar7.t(0, 2, 5, 2, 2), 0.001);
+
+        assertEquals(1.0, RRTStar7.slowU(0, 2, 3, 2, 1.2), 0.001);
+
+
     }
 }

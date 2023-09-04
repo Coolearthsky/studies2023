@@ -440,6 +440,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         return false;
     }
 
+    /** TODO: return both t1 and t2 */
     public static double t(double i, double idot, double g, double gdot, double umax) {
         // intercept of umax parabola intersecting x1
         double c_I_plus = i - Math.pow(idot, 2) / (2.0 * umax);
@@ -483,8 +484,9 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * @param gdot goal velocity
      * @param tw   time to wait
      */
-    public static double slowU(double idot, double gdot, double tw) {
-        return (gdot - idot) / tw;
+    public static double slowU(double i, double idot, double g, double gdot, double tw) {
+        return Math.pow(gdot - idot, 2) / (2 * (g - i - i * tw));
+        // return (gdot - idot) / tw;
     }
 
     /**
