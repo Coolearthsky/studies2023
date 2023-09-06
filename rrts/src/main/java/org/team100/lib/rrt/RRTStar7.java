@@ -39,10 +39,17 @@ import edu.wpi.first.math.system.NumericalIntegration;
 /**
  * RRT* version 7
  * 
- * full-state 4d field
+ * full-state 4d field, following the bang-bang rrt paper.
  * 
- * sample from state, find kd nearest neighbor, steer to sample using max U and
- * rand dt.
+ * https://arxiv.org/pdf/2210.01744.pdf
+ * 
+ * alpha = sample from state
+ * x_n = nearest neighbor
+ * find a path to the steer to sample using max U
+ * make the times of each axis match, respecting the gap if it exists
+ * same routine for rewiring i guess?
+ * 
+ * 
  * 
  * for rewiring and connecting, use a linear solver.
  */
@@ -121,9 +128,11 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
 
         boolean timeForward = same(_T_a.getValue().getState(), _model.initial());
 
+        // alpha
         Matrix<N4, N1> x_rand = SampleState();
 
-        KDNearNode<Node<N4>> x_nearest = Nearest(x_rand, _T_a);
+        // x_n
+        KDNearNode<Node<N4>> x_nearest = Nearest(x_rand, _T_a, timeForward);
 
         LocalLink<N4> randLink = SampleFree(timeForward);
         if (DEBUG)
@@ -220,15 +229,8 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         return _model.link(from, to);
     }
 
-    /** Usually sample the free state, sometimes choose a node in the other tree. */
+    /** Sample the free state. */
     Matrix<N4, N1> SampleState() {
-        if (random.nextDouble() < 0.1) {
-            List<Node<N4>> nodes = KDTree.values(_T_b);
-            int nodect = nodes.size();
-            int nodeidx = random.nextInt(nodect);
-            Node<N4> node_rand = nodes.get(nodeidx);
-            return node_rand.getState();
-        }
         while (true) {
             Matrix<N4, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
@@ -237,13 +239,60 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     }
 
     /**
-     * Return the nearest node in the tree, using the KDTree metric.
+     * Return the nearest node in the tree.
+     * 
+     * This works by finding a set of Euclidean-near nodes from the KD tree,
+     * rescoring all of them, and returning the lowest-scored one.
+     * 
+     * note this scores each of the double-integrators seprately; the state is
+     * (x xdot y ydot).
+     * 
+     * for now, it just takes the max time, but
+     * TODO: respect waiting time
      * 
      * @param x_rand   the random sample
      * @param rootNode the tree to look through
      */
-    KDNearNode<Node<N4>> Nearest(Matrix<N4, N1> x_rand, KDNode<Node<N4>> rootNode) {
-        return KDTree.nearest(_model, rootNode, x_rand);
+    KDNearNode<Node<N4>> Nearest(Matrix<N4, N1> x_rand, KDNode<Node<N4>> rootNode, boolean timeForward) {
+        // For now, use the Near function, which uses the "radius". Maybe
+        // it would be better to choose top-N-near, or use a different radius,
+        // or whatever.
+        ArrayList<NearNode<N4>> nodes = Near(x_rand, rootNode);
+        double bestT = Double.MAX_VALUE;
+        Node<N4> bestNode = null;
+        for (NearNode<N4> node : nodes) {
+            // rescore each node.
+            double tx;
+            double ty;
+            if (timeForward) {
+                // from x_rand to node
+                tx = tSwitch(
+                        x_rand.get(0, 0), x_rand.get(1, 0),
+                        node.node.getState().get(0, 0), node.node.getState().get(1, 0),
+                        MAX_U);
+                ty = tSwitch(
+                        x_rand.get(2, 0), x_rand.get(3, 0),
+                        node.node.getState().get(2, 0), node.node.getState().get(3, 0),
+                        MAX_U);
+            } else {
+                // from node to x_rand
+                tx = tSwitch(
+                        node.node.getState().get(0, 0), node.node.getState().get(1, 0),
+                        x_rand.get(0, 0), x_rand.get(1, 0),
+                        MAX_U);
+                ty = tSwitch(
+                        node.node.getState().get(2, 0), node.node.getState().get(3, 0),
+                        x_rand.get(2, 0), x_rand.get(3, 0),
+                        MAX_U);
+            }
+            double t = Math.max(tx, ty);
+            if (t < bestT) {
+                bestT = t;
+                bestNode = node.node;
+            }
+        }
+        return new KDNearNode<>(bestT, bestNode);
+        // return KDTree.nearest(_model, rootNode, x_rand);
     }
 
     /**
@@ -420,13 +469,13 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      */
     public static boolean goalRight(double i, double idot, double g, double gdot, double umax) {
         // intercept of umax parabola intersecting x1
-        double c_I_plus = i - Math.pow(idot, 2) / (2.0 * umax);
+        double c_I_plus = c_plus(i, idot, umax);
         // intercept of umin parabola intersecting x1
-        double c_I_minus = i - Math.pow(idot, 2) / (-2.0 * umax);
+        double c_I_minus = c_minus(i, idot, umax);
         // intercept of umax parabola intersecting x2
-        double c_G_plus = g - Math.pow(gdot, 2) / (2.0 * umax);
+        double c_G_plus = c_plus(g, gdot, umax);
         // intercept of umin parabola intersecting x2
-        double c_G_minus = g - Math.pow(gdot, 2) / (-2.0 * umax);
+        double c_G_minus = c_minus(g, gdot, umax);
 
         if (gdot > idot) {
             if (c_G_plus > c_I_plus) {
@@ -440,40 +489,114 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         return false;
     }
 
-    /** TODO: return both t1 and t2 */
-    public static double t(double i, double idot, double g, double gdot, double umax) {
-        // intercept of umax parabola intersecting x1
-        double c_I_plus = i - Math.pow(idot, 2) / (2.0 * umax);
-        // intercept of umin parabola intersecting x1
-        double c_I_minus = i - Math.pow(idot, 2) / (-2.0 * umax);
-        // intercept of umax parabola intersecting x2
-        double c_G_plus = g - Math.pow(gdot, 2) / (2.0 * umax);
-        // intercept of umin parabola intersecting x2
-        double c_G_minus = g - Math.pow(gdot, 2) / (-2.0 * umax);
-
+    /**
+     * for a single 2d double-integrator, this is the time
+     * to traverse x_i x_switch x_g.
+     * 
+     * there are three possible paths, of which one is sure to exist.
+     * 
+     * through x_switch
+     * through x_limit
+     * through x_mirror
+     * 
+     * this function returns the x_switch version.
+     * 
+     * TODO: return both t1 and t2
+     * TODO: something about waiting time? i think this all might be wrong.
+     */
+    public static double tSwitch(double i, double idot, double g, double gdot, double umax) {
         if (RRTStar7.goalRight(i, idot, g, gdot, umax)) {
-            // use I+G-
-            // location of switching point
-            double q_switch = (c_I_plus + c_G_minus) / 2;
-            double q_dot_switch = Math.sqrt(2 * umax * (q_switch - c_I_plus));
-            // time from initial to switching point
-            double t_1 = (q_dot_switch - idot) / umax;
-            // time from switching to final, note i think this is a mistake
-            // in the paper.
-            double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
-            return t_1 + t_2;
+            return tSwitchIplusGminus(i, idot, g, gdot, umax);
         }
-        // use I-G+
-        // for I+G- path
-        // location of switching point
-        double q_switch = (c_I_minus + c_G_plus) / 2;
-        double q_dot_switch = Math.sqrt(2 * umax * (q_switch - c_G_plus));
+        return tSwitchIminusGplus(i, idot, g, gdot, umax);
+    }
+
+    /**
+     * time to traverse x_i x_switch x_g.
+     * 
+     * This is for the I+G- path.
+     */
+    static double tSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
+        double q_dot_switch = qDotSwitchIplusGminus(i, idot, g, gdot, umax);
         // time from initial to switching point
         double t_1 = (q_dot_switch - idot) / umax;
         // time from switching to final, note i think this is a mistake
         // in the paper.
         double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
         return t_1 + t_2;
+    }
+
+    /**
+     * Velocity at x_switch.  this should be faster (more positive) than idot.
+     * 
+     * This is for the I+G- path.
+     */
+    static double qDotSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
+        return Math.sqrt(
+                2 * umax * (qSwitchIplusGminus(i, idot, g, gdot, umax) - c_plus(i, idot, umax)));
+    }
+
+    /**
+     * Position at x_switch, which is the midpoint between the curves
+     * intersecting the initial and goal states.
+     * 
+     * This is for the I+G- path.
+     */
+    static double qSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
+        return (c_plus(i, idot, umax) + c_minus(g, gdot, umax)) / 2;
+    }
+
+    /**
+     * Time to traverse x_i x_switch x_g.
+     * 
+     * This is for the I-G+ path.
+     */
+    static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
+        // time from initial to switching point
+        double t_1 = (q_dot_switch - idot) / umax;
+        // time from switching to final, note i think this is a mistake
+        // in the paper.
+        double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
+        return t_1 + t_2;
+    }
+
+    /**
+     * Velocity at x_switch.  this should be faster (more negative) than idot.
+     * 
+     * This is for the I-G+ path.
+     */
+    static double qDotSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        return -1.0 * Math.sqrt(
+                2 * umax * (qSwitchIminusGplus(i, idot, g, gdot, umax) - c_plus(g, gdot, umax)));
+    }
+
+    /**
+     * Position at x_switch, which is the midpoint between the curves
+     * intersecting the initial and goal states.
+     * 
+     * This is for the I-G+ path.
+     */
+    static double qSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        return (c_minus(i, idot, umax) + c_plus(g, gdot, umax)) / 2;
+    }
+
+    /** Intercept of negative-U path intersecting the state */
+    static double c_minus(double x, double xdot, double umax) {
+        return x - Math.pow(xdot, 2) / (-2.0 * umax);
+    }
+
+    /** Intercept of positive-U path intersecting the state */
+    static double c_plus(double x, double xdot, double umax) {
+        return x - Math.pow(xdot, 2) / (2.0 * umax);
+    }
+
+    static double tLimit() {
+        return 0;
+    }
+
+    static double tMirror() {
+        return 0;
     }
 
     /**

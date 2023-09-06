@@ -2,13 +2,10 @@ package org.team100.lib.math;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.function.BiFunction;
 
 import org.junit.jupiter.api.Test;
-import org.team100.lib.rrt.RRTStar7;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
@@ -107,37 +104,5 @@ public class SteeringTest {
         Matrix<N1, N1> u = new Matrix<>(Nat.N1(), Nat.N1(), new double[] { uu });
         Matrix<N2, N1> xx2 = NumericalIntegration.rk4(f2, x1, u, dt);
         assertArrayEquals(new double[] { 0.5, 1 }, xx2.getData(), 0.001);
-    }
-
-    @Test
-    void testGoalRight() {
-        assertTrue(RRTStar7.goalRight(0, 0, 0.5, 1.0, 2.0));
-        assertTrue(RRTStar7.goalRight(0, 1, 5, 1, 2.0));
-        assertTrue(RRTStar7.goalRight(0, 1, 0, -2, 2.0));
-        assertFalse(RRTStar7.goalRight(0, 1, 0, 0, 2.0));
-    }
-
-    @Test
-    void testSolve2() {
-        assertTrue(RRTStar7.goalRight(0, 0, 0.5, 1.0, 2));
-
-        assertEquals(0.724, RRTStar7.t(0, 0, 0.5, 1.0, 2), 0.001);
-
-        assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
-
-        // try sweeping the possibilities
-
-        assertEquals(0.414, RRTStar7.t(0, 1, 0.5, 1, 2), 0.001);
-        assertEquals(0.732, RRTStar7.t(0, 1, 1, 1, 2), 0.001);
-        assertEquals(1.000, RRTStar7.t(0, 1, 1.5, 1, 2), 0.001);
-
-
-        assertEquals(0.449, RRTStar7.t(0, 2, 1, 2, 2), 0.001);
-        assertEquals(1.162, RRTStar7.t(0, 2, 3, 2, 2), 0.001);
-        assertEquals(1.742, RRTStar7.t(0, 2, 5, 2, 2), 0.001);
-
-        assertEquals(1.0, RRTStar7.slowU(0, 2, 3, 2, 1.2), 0.001);
-
-
     }
 }
