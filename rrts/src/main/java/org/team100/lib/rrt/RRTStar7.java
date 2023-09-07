@@ -505,10 +505,33 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * TODO: something about waiting time? i think this all might be wrong.
      */
     public static double tSwitch(double i, double idot, double g, double gdot, double umax) {
-        if (RRTStar7.goalRight(i, idot, g, gdot, umax)) {
-            return tSwitchIplusGminus(i, idot, g, gdot, umax);
+        // if (RRTStar7.goalRight(i, idot, g, gdot, umax)) {
+
+        // these might return NaN for impossible paths
+
+        double tIplusGminus = tSwitchIplusGminus(i, idot, g, gdot, umax);
+        double tIminusGplus = tSwitchIminusGplus(i, idot, g, gdot, umax);
+
+        // it's also possible for more than one path to be returned, one
+        // faster than the other.
+
+        if (Double.isNaN(tIplusGminus) || tIplusGminus > 1e100) {
+            // there should be at least one solution
+            if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100) {
+                throw new IllegalArgumentException(String.format("A %f %f %f %f %f %f",
+                        tIplusGminus, tIminusGplus, i, idot, g, gdot));
+            }
+            return tIminusGplus;
+
         }
-        return tSwitchIminusGplus(i, idot, g, gdot, umax);
+        if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100) {
+            return tIplusGminus;
+        }
+        // if we got here, then they're both actually numbers.
+        // so just return the slower one for now.
+        // TODO: be clever about waiting time etc.
+
+        return Math.max(tIplusGminus, tIminusGplus);
     }
 
     /**
@@ -527,7 +550,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     }
 
     /**
-     * Velocity at x_switch.  this should be faster (more positive) than idot.
+     * Velocity at x_switch. this should be faster (more positive) than idot.
      * 
      * This is for the I+G- path.
      */
@@ -554,15 +577,15 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
         double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
         // time from initial to switching point
-        double t_1 = (q_dot_switch - idot) / umax;
+        double t_1 = (q_dot_switch - idot) / (-1.0 * umax);
         // time from switching to final, note i think this is a mistake
         // in the paper.
-        double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
+        double t_2 = (gdot - q_dot_switch) / umax;
         return t_1 + t_2;
     }
 
     /**
-     * Velocity at x_switch.  this should be faster (more negative) than idot.
+     * Velocity at x_switch. this should be faster (more negative) than idot.
      * 
      * This is for the I-G+ path.
      */
@@ -740,6 +763,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             throw new IllegalArgumentException();
         this.stepNo = stepNo;
         this.radius = _gamma * Math.pow(Math.log(stepNo + 1) / (stepNo + 1), 0.25);
+    }
+
+    public void setRadius(double radius) {
+        this.radius = radius;
     }
 
     static boolean same(Matrix<N4, N1> a, Matrix<N4, N1> b) {

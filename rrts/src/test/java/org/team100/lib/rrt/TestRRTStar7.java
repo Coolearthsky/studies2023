@@ -35,13 +35,16 @@ public class TestRRTStar7 {
 
         assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
 
-        // try sweeping the possibilities
-
-        assertEquals(0.414, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
+        // down to the axis and back is the slow way.  there's also a fast
+        // way, but we choose the slow one here.
+        // TODO: be more clever about the multiple paths
+        assertEquals(1.000, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
+        // the fast way
         assertEquals(0.732, RRTStar7.tSwitch(0, 1, 1, 1, 2), 0.001);
         assertEquals(1.000, RRTStar7.tSwitch(0, 1, 1.5, 1, 2), 0.001);
 
-        assertEquals(0.449, RRTStar7.tSwitch(0, 2, 1, 2, 2), 0.001);
+        // same story here, we choose the slow path but there's also a fast one.
+        assertEquals(3.414, RRTStar7.tSwitch(0, 2, 1, 2, 2), 0.001);
         assertEquals(1.162, RRTStar7.tSwitch(0, 2, 3, 2, 2), 0.001);
         assertEquals(1.742, RRTStar7.tSwitch(0, 2, 5, 2, 2), 0.001);
 
@@ -95,9 +98,14 @@ public class TestRRTStar7 {
         assertEquals(-0.5, RRTStar7.qSwitchIminusGplus(2, -2, -3, -2, 1), 0.001);
         assertEquals(0.0, RRTStar7.qSwitchIminusGplus(2, -2, -2, -2, 1), 0.001);
         assertEquals(0.5, RRTStar7.qSwitchIminusGplus(2, -2, -1, -2, 1), 0.001);
+
+        // these are all a little different just to avoid zero as the answer
+        assertEquals(0.5, RRTStar7.qSwitchIplusGminus(2, 2, -1, 2, 1), 0.001);
+        assertEquals(0.5, RRTStar7.qSwitchIplusGminus(-1, 2, 2, -2, 1), 0.001);
+        assertEquals(0.5, RRTStar7.qSwitchIminusGplus(2, 2, -1, 2, 1), 0.001);
+        assertEquals(0.5, RRTStar7.qSwitchIminusGplus(-1, 2, 2, -2, 1), 0.001);
     }
 
-    // TODO: also exercise the longer paths that cross the origin
     @Test
     void testQDotSwitch() {
         assertEquals(3.000, RRTStar7.qDotSwitchIplusGminus(-3, 2, 2, 2, 1), 0.001);
@@ -107,6 +115,44 @@ public class TestRRTStar7 {
         assertEquals(-3.0, RRTStar7.qDotSwitchIminusGplus(2, -2, -3, -2, 1), 0.001);
         assertEquals(-2.828, RRTStar7.qDotSwitchIminusGplus(2, -2, -2, -2, 1), 0.001);
         assertEquals(-2.645, RRTStar7.qDotSwitchIminusGplus(2, -2, -1, -2, 1), 0.001);
+
+        // from 2,2 to -2,2, I+G- is invalid
+        assertEquals(0, RRTStar7.qDotSwitchIplusGminus(2, 2, -2, 2, 1), 0.001);
+        // from -2,2 to 2,-2 switches in the same place as -2,2->2,2
+        assertEquals(2.828, RRTStar7.qDotSwitchIplusGminus(-2, 2, 2, -2, 1), 0.001);
+        // from 2,2 to -2,2 switches at the bottom
+        assertEquals(-2.828, RRTStar7.qDotSwitchIminusGplus(2, 2, -2, 2, 1), 0.001);
+        // from -2,2 to 2,-2, I-G+ is invalid
+        assertEquals(0, RRTStar7.qDotSwitchIminusGplus(-2, 2, 2, -2, 1), 0.001);
+    }
+
+    @Test
+    void testTSwitch() {
+        // from -2 to 2, the 'fast' and normal way
+        assertEquals(1.656, RRTStar7.tSwitchIplusGminus(-2, 2, 2, 2, 1), 0.001);
+        // this path goes from (-2,2) to (0,0) and then to (2,2)
+        assertEquals(4.000, RRTStar7.tSwitchIminusGplus(-2, 2, 2, 2, 1), 0.001);
+        // the opposite order, 2 to -2, this is a completely invalid result,
+        // traversing Iplus backwards, and then Gminus backwards.
+        assertEquals(-4.000, RRTStar7.tSwitchIplusGminus(2, 2, -2, 2, 1), 0.001);
+        // from 2 to -2 is the 'long way around' across the x-axis and back.
+        assertEquals(9.656, RRTStar7.tSwitchIminusGplus(2, 2, -2, 2, 1), 0.001);
+
+        // diagonal, the 'fast' and normal way
+        assertEquals(5.656, RRTStar7.tSwitchIplusGminus(-2, 2, 2, -2, 1), 0.001);
+        // this is completely invalid
+        assertEquals(0, RRTStar7.tSwitchIminusGplus(-2, 2, 2, -2, 1), 0.001);
+        // this is invalid, it should yield like NaN or something
+        assertEquals(0, RRTStar7.tSwitchIplusGminus(2, -2, -2, 2, 1), 0.001);
+        // from 2 to -2 is the 'long way around' across the x-axis and back.
+        assertEquals(5.656, RRTStar7.tSwitchIminusGplus(2, -2, -2, 2, 1), 0.001);
+
+        // another problem case
+        // this can't be done
+        assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus(-1, 1, 0, 0, 1), 0.001);
+        // the "normal" way
+        assertEquals(1.449, RRTStar7.tSwitchIplusGminus(-1, 1, 0, 0, 1), 0.001);
+
     }
 
     @Test
@@ -116,11 +162,14 @@ public class TestRRTStar7 {
         assertEquals(0, RRTStar7.tSwitch(0, 0, 0, 0, 2.5), 0.001);
         // simply move back, rest-to-rest
         assertFalse(RRTStar7.goalRight(1, 0, 0, 0, 2.5));
+        // (1,0) -> (0,0) takes 1.264
         assertEquals(1.264, RRTStar7.tSwitch(1, 0, 0, 0, 2.5), 0.001);
         // slows to a stop, back, stop, forward, motion-to-motion
-        // this is wrong.
         assertFalse(RRTStar7.goalRight(1, 1, -1, 1, 2.5));
-        assertEquals(1.159, RRTStar7.tSwitch(1, 1, -1, 1, 2.5), 0.001);
+        assertEquals(2.759, RRTStar7.tSwitch(1, 1, -1, 1, 2.5), 0.001);
+        // used below
+        assertEquals(0.985, RRTStar7.tSwitch(-1, 1, 0, 0, 2.5), 0.001);
+ 
     }
 
     @Test
@@ -134,13 +183,20 @@ public class TestRRTStar7 {
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
 
+        solver.setRadius(10);
+
         // add a node
         KDTree.insert(arena, T_a, new Node<>(new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, 0, 0, 0 })));
+        System.out.println(T_a);
+
         // look for it
         KDNearNode<Node<N4>> near = solver.Nearest(new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 0, 0, 0 }), T_a,
                 true);
+
+        System.out.println(near);
         // find it: note this the time, not the Euclidean distance
-        assertEquals(1.797, near._dist, 0.001);
+        // (1,0) to (0,0) takes 1.264 (see above)
+        assertEquals(1.264, near._dist, 0.001);
         assertArrayEquals(new double[] { 0, 0, 0, 0 }, near._nearest.getState().getData(), 0.001);
     }
 
@@ -154,11 +210,13 @@ public class TestRRTStar7 {
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        solver.setRadius(10);
 
         KDTree.insert(arena, T_a, new Node<>(new Matrix<>(Nat.N4(), Nat.N1(), new double[] { -1, 1, 0, 0 })));
         KDNearNode<Node<N4>> near = solver.Nearest(new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 1, 0, 0 }), T_a,
                 true);
-        assertEquals(1.798, near._dist, 0.001);
+        // (-1,1) to (0,0)
+        assertEquals(2.759, near._dist, 0.001);
         assertArrayEquals(new double[] { -1, 1, 0, 0 }, near._nearest.getState().getData(), 0.001);
     }
 
