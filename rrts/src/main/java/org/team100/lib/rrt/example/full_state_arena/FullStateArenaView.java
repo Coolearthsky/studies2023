@@ -70,7 +70,8 @@ public class FullStateArenaView extends JComponent {
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         //final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a, T_b);
-        final Solver<N4> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        solver.setRadius(10); // hoo boy
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 

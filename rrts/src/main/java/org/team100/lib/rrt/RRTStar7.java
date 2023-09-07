@@ -132,7 +132,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         Matrix<N4, N1> x_rand = SampleState();
 
         // x_n
-        KDNearNode<Node<N4>> x_nearest = Nearest(x_rand, _T_a, timeForward);
+        KDNearNode<Node<N4>> x_nearest = BangBangNearest(x_rand, _T_a, timeForward);
+
+        // x_s
+        Matrix<N4, N1> x_s = Steer(x_nearest, x_rand);
 
         LocalLink<N4> randLink = SampleFree(timeForward);
         if (DEBUG)
@@ -253,7 +256,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * @param x_rand   the random sample
      * @param rootNode the tree to look through
      */
-    KDNearNode<Node<N4>> Nearest(Matrix<N4, N1> x_rand, KDNode<Node<N4>> rootNode, boolean timeForward) {
+    KDNearNode<Node<N4>> BangBangNearest(Matrix<N4, N1> x_rand, KDNode<Node<N4>> rootNode, boolean timeForward) {
         // For now, use the Near function, which uses the "radius". Maybe
         // it would be better to choose top-N-near, or use a different radius,
         // or whatever.
@@ -296,8 +299,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     }
 
     /**
-     * Return a state that tries to go from x_nearest to x_rand using a feasible
-     * trajectory.
+     * For bang-bang rrt "steering" just means "follow the trajectory until it hits
+     * something"
+     * 
+     * so we need a way to sample the trajectory.
      * 
      * @param x_nearest starting state
      * @param x_rand    goal state
@@ -308,6 +313,29 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // _model.setRadius(radius);
         _model.setRadius(same(_T_a.getValue().getState(), _model.initial()) ? 1 : -1);
         return _model.steer(x_nearest, x_rand);
+    }
+
+    public static class Trajectory {
+        public static class Axis {
+            public static class Segment {
+                double u;
+                double t;
+            }
+
+            Segment s1;
+            Segment s2;
+        }
+
+        Axis x;
+        Axis y;
+    }
+
+    Matrix<N4, N1> sample(Trajectory traj, double t) {
+        return null;
+    }
+
+    Trajectory connect(Matrix<N4, N1> start, Matrix<N4, N1> end) {
+        return null;
     }
 
     /**
@@ -531,7 +559,11 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // so just return the slower one for now.
         // TODO: be clever about waiting time etc.
 
-        return Math.max(tIplusGminus, tIminusGplus);
+        // as specified in the paper (p2), we choose the *faster* of the
+        // feasible paths as the tSwitch path.
+        // we'll use the slower one as tLimit, later.
+
+        return Math.min(tIplusGminus, tIminusGplus);
     }
 
     /**
@@ -550,16 +582,6 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     }
 
     /**
-     * Velocity at x_switch. this should be faster (more positive) than idot.
-     * 
-     * This is for the I+G- path.
-     */
-    static double qDotSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
-        return Math.sqrt(
-                2 * umax * (qSwitchIplusGminus(i, idot, g, gdot, umax) - c_plus(i, idot, umax)));
-    }
-
-    /**
      * Position at x_switch, which is the midpoint between the curves
      * intersecting the initial and goal states.
      * 
@@ -567,31 +589,6 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      */
     static double qSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
         return (c_plus(i, idot, umax) + c_minus(g, gdot, umax)) / 2;
-    }
-
-    /**
-     * Time to traverse x_i x_switch x_g.
-     * 
-     * This is for the I-G+ path.
-     */
-    static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
-        double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
-        // time from initial to switching point
-        double t_1 = (q_dot_switch - idot) / (-1.0 * umax);
-        // time from switching to final, note i think this is a mistake
-        // in the paper.
-        double t_2 = (gdot - q_dot_switch) / umax;
-        return t_1 + t_2;
-    }
-
-    /**
-     * Velocity at x_switch. this should be faster (more negative) than idot.
-     * 
-     * This is for the I-G+ path.
-     */
-    static double qDotSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
-        return -1.0 * Math.sqrt(
-                2 * umax * (qSwitchIminusGplus(i, idot, g, gdot, umax) - c_plus(g, gdot, umax)));
     }
 
     /**
@@ -604,6 +601,71 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         return (c_minus(i, idot, umax) + c_plus(g, gdot, umax)) / 2;
     }
 
+    /**
+     * Velocity at x_switch. this should be faster than idot.
+     * 
+     * This is for the I+G- path.
+     * 
+     * For this path qDotSwitch is always positive; otherwise it's an x_limit path.
+     */
+    static double qDotSwitchIplusGminus(double i, double idot, double g, double gdot, double umax) {
+        return Math.sqrt(
+                2 * umax * (qSwitchIplusGminus(i, idot, g, gdot, umax) - c_plus(i, idot, umax)));
+    }
+
+    /**
+     * Velocity at x_switch. this should be faster than idot.
+     * 
+     * This is for the I-G+ path.
+     * 
+     * For this path qDotSwitch is always negative, otherwise it's an x_switch path.
+     */
+    static double qDotSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        return -1.0 * Math.sqrt(
+                2 * umax * (qSwitchIminusGplus(i, idot, g, gdot, umax) - c_plus(g, gdot, umax)));
+    }
+
+    /**
+     * Velocity at x_limit. this should be slower than idot.
+     * 
+     * This is for the I+G- path.
+     * 
+     * For this path qDotLimit is always negative; otherwise it's an x_switch path.
+     */
+    static double qDotLimitIplusGminus(double i, double idot, double g, double gdot, double umax) {
+        return -1.0 * Math.sqrt(
+                2 * umax * (qSwitchIplusGminus(i, idot, g, gdot, umax) - c_plus(i, idot, umax)));
+    }
+
+        /**
+     * Velocity at x_limit. this should be slower than idot.
+     * 
+     * This is for the I-G+ path.
+     * 
+     * For this path qDotLimit is always positive; otherwise it's an x_switch path.
+     */
+    static double qDotLimitIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        return Math.sqrt(
+                2 * umax * (qSwitchIminusGplus(i, idot, g, gdot, umax) - c_plus(g, gdot, umax)));
+    }
+
+    /**
+     * Time to traverse x_i x_switch x_g.
+     * 
+     * This is for the I-G+ path.
+     * 
+     * for this path, 
+     */
+    static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
+        // time from initial to switching point
+        double t_1 = (q_dot_switch - idot) / (-1.0 * umax);
+        // time from switching to final, note i think this is a mistake
+        // in the paper.
+        double t_2 = (gdot - q_dot_switch) / umax;
+        return t_1 + t_2;
+    }
+
     /** Intercept of negative-U path intersecting the state */
     static double c_minus(double x, double xdot, double umax) {
         return x - Math.pow(xdot, 2) / (-2.0 * umax);
@@ -614,12 +676,48 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         return x - Math.pow(xdot, 2) / (2.0 * umax);
     }
 
-    static double tLimit() {
-        return 0;
+    /**
+     * returns the slowest path possible without crossing the axis
+     * 
+     * the difference between tLimit and tMirror is the "gap".
+     */
+    static double tLimit(double i, double idot, double g, double gdot, double umax) {
+        double qDotLimitIplusGminus = qDotLimitIplusGminus(i, idot, g, gdot, umax);
+        double qDotLimitIminusGplus = qDotLimitIminusGplus(i, idot, g, gdot, umax);
+        if (Double.isNaN(qDotLimitIplusGminus) || Double.isNaN(qDotLimitIminusGplus))
+            return Double.NaN;
+
+        // the slow path involves the smaller of the two qDot values
+        if (Math.abs(qDotLimitIplusGminus) > Math.abs(qDotLimitIminusGplus)) {
+            double qDotLimit = qDotLimitIminusGplus;
+            return (qDotLimit - idot) / (-1.0 * umax) + (gdot - qDotLimit) / umax;
+        }
+        double qDotLimit = qDotLimitIplusGminus;
+        return (qDotLimit - idot) / umax + (gdot - qDotLimit) / (-1.0 * umax);
+
     }
 
-    static double tMirror() {
-        return 0;
+    /**
+     * returns the slowest path that crosses the axis.
+     * 
+     * the difference between tLimit and tMirror is the "gap".
+     */
+    static double tMirror(double i, double idot, double g, double gdot, double umax) {
+        double tLimit = tLimit(i, idot, g, gdot, umax);
+        if (Double.isNaN(tLimit))
+            return Double.NaN;
+
+        double qDotLimitIplusGminus = qDotLimitIplusGminus(i, idot, g, gdot, umax);
+        double qDotLimitIminusGplus = qDotLimitIminusGplus(i, idot, g, gdot, umax);
+
+        // use the slow one
+        if (Math.abs(qDotLimitIplusGminus) > Math.abs(qDotLimitIminusGplus)) {
+            double qDotLimit = qDotLimitIminusGplus;
+            return tLimit + 2.0 * qDotLimit / umax - 2.0 * qDotLimit / (-1.0 * umax);
+        }
+        double qDotLimit = qDotLimitIplusGminus;
+        return tLimit + 2.0 * qDotLimit / (-1.0 * umax) - 2.0 * qDotLimit / umax;
+
     }
 
     /**
@@ -762,7 +860,8 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         if (stepNo < 1)
             throw new IllegalArgumentException();
         this.stepNo = stepNo;
-        this.radius = _gamma * Math.pow(Math.log(stepNo + 1) / (stepNo + 1), 0.25);
+        // see below
+        // this.radius = _gamma * Math.pow(Math.log(stepNo + 1) / (stepNo + 1), 0.25);
     }
 
     public void setRadius(double radius) {
