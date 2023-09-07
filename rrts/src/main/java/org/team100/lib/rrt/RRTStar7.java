@@ -134,8 +134,8 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // x_n
         KDNearNode<Node<N4>> x_nearest = BangBangNearest(x_rand, _T_a, timeForward);
 
-        // x_s
-        Matrix<N4, N1> x_s = Steer(x_nearest, x_rand);
+        // includes states and controls
+        Trajectory phi = BangBangSteer(x_nearest._nearest.getState(), x_rand, timeForward);
 
         LocalLink<N4> randLink = SampleFree(timeForward);
         if (DEBUG)
@@ -298,22 +298,158 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // return KDTree.nearest(_model, rootNode, x_rand);
     }
 
+    static double tOptimal(
+            Matrix<N4, N1> x_i,
+            Matrix<N4, N1> x_g,
+            boolean timeForward,
+            double umax) {
+
+        // TODO: handle time reversal
+
+        double xTSwitch = tSwitch(
+                x_i.get(0, 0),
+                x_i.get(1, 0),
+                x_g.get(0, 0),
+                x_g.get(1, 0),
+                umax);
+        double yTSwitch = tSwitch(
+                x_i.get(2, 0),
+                x_i.get(3, 0),
+                x_g.get(2, 0),
+                x_g.get(3, 0),
+                umax);
+        double xTLimit = tLimit(
+                x_i.get(0, 0),
+                x_i.get(1, 0),
+                x_g.get(0, 0),
+                x_g.get(1, 0),
+                umax);
+        double yTLimit = tLimit(
+                x_i.get(2, 0),
+                x_i.get(3, 0),
+                x_g.get(2, 0),
+                x_g.get(3, 0),
+                umax);
+        double xTMirror = tMirror(
+                x_i.get(0, 0),
+                x_i.get(1, 0),
+                x_g.get(0, 0),
+                x_g.get(1, 0),
+                umax);
+        double yTMirror = tMirror(
+                x_i.get(2, 0),
+                x_i.get(3, 0),
+                x_g.get(2, 0),
+                x_g.get(3, 0),
+                umax);
+
+        List<Item> opts = new ArrayList<>();
+        put(opts, xTSwitch, Solution.SWITCH);
+        put(opts, yTSwitch, Solution.SWITCH);
+        put(opts, xTLimit, Solution.LIMIT);
+        put(opts, yTLimit, Solution.LIMIT);
+        put(opts, xTMirror, Solution.MIRROR);
+        put(opts, yTMirror, Solution.MIRROR);
+        Collections.sort(opts);
+
+
+        int solved = 0;
+        for (Item item : opts) {
+            switch (item.s) {
+                case SWITCH:
+                    ++solved;
+                    break;
+                case LIMIT:
+                    --solved;
+                    break;
+                case MIRROR:
+                    ++solved;
+                    break;
+            }
+            if (solved == 2) {
+                return item.t;
+            }
+        }
+        // this should never happen; there is never not a solution.
+        throw new IllegalArgumentException(x_i.toString() + x_g.toString());
+    }
+
+    static void put(List<Item> opts, double t, Solution solution) {
+        if (!Double.isNaN(t) && t >= 0)
+            opts.add(new Item(t, solution));
+    }
+
+    static class Item implements Comparable<Item> {
+        double t;
+        Solution s;
+
+        public Item(double t, Solution s) {
+            this.t = t;
+            this.s = s;
+        }
+
+        @Override
+        public int compareTo(Item arg0) {
+            return Double.compare(t, arg0.t);
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            long temp;
+            temp = Double.doubleToLongBits(t);
+            result = prime * result + (int) (temp ^ (temp >>> 32));
+            result = prime * result + ((s == null) ? 0 : s.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Item other = (Item) obj;
+            if (Double.doubleToLongBits(t) != Double.doubleToLongBits(other.t))
+                return false;
+            if (s != other.s)
+                return false;
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "Item [t=" + t + ", s=" + s + "]";
+        }
+    }
+
     /**
-     * For bang-bang rrt "steering" just means "follow the trajectory until it hits
-     * something"
+     * The paper's method of "steering" is to follow the trajectory until it hits
+     * something, but doing that also implies redoing the whole thing with a resting
+     * state at the obstacle boundary, and that seems like a pain, so instead i'll
+     * just check for collisions and return the trajectory if there aren't any.
      * 
      * so we need a way to sample the trajectory.
      * 
-     * @param x_nearest starting state
-     * @param x_rand    goal state
-     * @return x_new a feasible state
+     * @param x_i initial state
+     * @param x_g goal state
+     * @return a feasible trajectory from initial to goal, or null if none is
+     *         feasible.
      */
-    Matrix<N4, N1> Steer(KDNearNode<Node<N4>> x_nearest, Matrix<N4, N1> x_rand) {
-        _model.setStepNo(stepNo);
-        // _model.setRadius(radius);
-        _model.setRadius(same(_T_a.getValue().getState(), _model.initial()) ? 1 : -1);
-        return _model.steer(x_nearest, x_rand);
+    static Trajectory BangBangSteer(
+            Matrix<N4, N1> x_i,
+            Matrix<N4, N1> x_g,
+            boolean timeForward) {
+
+        return null;
     }
+
+    public enum Solution {
+        SWITCH, LIMIT, MIRROR
+    };
 
     public static class Trajectory {
         public static class Axis {
@@ -637,7 +773,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
                 2 * umax * (qSwitchIplusGminus(i, idot, g, gdot, umax) - c_plus(i, idot, umax)));
     }
 
-        /**
+    /**
      * Velocity at x_limit. this should be slower than idot.
      * 
      * This is for the I-G+ path.
@@ -654,7 +790,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * 
      * This is for the I-G+ path.
      * 
-     * for this path, 
+     * for this path,
      */
     static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
         double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);

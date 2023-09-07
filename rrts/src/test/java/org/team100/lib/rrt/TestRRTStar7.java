@@ -10,11 +10,13 @@ import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
+import org.team100.lib.rrt.RRTStar7.Trajectory;
 import org.team100.lib.rrt.example.full_state_arena.FullStateHolonomicArena;
 import org.team100.lib.space.Sample;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N4;
 
 public class TestRRTStar7 {
@@ -25,15 +27,25 @@ public class TestRRTStar7 {
         assertTrue(RRTStar7.goalRight(0, 1, 5, 1, 2.0));
         assertTrue(RRTStar7.goalRight(0, 1, 0, -2, 2.0));
         assertFalse(RRTStar7.goalRight(0, 1, 0, 0, 2.0));
+        // no movement == zero time
+        assertFalse(RRTStar7.goalRight(0, 0, 0, 0, 2.5));
+        // simply move back, rest-to-rest
+        assertFalse(RRTStar7.goalRight(1, 0, 0, 0, 2.5));
+        // slows to a stop, back, stop, forward, motion-to-motion
+        assertFalse(RRTStar7.goalRight(1, 1, -1, 1, 2.5));
     }
 
     @Test
-    void testTime() {
-        assertTrue(RRTStar7.goalRight(0, 0, 0.5, 1.0, 2));
+    void testSlowU() {
+        assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
+        // assertEquals(1.0, RRTStar7.slowU(0, 2, 3, 2, 1.2), 0.001);
+
+    }
+
+    @Test
+    void testTSwitch() {
 
         assertEquals(0.724, RRTStar7.tSwitch(0, 0, 0.5, 1.0, 2), 0.001);
-
-        assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
 
         // there are three solutions to this case; tSwitch returns the fastest.
         // see below for tLimit and tMirror.
@@ -47,7 +59,22 @@ public class TestRRTStar7 {
         assertEquals(1.162, RRTStar7.tSwitch(0, 2, 3, 2, 2), 0.001);
         assertEquals(1.742, RRTStar7.tSwitch(0, 2, 5, 2, 2), 0.001);
 
-        // assertEquals(1.0, RRTStar7.slowU(0, 2, 3, 2, 1.2), 0.001);
+        // no movement == zero time
+        assertEquals(0, RRTStar7.tSwitch(0, 0, 0, 0, 2.5), 0.001);
+
+        // simply move back, rest-to-rest
+        // (1,0) -> (0,0) takes 1.264
+        assertEquals(1.264, RRTStar7.tSwitch(1, 0, 0, 0, 2.5), 0.001);
+
+        // slows to a stop, back, stop, forward, motion-to-motion
+        assertEquals(2.759, RRTStar7.tSwitch(1, 1, -1, 1, 2.5), 0.001);
+
+        // (-1,1) -> (0,0), used below
+        assertEquals(0.985, RRTStar7.tSwitch(-1, 1, 0, 0, 2.5), 0.001);
+
+        // (0,0) -> (1,0), used below
+        assertEquals(1.264, RRTStar7.tSwitch(0, 0, 1, 0, 2.5), 0.001);
+
     }
 
     @Test
@@ -125,7 +152,7 @@ public class TestRRTStar7 {
     }
 
     @Test
-    void testTSwitch() {
+    void testTSwitchByPath() {
         // from -2 to 2, the 'fast' and normal way
         assertEquals(1.656, RRTStar7.tSwitchIplusGminus(-2, 2, 2, 2, 1), 0.001);
         // this path goes from (-2,2) to (0,0) and then to (2,2)
@@ -151,27 +178,6 @@ public class TestRRTStar7 {
         assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus(-1, 1, 0, 0, 1), 0.001);
         // the "normal" way
         assertEquals(1.449, RRTStar7.tSwitchIplusGminus(-1, 1, 0, 0, 1), 0.001);
-
-    }
-
-    @Test
-    void testTime2() {
-        // no movement == zero time
-        assertFalse(RRTStar7.goalRight(0, 0, 0, 0, 2.5));
-        assertEquals(0, RRTStar7.tSwitch(0, 0, 0, 0, 2.5), 0.001);
-
-        // simply move back, rest-to-rest
-        assertFalse(RRTStar7.goalRight(1, 0, 0, 0, 2.5));
-
-        // (1,0) -> (0,0) takes 1.264
-        assertEquals(1.264, RRTStar7.tSwitch(1, 0, 0, 0, 2.5), 0.001);
-
-        // slows to a stop, back, stop, forward, motion-to-motion
-        assertFalse(RRTStar7.goalRight(1, 1, -1, 1, 2.5));
-        assertEquals(2.759, RRTStar7.tSwitch(1, 1, -1, 1, 2.5), 0.001);
-
-        // used below
-        assertEquals(0.985, RRTStar7.tSwitch(-1, 1, 0, 0, 2.5), 0.001);
 
     }
 
@@ -225,10 +231,57 @@ public class TestRRTStar7 {
         assertArrayEquals(new double[] { -1, 1, 0, 0 }, near._nearest.getState().getData(), 0.001);
     }
 
+    Matrix<N4, N1> s(double x1, double x2, double x3, double x4) {
+        return new Matrix<>(Nat.N4(), Nat.N1(), new double[] { x1, x2, x3, x4 });
+    }
+
+    @Test
+    void testTOptimal() {
+        // no movement = no time
+        assertEquals(0, RRTStar7.tOptimal(s(0, 0, 0, 0), s(0, 0, 0, 0), true, 2), 0.001);
+
+        // same trajectory in both axes
+        // x: (0,0) -> (1,0):
+        // y: (0,0) -> (1,0)
+        assertEquals(1.264, RRTStar7.tOptimal(s(0, 0, 0, 0), s(1, 0, 1, 0), true, 2.5), 0.001);
+
+        // slow one is slower than tmirror
+        // x: (0,1) -> (0.5,1): tswitch = 0.414, tlimit=tmirror=1
+        assertEquals(1.264, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.5, 1, 1, 0), true, 2.5), 0.001);
+
+        // the y axis is in the gap of the x axis, so use tmirror
+        // x: (0,1) -> (0.25,1) tswitch=0.224 tlimit=0.292 tmirror=1.707
+        // y: (0,0) -> (1.00,0) tswitch=1.264 tlimit=nan tmirror=nan
+        // note u = 2
+        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.25, 1, 1, 0), true, 2.0), 0.001);
+
+        // another gap example
+        // x: (0,1) -> (0.25,1) tswitch=0.224 tlimit=0.292 tmirror=1.707
+        // y: (0,1) -> (0.50,1) tswitch=0.414 tlimit=1.000 tmirror=1.000
+        // note u = 2
+        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 1), s(0.25, 1, 0.5, 1), true, 2.0), 0.001);
+
+        // both are above the gap so it just picks the slower tswitch
+        // x: (0,2) -> (1.0,2) tswitch=0.449 tlimit=0.585 tmirror=3.414
+        // y: (0,1) -> (0.5,1) tswitch=0.414 tlimit=1.000 tmirror=1.000
+        assertEquals(0.449, RRTStar7.tOptimal(s(0, 2, 0, 1), s(1, 2, 0.5, 1), true, 2.0), 0.001);
+    }
+
     @Test
     void testSteer() {
-        // "steering" in this case just means "follow until obstacle"
-        // so it's nothing like the other "steer"
+        // x: (0,0) -> (1,0)
+        // y: (0,0) -> (1,0)
+        Matrix<N4, N1> x_i = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, 0, 0, 0 });
+        Matrix<N4, N1> x_g = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 0, 1, 0 });
+        Trajectory phi = RRTStar7.BangBangSteer(x_i, x_g, true);
+        assertEquals(100, phi.x.s1.u, 0.001);
+        assertEquals(100, phi.x.s1.t, 0.001);
+        assertEquals(100, phi.x.s2.u, 0.001);
+        assertEquals(100, phi.x.s2.t, 0.001);
+        assertEquals(100, phi.y.s1.u, 0.001);
+        assertEquals(100, phi.y.s1.t, 0.001);
+        assertEquals(100, phi.y.s2.u, 0.001);
+        assertEquals(100, phi.y.s2.t, 0.001);
 
     }
 
@@ -275,6 +328,9 @@ public class TestRRTStar7 {
         // there are no cases here with i and g on opposite sides
         // of the qdot=0 axis, because there's no "limit" or "mirror"
         // possible in that case
+
+        // (0,0) -> (1,0)
+        assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
     }
 
     @Test
@@ -293,6 +349,9 @@ public class TestRRTStar7 {
 
         // two intersections, recall that tLimit was 0.585
         assertEquals(3.414, RRTStar7.tMirror(0, 2, 1, 2, 2), 0.001);
+
+        // (0,0) -> (1,0)
+        assertEquals(Double.NaN, RRTStar7.tMirror(0, 0, 1, 0, 2.5), 0.001);
     }
 
 }
