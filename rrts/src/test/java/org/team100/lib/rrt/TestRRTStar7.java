@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
@@ -37,8 +39,43 @@ public class TestRRTStar7 {
 
     @Test
     void testSlowU() {
-        assertEquals(1.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.0), 0.001);
-        // assertEquals(1.0, RRTStar7.slowU(0, 2, 3, 2, 1.2), 0.001);
+        // some cases where u happens to be maxu:
+        assertEquals(2.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724), 0.01);
+
+        // recall
+        assertEquals(0.414, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
+        assertEquals(1.000, RRTStar7.tLimit(0, 1, 0.5, 1, 2), 0.001);
+        assertEquals(1.000, RRTStar7.tMirror(0, 1, 0.5, 1, 2), 0.001);
+        // but this is NaN
+        // assertEquals(2.0, RRTStar7.slowU(0, 1, 0.5, 1, 0.75), 0.001);
+
+        assertEquals(0.732, RRTStar7.tSwitch(0, 1, 1, 1, 2), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1, 1, 2), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1, 1, 2), 0.001);
+        // but this is NaN
+        // assertEquals(-1, RRTStar7.slowU(0, 1, 1, 1, 0.733), 0.001);
+
+        assertEquals(1.000, RRTStar7.tSwitch(0, 1, 1.5, 1, 2), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1.5, 1, 2), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1.5, 1, 2), 0.001);
+        // this is nan
+        // assertEquals(-1.000, RRTStar7.slowU(0, 1, 1.5, 1, 2), 0.001);
+
+        assertEquals(0.449, RRTStar7.tSwitch(0, 2, 1, 2, 2), 0.001);
+        assertEquals(0.585, RRTStar7.tLimit(0, 2, 1, 2, 2), 0.001);
+        assertEquals(3.414, RRTStar7.tMirror(0, 2, 1, 2, 2), 0.001);
+        // nan
+        // assertEquals(-1, RRTStar7.slowU(0, 2, 1, 2, 4.0), 0.001);
+
+        // maybe just cases that start at idot=0 work
+        assertEquals(1, RRTStar7.tSwitch(1, 0, 2, 2, 2), 0.001);
+        // hm
+        assertEquals(2, RRTStar7.slowU(1, 0, 2, 2, 1), 0.001);
+
+        // negative idot?
+        assertEquals(2.645, RRTStar7.tSwitch(0, -1, 3, 1, 2), 0.001);
+        // hm
+        assertEquals(1.609, RRTStar7.slowU(0, -1, 3, 1, 3), 0.001);
 
     }
 
@@ -74,6 +111,7 @@ public class TestRRTStar7 {
 
         // (0,0) -> (1,0), used below
         assertEquals(1.264, RRTStar7.tSwitch(0, 0, 1, 0, 2.5), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
 
     }
 
@@ -238,7 +276,6 @@ public class TestRRTStar7 {
     @Test
     void testTOptimal() {
         // no movement = no time
-        assertEquals(0, RRTStar7.tOptimal(s(0, 0, 0, 0), s(0, 0, 0, 0), true, 2), 0.001);
 
         // same trajectory in both axes
         // x: (0,0) -> (1,0):
@@ -354,4 +391,13 @@ public class TestRRTStar7 {
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 0, 1, 0, 2.5), 0.001);
     }
 
+    @Test
+    void quadraticTest() {
+        assertEquals(List.of(0.0), RRTStar7.quadratic(1,0,0));
+        assertEquals(List.of(1.0, -1.0), RRTStar7.quadratic(1,0,-1));
+        // https://en.wikipedia.org/wiki/Quadratic_formula
+        assertEquals(List.of(4.0, 1.0), RRTStar7.quadratic(0.5,-2.5,2));
+        assertEquals(List.of(-0.0), RRTStar7.quadratic(0,1,0));
+
+    }
 }

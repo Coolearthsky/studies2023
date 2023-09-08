@@ -24,6 +24,7 @@ import org.team100.lib.math.ShootingSolver;
 import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.random.MersenneTwister;
+import org.team100.lib.rrt.RRTStar7.Trajectory.Axis.Segment;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
 import org.team100.lib.util.Util;
@@ -35,6 +36,9 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
+
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 
 /**
  * RRT* version 7
@@ -352,7 +356,6 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         put(opts, yTMirror, Solution.MIRROR);
         Collections.sort(opts);
 
-
         int solved = 0;
         for (Item item : opts) {
             switch (item.s) {
@@ -443,6 +446,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             Matrix<N4, N1> x_i,
             Matrix<N4, N1> x_g,
             boolean timeForward) {
+        double tOptimal = tOptimal(x_i, x_g, timeForward, MAX_U);
 
         return null;
     }
@@ -860,13 +864,278 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * Used for the slower of the double-integrators; find a solution that takes the
      * specified time, to match the umax solution of the other double-integrator.
      * 
+     * eq 8 and 9 from the paper, and the restriction that a1+a2=0, reduces to this
+     * expression.
+     * 
+     * https://colab.research.google.com/drive/1zgJ38IqWSkRcRnauH_WL-h8NjTPNZY1E
+     * 
+     * ok this is frustrating and wrong.
+     * 
+     * @param i    initial position
      * @param idot initial velocity
+     * @param g    goal position
      * @param gdot goal velocity
      * @param tw   time to wait
      */
     public static double slowU(double i, double idot, double g, double gdot, double tw) {
-        return Math.pow(gdot - idot, 2) / (2 * (g - i - i * tw));
-        // return (gdot - idot) / tw;
+        return (-3 * gdot * tw - idot * tw + 4 * g - 4 * i
+                + (2 * gdot - 2 * idot) * ((gdot * tw - g + i) / (gdot - idot) + 1.0 / 2.0 * sqrt(2)
+                        * sqrt(pow(gdot, 2) * pow(tw, 2) - 2 * gdot * g * tw + 2 * gdot * i * tw
+                                + pow(idot, 2) * pow(tw, 2) - 2 * idot * g * tw + 2 * idot * i * tw
+                                + 2 * pow(g, 2) - 4 * g * i + 2 * pow(i, 2))
+                        / (gdot - idot)))
+                / pow(tw, 2);
+    }
+
+    /**
+     * returns roots of the quadratic
+     * see KrisLibrary/planning/ParabolicRamp.cpp
+     */
+    static List<Double> quadratic(double a, double b, double c) {
+        if (a == 0) {
+            if (b == 0) {
+                if (c == 0)
+                    return List.of();
+                return List.of();
+            }
+            return List.of(-c / b);
+
+        }
+        if (c == 0) { // det = b^2
+            if (b == 0) // just y=ax^2
+                return List.of(0.0);
+            return List.of(0.0, -b / a);
+        }
+        double det = b * b - 4.0 * a * c;
+        if (det < 0.0)
+            return List.of();
+        if (det == 0.0) {
+            return List.of(-b / (2.0 * a));
+        }
+        det = sqrt(det);
+        double x1;
+        double x2;
+        if (Math.abs(-b - det) < Math.abs(a))
+            x1 = 0.5 * (-b + det) / a;
+        else
+            x1 = 2.0 * c / (-b - det);
+        if (Math.abs(-b + det) < Math.abs(a))
+            x2 = 0.5 * (-b - det) / a;
+        else
+            x2 = 2.0 * c / (-b + det);
+        return List.of(x1, x2);
+    }
+
+    static double Sqr(double x) {
+        return x * x;
+    }
+
+    static boolean FuzzyZero(double a, double eps) {
+        return Math.abs(a) <= eps;
+    }
+
+    static boolean FuzzyEquals(double a, double b, double eps) {
+        return Math.abs(a - b) <= eps;
+    }
+
+    static class Outvar<T> {
+        T v;
+
+        public Outvar(T v) {
+            this.v = v;
+        }
+    }
+
+    /**
+     * seems to return accel of some kind?
+     * 
+     * TODO: handle the outvars
+     * 
+     * see KrisLibrary/planning/ParabolicRamp.cpp
+     */
+    static double CalcMinAccel(double x0, double dx0,
+            double x1, double dx1, double endTime, double sign, Outvar<Double> switchTime) {
+
+        double EpsilonT = 1e-10; // time
+        double EpsilonA = 1e-10; // accel
+        double EpsilonV = 1e-10; // velocity
+        double EpsilonX = 1e-10; // position
+
+        // TODO: handle these outputs
+        double tswitch1, tswitch2; // time to switch between ramp/flat/ramp
+        double ttotal;
+        double a1, v, a2;
+
+        double a, b, c;
+        a = -(dx1 - dx0) / endTime;
+        b = (2.0 * (dx0 + dx1) + 4.0 * (x0 - x1) / endTime);
+        c = (dx1 - dx0) * endTime;
+        // double rat1;
+        // double rat2;
+        List<Double> roots = quadratic(a, b, c);
+
+        int res = roots.size();
+
+        double accel1 = 0;
+        double accel2 = 0;
+        double switchTime1 = 0;
+        double switchTime2 = 0;
+
+        // int res=quadratic(a,b,c,rat1,rat2);
+
+        // double accel2 = (dx1-dx0)/rat2;
+        // double switchTime1 = endTime*0.5+0.5*rat1;
+        // double switchTime2 = endTime*0.5+0.5*rat2;
+        // fix up numerical errors
+        // if(switchTime1 > endTime && switchTime1 < endTime+EpsilonT*1e-1)
+        // switchTime1 = endTime;
+        // if(switchTime2 > endTime && switchTime2 < endTime+EpsilonT*1e-1)
+        // switchTime2 = endTime;
+        // if(switchTime1 < 0 && switchTime1 > -EpsilonT*1e-1)
+        // switchTime1 = 0;
+        // if(switchTime2 < 0 && switchTime2 > -EpsilonT*1e-1)
+        // switchTime2 = 0;
+        if (res > 0) {
+            double rat1 = roots.get(0);
+            accel1 = (dx1 - dx0) / rat1;
+            if (FuzzyZero(rat1, EpsilonT)) {
+                // consider it as a zero, ts = T/2
+                // z = - 4*(x0-x1)/T^2 - 2 (dx0+dx1)/T
+                accel1 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
+            }
+        }
+        if (res > 1) {
+            double rat2 = roots.get(1);
+            if (FuzzyZero(rat2, EpsilonT)) {
+
+                accel2 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
+            }
+            boolean firstInfeas = false;
+            if (res > 0) {
+                double rat1 = roots.get(0);
+                accel1 = (dx1 - dx0) / rat1;
+                if ((FuzzyZero(accel1, EpsilonA) || FuzzyZero(endTime / rat1, EpsilonA))) { // infer that accel must be
+                                                                                            // small
+                    // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
+                    // switchTime1 = endTime*0.5;
+                    // }
+
+                    switchTime1 = endTime * 0.5 + 0.5 * rat1;
+                    if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
+                        switchTime1 = endTime;
+                    if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
+                        switchTime1 = 0;
+
+                    if (!FuzzyEquals(x0 + switchTime1 * dx0 + 0.5 * Sqr(switchTime1) * accel1,
+                            x1 - (endTime - switchTime1) * dx1 - 0.5 * Sqr(endTime - switchTime1) * accel1, EpsilonX) ||
+                            !FuzzyEquals(dx0 + switchTime1 * accel1, dx1 + (endTime - switchTime1) * accel1,
+                                    EpsilonV)) {
+                        firstInfeas = true;
+                    }
+                }
+                if (res > 1) {
+                    // double rat2 = roots.get(1);
+                    accel2 = (dx1 - dx0) / rat2;
+
+                    if ((FuzzyZero(accel2, EpsilonA) || FuzzyZero(endTime / rat2, EpsilonA))) {
+                        // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
+                        // switchTime2 = endTime*0.5;
+                        // }
+                        switchTime1 = endTime * 0.5 + 0.5 * rat1;
+                        switchTime2 = endTime * 0.5 + 0.5 * rat2;
+                        if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
+                            switchTime1 = endTime;
+                        if (switchTime2 > endTime && switchTime2 < endTime + EpsilonT * 1e-1)
+                            switchTime2 = endTime;
+                        if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
+                            switchTime1 = 0;
+                        if (switchTime2 < 0 && switchTime2 > -EpsilonT * 1e-1)
+                            switchTime2 = 0;
+
+                        if (!FuzzyEquals(x0 + switchTime2 * dx0 + 0.5 * Sqr(switchTime2) * accel2,
+                                x1 - (endTime - switchTime2) * dx1 - 0.5 * Sqr(endTime - switchTime2) * accel2,
+                                EpsilonX) ||
+                                !FuzzyEquals(dx0 + switchTime2 * accel2, dx1 + (endTime - switchTime2) * accel2,
+                                        EpsilonV)) {
+                            res--;
+                        }
+                    }
+                    if (firstInfeas) {
+                        accel1 = accel2;
+                        rat1 = rat2;
+                        switchTime1 = switchTime2;
+                        res--;
+                    }
+                    if (res == 0)
+                        return -1;
+                    else if (res == 1) {
+                        if (switchTime1 >= 0 && switchTime1 <= endTime) {
+                            switchTime.v = switchTime1;
+                            return sign * accel1;
+                        }
+                        return -1.0;
+                    } else if (res == 2) {
+                        if (switchTime1 >= 0 && switchTime1 <= endTime) {
+                            if (switchTime2 >= 0 && switchTime2 <= endTime) {
+                                if (accel1 < accel2) {
+                                    switchTime.v = switchTime1;
+                                    return sign * accel1;
+                                } else {
+                                    switchTime.v = switchTime2;
+                                    return sign * accel2;
+                                }
+                            } else {
+                                switchTime.v = switchTime1;
+                                return sign * accel1;
+                            }
+                        } else if (switchTime2 >= 0 && switchTime2 <= endTime) {
+                            switchTime.v = switchTime2;
+                            return sign * accel2;
+                        }
+                        return -1.0;
+                    }
+                    if (FuzzyZero(a, EpsilonT) && FuzzyZero(b, EpsilonT) && FuzzyZero(c, EpsilonT)) {
+                        switchTime.v = 0.5 * endTime;
+                        return 0;
+                    }
+                }
+            }
+        }
+        return -1.0;
+    }
+
+    /** see KrisLibrary/planning/ParabolicRamp.cpp */
+    static boolean SolveMinAccel(double x0, double dx0, double x1, double dx1, double endTime) {
+        // TODO: handle these outputs
+        double tswitch; // time to switch between ramp/flat/ramp
+        double ttotal;
+        double a, a1, v, a2;
+
+        Outvar<Double> switch1 = new Outvar<Double>(0.0);
+        Outvar<Double> switch2 = new Outvar<Double>(0.0);
+        // TODO: switch1 and switch2 are outvars
+        double apn = CalcMinAccel(x0, dx0, x1, dx1, endTime, 1.0, switch1);
+        double anp = CalcMinAccel(x0, dx0, x1, dx1, endTime, -1.0, switch2);
+        if (apn >= 0) {
+            if (anp >= 0 && anp < apn)
+                a = -anp;
+            else
+                a = apn;
+        } else if (anp >= 0)
+            a = -anp;
+        else {
+            a = 0;
+            tswitch = -1;
+            ttotal = -1;
+            return false;
+        }
+        ttotal = endTime;
+        if (a == apn)
+            tswitch = switch1.v;
+        else
+            tswitch = switch2.v;
+        return true;
+
     }
 
     /**
