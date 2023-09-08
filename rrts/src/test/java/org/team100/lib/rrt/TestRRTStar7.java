@@ -39,8 +39,29 @@ public class TestRRTStar7 {
 
     @Test
     void testSlowU() {
-        // some cases where u happens to be maxu:
-        assertEquals(2.0, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724), 0.01);
+
+        System.out.println("faster = higher U");
+        assertEquals(4.828, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.5), 0.001);
+
+        System.out.println("example from below, tswitch is 0.724s for U=2");
+        assertEquals(2.004, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724), 0.001);
+
+        System.out.println("just faster than no switch");
+        assertEquals(1.241, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.9), 0.001);
+
+        System.out.println("no switch");
+        assertEquals(1.000, RRTStar7.slowU(0, 0, 0.5, 1.0, 1), 0.001);
+
+        // I-G+
+        System.out.println("just slower than no switch");
+        assertEquals(0.995, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.1), 0.001);
+        
+        System.out.println("much slower");
+        assertEquals(0.809, RRTStar7.slowU(0, 0, 0.5, 1.0, 2), 0.001);
+
+        // I+G-
+        System.out.println("reflect the above case");
+        assertEquals(0.809, RRTStar7.slowU(0, 0, -0.5, -1.0, 2), 0.001);
 
         // recall
         assertEquals(0.414, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
@@ -153,7 +174,10 @@ public class TestRRTStar7 {
     }
 
     @Test
-    void testQSwitch() {
+    void testQSwitch() { 
+        assertEquals(0.375, RRTStar7.qSwitchIplusGminus(0, 0, 0.5, 1.0, 2), 0.001);
+        assertEquals(0.125, RRTStar7.qSwitchIminusGplus(0, 0, 0.5, 1.0, 2), 0.001);
+
         assertEquals(-0.5, RRTStar7.qSwitchIplusGminus(-3, 2, 2, 2, 1), 0.001);
         assertEquals(0, RRTStar7.qSwitchIplusGminus(-2, 2, 2, 2, 1), 0.001);
         assertEquals(0.5, RRTStar7.qSwitchIplusGminus(-1, 2, 2, 2, 1), 0.001);
@@ -171,6 +195,9 @@ public class TestRRTStar7 {
 
     @Test
     void testQDotSwitch() {
+        assertEquals(1.224, RRTStar7.qDotSwitchIplusGminus(0, 0, 0.5, 1.0, 2), 0.001);
+        assertEquals(Double.NaN, RRTStar7.qDotSwitchIminusGplus(0, 0, 0.5, 1.0, 2), 0.001);
+
         assertEquals(3.000, RRTStar7.qDotSwitchIplusGminus(-3, 2, 2, 2, 1), 0.001);
         assertEquals(2.828, RRTStar7.qDotSwitchIplusGminus(-2, 2, 2, 2, 1), 0.001);
         assertEquals(2.645, RRTStar7.qDotSwitchIplusGminus(-1, 2, 2, 2, 1), 0.001);

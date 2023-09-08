@@ -877,7 +877,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * @param gdot goal velocity
      * @param tw   time to wait
      */
-    public static double slowU(double i, double idot, double g, double gdot, double tw) {
+    public static double slowULaValle(double i, double idot, double g, double gdot, double tw) {
         return (-3 * gdot * tw - idot * tw + 4 * g - 4 * i
                 + (2 * gdot - 2 * idot) * ((gdot * tw - g + i) / (gdot - idot) + 1.0 / 2.0 * sqrt(2)
                         * sqrt(pow(gdot, 2) * pow(tw, 2) - 2 * gdot * g * tw + 2 * gdot * i * tw
@@ -885,6 +885,75 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
                                 + 2 * pow(g, 2) - 4 * g * i + 2 * pow(i, 2))
                         / (gdot - idot)))
                 / pow(tw, 2);
+    }
+
+    /**
+     * another attempt to find a for fixed T
+     * https://motion.cs.illinois.edu/papers/icra10-smoothing.pdf
+     * so the paper says solve the quadratic
+     * T^2a^2 + sigma(2T(idot+gdot) + 4(i-g))a - (gdot-idot)^2 = 0.
+     */
+    static double slowU(double i, double idot, double g, double gdot, double tw) {
+        double a = tw * tw;
+        double b = 2.0 * tw * (idot + gdot) + 4.0 * (i - g);
+        double c = -1.0 * (gdot - idot) * (gdot - idot);
+        System.out.printf("a %f b %f c %f\n", a, b, c);
+
+        List<Double> plus = quadratic(a, b, c);
+        List<Double> minus = quadratic(a, -b, c);
+        System.out.printf("plus %s minus %s\n", plus, minus);
+        // we generally want the *lowest* acceleration that will solve the problem
+        Double aMin = null;
+        for (Double p : plus) {
+            double ts = 0.5 * (tw + (gdot - idot) / p);
+            System.out.printf("p ts %f\n", ts);
+            if (p <= 0) {
+                System.out.println("reject p < 0");
+                // TODO: negative accel is generally ok, wtf? maybe "a" is
+                // defined as abs(accel)
+                continue;
+            }
+            if (ts < 0) {
+                System.out.println("reject ts < 0");
+                continue;
+            }
+
+            if (ts > tw) { // switching time can't be more than total time
+                System.out.println("reject ts > tw");
+                continue;
+
+            }
+            if (aMin == null || p < aMin) {
+                System.out.printf("accept p %f\n", p);
+                aMin = p;
+            }
+        }
+        for (Double m : minus) {
+            double ts = 0.5 * (tw + (gdot - idot) / m);
+            System.out.printf("m ts %f\n", ts);
+            if (m <= 0) {
+                System.out.println("reject m < 0");
+                continue;
+            }
+            if (ts < 0) {
+                System.out.println("reject ts < 0");
+                continue;
+            }
+            if (ts > tw) {
+                System.out.println("reject ts > tw");
+                continue;
+            }
+            if (aMin == null || m < aMin) {
+                System.out.printf("accept m %f\n", m);
+                aMin = m;
+            }
+        }
+        if (aMin == null)
+            return Double.NaN;
+
+        double ts = 0.5 * (tw + (gdot - idot) / aMin);
+        System.out.printf("ts %f\n", ts);
+        return aMin;
     }
 
     /**
@@ -946,197 +1015,205 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         }
     }
 
-    /**
-     * seems to return accel of some kind?
-     * 
-     * TODO: handle the outvars
-     * 
-     * see KrisLibrary/planning/ParabolicRamp.cpp
-     */
-    static double CalcMinAccel(double x0, double dx0,
-            double x1, double dx1, double endTime, double sign, Outvar<Double> switchTime) {
+    // /**
+    // * seems to return accel of some kind?
+    // *
+    // * TODO: handle the outvars
+    // *
+    // * see KrisLibrary/planning/ParabolicRamp.cpp
+    // */
+    // static double CalcMinAccel(double x0, double dx0,
+    // double x1, double dx1, double endTime, double sign, Outvar<Double>
+    // switchTime) {
 
-        double EpsilonT = 1e-10; // time
-        double EpsilonA = 1e-10; // accel
-        double EpsilonV = 1e-10; // velocity
-        double EpsilonX = 1e-10; // position
+    // double EpsilonT = 1e-10; // time
+    // double EpsilonA = 1e-10; // accel
+    // double EpsilonV = 1e-10; // velocity
+    // double EpsilonX = 1e-10; // position
 
-        // TODO: handle these outputs
-        double tswitch1, tswitch2; // time to switch between ramp/flat/ramp
-        double ttotal;
-        double a1, v, a2;
+    // // TODO: handle these outputs
+    // double tswitch1, tswitch2; // time to switch between ramp/flat/ramp
+    // double ttotal;
+    // double a1, v, a2;
 
-        double a, b, c;
-        a = -(dx1 - dx0) / endTime;
-        b = (2.0 * (dx0 + dx1) + 4.0 * (x0 - x1) / endTime);
-        c = (dx1 - dx0) * endTime;
-        // double rat1;
-        // double rat2;
-        List<Double> roots = quadratic(a, b, c);
+    // double a, b, c;
+    // a = -(dx1 - dx0) / endTime;
+    // b = (2.0 * (dx0 + dx1) + 4.0 * (x0 - x1) / endTime);
+    // c = (dx1 - dx0) * endTime;
+    // // double rat1;
+    // // double rat2;
+    // List<Double> roots = quadratic(a, b, c);
 
-        int res = roots.size();
+    // int res = roots.size();
 
-        double accel1 = 0;
-        double accel2 = 0;
-        double switchTime1 = 0;
-        double switchTime2 = 0;
+    // double accel1 = 0;
+    // double accel2 = 0;
+    // double switchTime1 = 0;
+    // double switchTime2 = 0;
 
-        // int res=quadratic(a,b,c,rat1,rat2);
+    // // int res=quadratic(a,b,c,rat1,rat2);
 
-        // double accel2 = (dx1-dx0)/rat2;
-        // double switchTime1 = endTime*0.5+0.5*rat1;
-        // double switchTime2 = endTime*0.5+0.5*rat2;
-        // fix up numerical errors
-        // if(switchTime1 > endTime && switchTime1 < endTime+EpsilonT*1e-1)
-        // switchTime1 = endTime;
-        // if(switchTime2 > endTime && switchTime2 < endTime+EpsilonT*1e-1)
-        // switchTime2 = endTime;
-        // if(switchTime1 < 0 && switchTime1 > -EpsilonT*1e-1)
-        // switchTime1 = 0;
-        // if(switchTime2 < 0 && switchTime2 > -EpsilonT*1e-1)
-        // switchTime2 = 0;
-        if (res > 0) {
-            double rat1 = roots.get(0);
-            accel1 = (dx1 - dx0) / rat1;
-            if (FuzzyZero(rat1, EpsilonT)) {
-                // consider it as a zero, ts = T/2
-                // z = - 4*(x0-x1)/T^2 - 2 (dx0+dx1)/T
-                accel1 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
-            }
-        }
-        if (res > 1) {
-            double rat2 = roots.get(1);
-            if (FuzzyZero(rat2, EpsilonT)) {
+    // // double accel2 = (dx1-dx0)/rat2;
+    // // double switchTime1 = endTime*0.5+0.5*rat1;
+    // // double switchTime2 = endTime*0.5+0.5*rat2;
+    // // fix up numerical errors
+    // // if(switchTime1 > endTime && switchTime1 < endTime+EpsilonT*1e-1)
+    // // switchTime1 = endTime;
+    // // if(switchTime2 > endTime && switchTime2 < endTime+EpsilonT*1e-1)
+    // // switchTime2 = endTime;
+    // // if(switchTime1 < 0 && switchTime1 > -EpsilonT*1e-1)
+    // // switchTime1 = 0;
+    // // if(switchTime2 < 0 && switchTime2 > -EpsilonT*1e-1)
+    // // switchTime2 = 0;
+    // if (res > 0) {
+    // double rat1 = roots.get(0);
+    // accel1 = (dx1 - dx0) / rat1;
+    // if (FuzzyZero(rat1, EpsilonT)) {
+    // // consider it as a zero, ts = T/2
+    // // z = - 4*(x0-x1)/T^2 - 2 (dx0+dx1)/T
+    // accel1 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
+    // }
+    // }
+    // if (res > 1) {
+    // double rat2 = roots.get(1);
+    // if (FuzzyZero(rat2, EpsilonT)) {
 
-                accel2 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
-            }
-            boolean firstInfeas = false;
-            if (res > 0) {
-                double rat1 = roots.get(0);
-                accel1 = (dx1 - dx0) / rat1;
-                if ((FuzzyZero(accel1, EpsilonA) || FuzzyZero(endTime / rat1, EpsilonA))) { // infer that accel must be
-                                                                                            // small
-                    // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
-                    // switchTime1 = endTime*0.5;
-                    // }
+    // accel2 = -2.0 * (dx0 + dx1) / endTime + 4.0 * (x1 - x0) / Sqr(endTime);
+    // }
+    // boolean firstInfeas = false;
+    // if (res > 0) {
+    // double rat1 = roots.get(0);
+    // accel1 = (dx1 - dx0) / rat1;
+    // if ((FuzzyZero(accel1, EpsilonA) || FuzzyZero(endTime / rat1, EpsilonA))) {
+    // // infer that accel must be
+    // // small
+    // // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
+    // // switchTime1 = endTime*0.5;
+    // // }
 
-                    switchTime1 = endTime * 0.5 + 0.5 * rat1;
-                    if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
-                        switchTime1 = endTime;
-                    if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
-                        switchTime1 = 0;
+    // switchTime1 = endTime * 0.5 + 0.5 * rat1;
+    // if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
+    // switchTime1 = endTime;
+    // if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
+    // switchTime1 = 0;
 
-                    if (!FuzzyEquals(x0 + switchTime1 * dx0 + 0.5 * Sqr(switchTime1) * accel1,
-                            x1 - (endTime - switchTime1) * dx1 - 0.5 * Sqr(endTime - switchTime1) * accel1, EpsilonX) ||
-                            !FuzzyEquals(dx0 + switchTime1 * accel1, dx1 + (endTime - switchTime1) * accel1,
-                                    EpsilonV)) {
-                        firstInfeas = true;
-                    }
-                }
-                if (res > 1) {
-                    // double rat2 = roots.get(1);
-                    accel2 = (dx1 - dx0) / rat2;
+    // if (!FuzzyEquals(x0 + switchTime1 * dx0 + 0.5 * Sqr(switchTime1) * accel1,
+    // x1 - (endTime - switchTime1) * dx1 - 0.5 * Sqr(endTime - switchTime1) *
+    // accel1, EpsilonX) ||
+    // !FuzzyEquals(dx0 + switchTime1 * accel1, dx1 + (endTime - switchTime1) *
+    // accel1,
+    // EpsilonV)) {
+    // firstInfeas = true;
+    // }
+    // }
+    // if (res > 1) {
+    // // double rat2 = roots.get(1);
+    // accel2 = (dx1 - dx0) / rat2;
 
-                    if ((FuzzyZero(accel2, EpsilonA) || FuzzyZero(endTime / rat2, EpsilonA))) {
-                        // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
-                        // switchTime2 = endTime*0.5;
-                        // }
-                        switchTime1 = endTime * 0.5 + 0.5 * rat1;
-                        switchTime2 = endTime * 0.5 + 0.5 * rat2;
-                        if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
-                            switchTime1 = endTime;
-                        if (switchTime2 > endTime && switchTime2 < endTime + EpsilonT * 1e-1)
-                            switchTime2 = endTime;
-                        if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
-                            switchTime1 = 0;
-                        if (switchTime2 < 0 && switchTime2 > -EpsilonT * 1e-1)
-                            switchTime2 = 0;
+    // if ((FuzzyZero(accel2, EpsilonA) || FuzzyZero(endTime / rat2, EpsilonA))) {
+    // // if(!FuzzyZero(dx0-dx1,EpsilonT)) { //no good answer if dx0!=dx1
+    // // switchTime2 = endTime*0.5;
+    // // }
+    // switchTime1 = endTime * 0.5 + 0.5 * rat1;
+    // switchTime2 = endTime * 0.5 + 0.5 * rat2;
+    // if (switchTime1 > endTime && switchTime1 < endTime + EpsilonT * 1e-1)
+    // switchTime1 = endTime;
+    // if (switchTime2 > endTime && switchTime2 < endTime + EpsilonT * 1e-1)
+    // switchTime2 = endTime;
+    // if (switchTime1 < 0 && switchTime1 > -EpsilonT * 1e-1)
+    // switchTime1 = 0;
+    // if (switchTime2 < 0 && switchTime2 > -EpsilonT * 1e-1)
+    // switchTime2 = 0;
 
-                        if (!FuzzyEquals(x0 + switchTime2 * dx0 + 0.5 * Sqr(switchTime2) * accel2,
-                                x1 - (endTime - switchTime2) * dx1 - 0.5 * Sqr(endTime - switchTime2) * accel2,
-                                EpsilonX) ||
-                                !FuzzyEquals(dx0 + switchTime2 * accel2, dx1 + (endTime - switchTime2) * accel2,
-                                        EpsilonV)) {
-                            res--;
-                        }
-                    }
-                    if (firstInfeas) {
-                        accel1 = accel2;
-                        rat1 = rat2;
-                        switchTime1 = switchTime2;
-                        res--;
-                    }
-                    if (res == 0)
-                        return -1;
-                    else if (res == 1) {
-                        if (switchTime1 >= 0 && switchTime1 <= endTime) {
-                            switchTime.v = switchTime1;
-                            return sign * accel1;
-                        }
-                        return -1.0;
-                    } else if (res == 2) {
-                        if (switchTime1 >= 0 && switchTime1 <= endTime) {
-                            if (switchTime2 >= 0 && switchTime2 <= endTime) {
-                                if (accel1 < accel2) {
-                                    switchTime.v = switchTime1;
-                                    return sign * accel1;
-                                } else {
-                                    switchTime.v = switchTime2;
-                                    return sign * accel2;
-                                }
-                            } else {
-                                switchTime.v = switchTime1;
-                                return sign * accel1;
-                            }
-                        } else if (switchTime2 >= 0 && switchTime2 <= endTime) {
-                            switchTime.v = switchTime2;
-                            return sign * accel2;
-                        }
-                        return -1.0;
-                    }
-                    if (FuzzyZero(a, EpsilonT) && FuzzyZero(b, EpsilonT) && FuzzyZero(c, EpsilonT)) {
-                        switchTime.v = 0.5 * endTime;
-                        return 0;
-                    }
-                }
-            }
-        }
-        return -1.0;
-    }
+    // if (!FuzzyEquals(x0 + switchTime2 * dx0 + 0.5 * Sqr(switchTime2) * accel2,
+    // x1 - (endTime - switchTime2) * dx1 - 0.5 * Sqr(endTime - switchTime2) *
+    // accel2,
+    // EpsilonX) ||
+    // !FuzzyEquals(dx0 + switchTime2 * accel2, dx1 + (endTime - switchTime2) *
+    // accel2,
+    // EpsilonV)) {
+    // res--;
+    // }
+    // }
+    // if (firstInfeas) {
+    // accel1 = accel2;
+    // rat1 = rat2;
+    // switchTime1 = switchTime2;
+    // res--;
+    // }
+    // if (res == 0)
+    // return -1;
+    // else if (res == 1) {
+    // if (switchTime1 >= 0 && switchTime1 <= endTime) {
+    // switchTime.v = switchTime1;
+    // return sign * accel1;
+    // }
+    // return -1.0;
+    // } else if (res == 2) {
+    // if (switchTime1 >= 0 && switchTime1 <= endTime) {
+    // if (switchTime2 >= 0 && switchTime2 <= endTime) {
+    // if (accel1 < accel2) {
+    // switchTime.v = switchTime1;
+    // return sign * accel1;
+    // } else {
+    // switchTime.v = switchTime2;
+    // return sign * accel2;
+    // }
+    // } else {
+    // switchTime.v = switchTime1;
+    // return sign * accel1;
+    // }
+    // } else if (switchTime2 >= 0 && switchTime2 <= endTime) {
+    // switchTime.v = switchTime2;
+    // return sign * accel2;
+    // }
+    // return -1.0;
+    // }
+    // if (FuzzyZero(a, EpsilonT) && FuzzyZero(b, EpsilonT) && FuzzyZero(c,
+    // EpsilonT)) {
+    // switchTime.v = 0.5 * endTime;
+    // return 0;
+    // }
+    // }
+    // }
+    // }
+    // return -1.0;
+    // }
 
-    /** see KrisLibrary/planning/ParabolicRamp.cpp */
-    static boolean SolveMinAccel(double x0, double dx0, double x1, double dx1, double endTime) {
-        // TODO: handle these outputs
-        double tswitch; // time to switch between ramp/flat/ramp
-        double ttotal;
-        double a, a1, v, a2;
+    // /** see KrisLibrary/planning/ParabolicRamp.cpp */
+    // static boolean SolveMinAccel(double x0, double dx0, double x1, double dx1,
+    // double endTime) {
+    // // TODO: handle these outputs
+    // double tswitch; // time to switch between ramp/flat/ramp
+    // double ttotal;
+    // double a, a1, v, a2;
 
-        Outvar<Double> switch1 = new Outvar<Double>(0.0);
-        Outvar<Double> switch2 = new Outvar<Double>(0.0);
-        // TODO: switch1 and switch2 are outvars
-        double apn = CalcMinAccel(x0, dx0, x1, dx1, endTime, 1.0, switch1);
-        double anp = CalcMinAccel(x0, dx0, x1, dx1, endTime, -1.0, switch2);
-        if (apn >= 0) {
-            if (anp >= 0 && anp < apn)
-                a = -anp;
-            else
-                a = apn;
-        } else if (anp >= 0)
-            a = -anp;
-        else {
-            a = 0;
-            tswitch = -1;
-            ttotal = -1;
-            return false;
-        }
-        ttotal = endTime;
-        if (a == apn)
-            tswitch = switch1.v;
-        else
-            tswitch = switch2.v;
-        return true;
+    // Outvar<Double> switch1 = new Outvar<Double>(0.0);
+    // Outvar<Double> switch2 = new Outvar<Double>(0.0);
+    // // TODO: switch1 and switch2 are outvars
+    // double apn = CalcMinAccel(x0, dx0, x1, dx1, endTime, 1.0, switch1);
+    // double anp = CalcMinAccel(x0, dx0, x1, dx1, endTime, -1.0, switch2);
+    // if (apn >= 0) {
+    // if (anp >= 0 && anp < apn)
+    // a = -anp;
+    // else
+    // a = apn;
+    // } else if (anp >= 0)
+    // a = -anp;
+    // else {
+    // a = 0;
+    // tswitch = -1;
+    // ttotal = -1;
+    // return false;
+    // }
+    // ttotal = endTime;
+    // if (a == apn)
+    // tswitch = switch1.v;
+    // else
+    // tswitch = switch2.v;
+    // return true;
 
-    }
+    // }
 
     /**
      * Return a list of nearby nodes, using the KDTree metric, which may not
