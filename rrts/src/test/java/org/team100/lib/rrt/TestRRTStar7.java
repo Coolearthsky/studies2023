@@ -13,6 +13,7 @@ import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
 import org.team100.lib.rrt.RRTStar7.Trajectory;
+import org.team100.lib.rrt.RRTStar7.Trajectory.Axis;
 import org.team100.lib.rrt.example.full_state_arena.FullStateHolonomicArena;
 import org.team100.lib.space.Sample;
 
@@ -39,87 +40,176 @@ public class TestRRTStar7 {
 
     @Test
     void testSlowU() {
+        System.out.println("faster = higher U, I+G-");
+        Axis slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.5);
+        assertEquals(4.828, slowU.s1.u, 0.001);
+        assertEquals(0.353, slowU.s1.t, 0.001);
+        assertEquals(-4.828, slowU.s2.u, 0.001);
+        assertEquals(0.146, slowU.s2.t, 0.001);
 
-        System.out.println("faster = higher U");
-        assertEquals(4.828, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.5), 0.001);
+        System.out.println("example from below, tswitch is 0.724s for U=2, I+G-");
+        Axis slowU2 = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724);
+        assertEquals(2.004, slowU2.s1.u, 0.001);
+        assertEquals(0.611, slowU2.s1.t, 0.001);
+        assertEquals(-2.004, slowU2.s2.u, 0.001);
+        assertEquals(0.112, slowU2.s2.t, 0.001);
 
-        System.out.println("example from below, tswitch is 0.724s for U=2");
-        assertEquals(2.004, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724), 0.001);
+        System.out.println("just faster than no switch, I+G-");
+        Axis slowU3 = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.9);
+        assertEquals(1.241, slowU3.s1.u, 0.001);
+        assertEquals(0.852, slowU3.s1.t, 0.001);
+        assertEquals(-1.241, slowU3.s2.u, 0.001);
+        assertEquals(0.047, slowU3.s2.t, 0.001); // very short
 
-        System.out.println("just faster than no switch");
-        assertEquals(1.241, RRTStar7.slowU(0, 0, 0.5, 1.0, 0.9), 0.001);
+        System.out.println("no switch I+G-");
+        Axis slowU4 = RRTStar7.slowU(0, 0, 0.5, 1.0, 1);
+        assertEquals(1.000, slowU4.s1.u, 0.001);
+        assertEquals(1.000, slowU4.s1.t, 0.001);
+        assertEquals(-1.000, slowU4.s2.u, 0.001);
+        assertEquals(0, slowU4.s2.t, 0.001); // zero!
 
-        System.out.println("no switch");
-        assertEquals(1.000, RRTStar7.slowU(0, 0, 0.5, 1.0, 1), 0.001);
+        System.out.println("just slower than no switch I-G+");
+        Axis slowU5 = RRTStar7.slowU(0, 0, 0.5, 1.0, 1.1);
+        assertEquals(-0.995, slowU5.s1.u, 0.001);
+        assertEquals(1.052, slowU5.s1.t, 0.001);
+        assertEquals(0.995, slowU5.s2.u, 0.001);
+        assertEquals(0.047, slowU5.s2.t, 0.001);
 
-        // I-G+
-        System.out.println("just slower than no switch");
-        assertEquals(0.995, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.1), 0.001);
+        System.out.println("much slower I-G+");
+        Axis slowU6 = RRTStar7.slowU(0, 0, 0.5, 1.0, 2);
+        assertEquals(-0.809, slowU6.s1.u, 0.001);
+        assertEquals(1.618, slowU6.s1.t, 0.001);
+        assertEquals(0.809, slowU6.s2.u, 0.001);
+        assertEquals(0.381, slowU6.s2.t, 0.001);
 
-        System.out.println("much slower");
-        assertEquals(0.809, RRTStar7.slowU(0, 0, 0.5, 1.0, 2), 0.001);
-
-        // I+G-
-        System.out.println("reflect the above case");
-        assertEquals(0.809, RRTStar7.slowU(0, 0, -0.5, -1.0, 2), 0.001);
+        System.out.println("reflect the above case, I+G-");
+        Axis slowU7 = RRTStar7.slowU(0, 0, -0.5, -1.0, 2);
+        assertEquals(0.809, slowU7.s1.u, 0.001);
+        assertEquals(0.381, slowU7.s1.t, 0.001);
+        assertEquals(-0.809, slowU7.s2.u, 0.001);
+        assertEquals(1.618, slowU7.s2.t, 0.001);
 
         // single intersection at u=2
         assertEquals(0.414, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
         assertEquals(1.000, RRTStar7.tLimit(0, 1, 0.5, 1, 2), 0.001);
         assertEquals(1.000, RRTStar7.tMirror(0, 1, 0.5, 1, 2), 0.001);
-        // finds the tswitch u=2 solution
-        assertEquals(2.007, RRTStar7.slowU(0, 1, 0.5, 1, 0.414), 0.001);
-        // finds the tlimit u=2 solution
-        assertEquals(2.0, RRTStar7.slowU(0, 1, 0.5, 1, 1.000), 0.001);
-        // this is a loop below the axis
-        assertEquals(1.5, RRTStar7.slowU(0, 1, 0.5, 1, 2.000), 0.001);
+        // finds the tswitch u=2 solution, I+G-
+        Axis slowU8 = RRTStar7.slowU(0, 1, 0.5, 1, 0.414);
+        assertEquals(2.007, slowU8.s1.u, 0.001);
+        assertEquals(0.207, slowU8.s1.t, 0.001);
+        assertEquals(-2.007, slowU8.s2.u, 0.001);
+        assertEquals(0.207, slowU8.s2.t, 0.001); // midpoint
+        // finds the tlimit u=2 solution, I-G+
+        Axis slowU9 = RRTStar7.slowU(0, 1, 0.5, 1, 1.000);
+        assertEquals(-2.0, slowU9.s1.u, 0.001);
+        assertEquals(0.5, slowU9.s1.t, 0.001);
+        assertEquals(2.0, slowU9.s2.u, 0.001);
+        assertEquals(0.5, slowU9.s2.t, 0.001); // midpoint
+        // this is a loop below the axis, I-G+
+        Axis slowU10 = RRTStar7.slowU(0, 1, 0.5, 1, 2.000);
+        assertEquals(-1.5, slowU10.s1.u, 0.001);
+        assertEquals(1.0, slowU10.s1.t, 0.001);
+        assertEquals(1.5, slowU10.s2.u, 0.001);
+        assertEquals(1.0, slowU10.s2.t, 0.001); // midpoint
 
         // no limit or mirror at u=2
         assertEquals(0.732, RRTStar7.tSwitch(0, 1, 1, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1, 1, 2), 0.001);
         // discover the tswitch solution
-        assertEquals(2.000, RRTStar7.slowU(0, 1, 1, 1, 0.732), 0.001); 
-        // interesting case for the quadratic solver
-        // the correct answer is to just drift
-        assertEquals(0, RRTStar7.slowU(0, 1, 1, 1, 1.000), 0.001);
-        // down to the axis and back
-        assertEquals(1, RRTStar7.slowU(0, 1, 1, 1, 2.000), 0.001);
+        Axis slowU11 = RRTStar7.slowU(0, 1, 1, 1, 0.732);
+        assertEquals(2.000, slowU11.s1.u, 0.001);
+        assertEquals(0.366, slowU11.s1.t, 0.001);
+        assertEquals(-2.000, slowU11.s2.u, 0.001);
+        assertEquals(0.366, slowU11.s2.t, 0.001); // midpoint
+        System.out.println("the correct answer is to just drift, u=0");
+        Axis slowU12 = RRTStar7.slowU(0, 1, 1, 1, 1.000);
+        assertEquals(0, slowU12.s1.u, 0.001);
+        assertEquals(1.000, slowU12.s1.t, 0.001);
+        assertEquals(0, slowU12.s2.u, 0.001);
+        assertEquals(0, slowU12.s2.t, 0.001); // no second segment
+        // down to the axis and back, I-G+
+        Axis slowU13 = RRTStar7.slowU(0, 1, 1, 1, 2.000);
+        assertEquals(-1, slowU13.s1.u, 0.001);
+        assertEquals(1, slowU13.s1.t, 0.001);
+        assertEquals(1, slowU13.s2.u, 0.001);
+        assertEquals(1, slowU13.s2.t, 0.001);
 
         // no limit or mirror at u=2
         assertEquals(1.000, RRTStar7.tSwitch(0, 1, 1.5, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1.5, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1.5, 1, 2), 0.001);
-        // discover tswitch
-        assertEquals(2.000, RRTStar7.slowU(0, 1, 1.5, 1, 1.000), 0.001);
-        // t=2, u=0.5, intersects at (0.75,0.5)
-        assertEquals(0.500, RRTStar7.slowU(0, 1, 1.5, 1, 2.000), 0.001);
-        // taking longer takes *more* u in order to slow down harder
-        assertEquals(0.666, RRTStar7.slowU(0, 1, 1.5, 1, 3.000), 0.001);
+        // discover tswitch, I+G-
+        Axis slowU14 = RRTStar7.slowU(0, 1, 1.5, 1, 1.000);
+        assertEquals(2.000, slowU14.s1.u, 0.001);
+        assertEquals(0.5, slowU14.s1.t, 0.001);
+        assertEquals(-2.000, slowU14.s2.u, 0.001);
+        assertEquals(0.5, slowU14.s2.t, 0.001); // midpoint
+        // t=2, u=0.5, intersects at (0.75,0.5), I-G+
+        Axis slowU15 = RRTStar7.slowU(0, 1, 1.5, 1, 2.000);
+        assertEquals(-0.500, slowU15.s1.u, 0.001);
+        assertEquals(1.0, slowU15.s1.t, 0.001);
+        assertEquals(0.500, slowU15.s2.u, 0.001);
+        assertEquals(1.0, slowU15.s2.t, 0.001);  // midpoint
+        // taking longer takes *more* u in order to slow down harder, I-G+
+        Axis slowU16 = RRTStar7.slowU(0, 1, 1.5, 1, 3.000);
+        assertEquals(-0.666, slowU16.s1.u, 0.001);
+        assertEquals(1.5, slowU16.s1.t, 0.001);
+        assertEquals(0.666, slowU16.s2.u, 0.001);
+        assertEquals(1.5, slowU16.s2.t, 0.001); // midpoint
 
         // a short path with limit and mirror
         assertEquals(0.449, RRTStar7.tSwitch(0, 2, 1, 2, 2), 0.001);
         assertEquals(0.585, RRTStar7.tLimit(0, 2, 1, 2, 2), 0.001);
         assertEquals(3.414, RRTStar7.tMirror(0, 2, 1, 2, 2), 0.001);
-        // discover tswitch (the fast path)
-        assertEquals(2.023, RRTStar7.slowU(0, 2, 1, 2, 0.449), 0.001);
-        // discover tlimit
-        assertEquals(1.986, RRTStar7.slowU(0, 2, 1, 2, 0.585), 0.001);
-        // discover tmirror
-        assertEquals(2.000, RRTStar7.slowU(0, 2, 1, 2, 3.414), 0.001);
+        // discover tswitch (the fast path) I+G-
+        Axis slowU17 = RRTStar7.slowU(0, 2, 1, 2, 0.449);
+        assertEquals(2.023, slowU17.s1.u, 0.001);
+        assertEquals(0.224, slowU17.s1.t, 0.001);
+        assertEquals(-2.023, slowU17.s2.u, 0.001);
+        assertEquals(0.224, slowU17.s2.t, 0.001); // midpoint
+        // discover tlimit I-G+
+        Axis slowU18 = RRTStar7.slowU(0, 2, 1, 2, 0.585);
+        assertEquals(-1.986, slowU18.s1.u, 0.001);
+        assertEquals(0.292, slowU18.s1.t, 0.001);
+        assertEquals(1.986, slowU18.s2.u, 0.001);
+        assertEquals(0.292, slowU18.s2.t, 0.001);  // midpoint
+        // discover tmirror I-G+
+        Axis slowU19 = RRTStar7.slowU(0, 2, 1, 2, 3.414);
+        assertEquals(-2.000, slowU19.s1.u, 0.001);
+        assertEquals(1.707, slowU19.s1.t, 0.001);
+        assertEquals(2.000, slowU19.s2.u, 0.001);
+        assertEquals(1.707, slowU19.s2.t, 0.001); // midpoint
         // try a couple of times between tlimit and tmirror
-        // it's possible you just need more u.
-        assertEquals(4.000, RRTStar7.slowU(0, 2, 1, 2, 1), 0.001);
-        assertEquals(3.000, RRTStar7.slowU(0, 2, 1, 2, 2), 0.001);
+        // it's possible you just need more u. I-G+
+        Axis slowU20 = RRTStar7.slowU(0, 2, 1, 2, 1);
+        assertEquals(-4.000, slowU20.s1.u, 0.001);
+        assertEquals(0.5, slowU20.s1.t, 0.001);
+        assertEquals(4.000, slowU20.s2.u, 0.001);
+        assertEquals(0.5, slowU20.s2.t, 0.001); // midpoint
+        // I-G+
+        Axis slowU21 = RRTStar7.slowU(0, 2, 1, 2, 2);
+        assertEquals(-3.000, slowU21.s1.u, 0.001);
+        assertEquals(1.0, slowU21.s1.t, 0.001);
+        assertEquals(3.000, slowU21.s2.u, 0.001);
+        assertEquals(1.0, slowU21.s2.t, 0.001);
 
-        // up from zero
+        // up from zero I+G-
         assertEquals(1, RRTStar7.tSwitch(1, 0, 2, 2, 2), 0.001);
-        assertEquals(2, RRTStar7.slowU(1, 0, 2, 2, 1), 0.001);
+        Axis slowU22 = RRTStar7.slowU(1, 0, 2, 2, 1);
+        assertEquals(2.0, slowU22.s1.u, 0.001);
+        assertEquals(1.0, slowU22.s1.t, 0.001);
+        assertEquals(-2.0, slowU22.s2.u, 0.001);
+        assertEquals(0.0, slowU22.s2.t, 0.001); // no second segment
 
-        // from negative idot, cross the axis, switch.
+        // from negative idot, cross the axis, switch. I+G-
         assertEquals(2.645, RRTStar7.tSwitch(0, -1, 3, 1, 2), 0.001);
         // discover tswitch
-        assertEquals(2.000, RRTStar7.slowU(0, -1, 3, 1, 2.645), 0.001);
+        Axis slowU23 = RRTStar7.slowU(0, -1, 3, 1, 2.645);
+        assertEquals(2.000, slowU23.s1.u, 0.001);
+        assertEquals(1.822, slowU23.s1.t, 0.001);
+        assertEquals(-2.000, slowU23.s2.u, 0.001);
+        assertEquals(0.822, slowU23.s2.t, 0.001);
 
     }
 
@@ -197,7 +287,7 @@ public class TestRRTStar7 {
     }
 
     @Test
-    void testQSwitch() { 
+    void testQSwitch() {
         assertEquals(0.375, RRTStar7.qSwitchIplusGminus(0, 0, 0.5, 1.0, 2), 0.001);
         assertEquals(0.125, RRTStar7.qSwitchIminusGplus(0, 0, 0.5, 1.0, 2), 0.001);
 
@@ -443,11 +533,11 @@ public class TestRRTStar7 {
 
     @Test
     void quadraticTest() {
-        assertEquals(List.of(0.0), RRTStar7.quadratic(1,0,0));
-        assertEquals(List.of(1.0, -1.0), RRTStar7.quadratic(1,0,-1));
+        assertEquals(List.of(0.0), RRTStar7.quadratic(1, 0, 0));
+        assertEquals(List.of(1.0, -1.0), RRTStar7.quadratic(1, 0, -1));
         // https://en.wikipedia.org/wiki/Quadratic_formula
-        assertEquals(List.of(4.0, 1.0), RRTStar7.quadratic(0.5,-2.5,2));
-        assertEquals(List.of(-0.0), RRTStar7.quadratic(0,1,0));
+        assertEquals(List.of(4.0, 1.0), RRTStar7.quadratic(0.5, -2.5, 2));
+        assertEquals(List.of(-0.0), RRTStar7.quadratic(0, 1, 0));
 
     }
 }

@@ -462,12 +462,12 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
                 double t;
             }
 
-            Segment s1;
-            Segment s2;
+            Segment s1 = new Segment();
+            Segment s2 = new Segment();
         }
 
-        Axis x;
-        Axis y;
+        Axis x = new Axis();
+        Axis y = new Axis();
     }
 
     Matrix<N4, N1> sample(Trajectory traj, double t) {
@@ -892,8 +892,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * https://motion.cs.illinois.edu/papers/icra10-smoothing.pdf
      * so the paper says solve the quadratic
      * T^2a^2 + sigma(2T(idot+gdot) + 4(i-g))a - (gdot-idot)^2 = 0.
+     * 
+     * returns a two-part trajectory for one axis
      */
-    static double slowU(double i, double idot, double g, double gdot, double tw) {
+    static Trajectory.Axis slowU(double i, double idot, double g, double gdot, double tw) {
         double a = tw * tw;
         double b = 2.0 * tw * (idot + gdot) + 4.0 * (i - g);
         double c = -1.0 * (gdot - idot) * (gdot - idot);
@@ -904,14 +906,21 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         System.out.printf("plus %s minus %s\n", plus, minus);
         // we generally want the *lowest* acceleration that will solve the problem
         Double aMin = null;
+        Trajectory.Axis result = new Trajectory.Axis();
         for (Double p : plus) {
-            double ts = 0.5 * (tw + (gdot - idot) / p);
-            System.out.printf("p %f ts %f\n", p, ts);
             if (Math.abs(p) < 1e-6 && plus.size() > 1) {
                 // zero is only ok if it's the only solution
                 System.out.println("reject p = 0 with two solutions");
                 continue;
             }
+            double ts;
+            if (Math.abs(p) < 1e-6) {
+                // if there is a zero solution then it runs the whole time
+                ts = tw;
+            } else {
+                ts = 0.5 * (tw + (gdot - idot) / p);
+            }
+            System.out.printf("p %f ts %f\n", p, ts);
             if (p < 0) {
                 System.out.println("reject p < 0");
                 continue;
@@ -921,7 +930,8 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
                 continue;
             }
 
-            if (ts > tw) { // switching time can't be more than total time
+            if (ts > tw) {
+                // switching time can't be more than total time
                 System.out.println("reject ts > tw");
                 continue;
 
@@ -929,16 +939,25 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             if (aMin == null || p < aMin) {
                 System.out.printf("accept p %f\n", p);
                 aMin = p;
+                result.s1.u = aMin;
+                result.s1.t = ts;
+                result.s2.u = -aMin;
+                result.s2.t = tw - ts;
             }
         }
         for (Double m : minus) {
-            double ts = 0.5 * (tw + (gdot - idot) / m);
-            System.out.printf("m %f ts %f\n", m, ts);
             if (Math.abs(m) < 1e-6 && minus.size() > 1) {
                 // zero is only ok if it's the only solution
                 System.out.println("reject p = 0 with two solutions");
                 continue;
             }
+            double ts;
+            if (Math.abs(m) < 1e-6) {
+                ts = tw;
+            } else {
+                ts  = 0.5 * (tw + (gdot - idot) / m);
+            }
+            System.out.printf("m %f ts %f\n", m, ts);
             if (m < 0) {
                 System.out.println("reject m < 0");
                 continue;
@@ -954,14 +973,15 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             if (aMin == null || m < aMin) {
                 System.out.printf("accept m %f\n", m);
                 aMin = m;
+                result.s1.u = -aMin;
+                result.s1.t = ts;
+                result.s2.u = aMin;
+                result.s2.t = tw - ts;
             }
         }
         if (aMin == null)
-            return Double.NaN;
-
-        double ts = 0.5 * (tw + (gdot - idot) / aMin);
-        System.out.printf("ts %f\n", ts);
-        return aMin;
+            return null;
+        return result;
     }
 
     /**
