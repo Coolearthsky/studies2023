@@ -55,7 +55,7 @@ public class TestRRTStar7 {
         // I-G+
         System.out.println("just slower than no switch");
         assertEquals(0.995, RRTStar7.slowU(0, 0, 0.5, 1.0, 1.1), 0.001);
-        
+
         System.out.println("much slower");
         assertEquals(0.809, RRTStar7.slowU(0, 0, 0.5, 1.0, 2), 0.001);
 
@@ -63,40 +63,63 @@ public class TestRRTStar7 {
         System.out.println("reflect the above case");
         assertEquals(0.809, RRTStar7.slowU(0, 0, -0.5, -1.0, 2), 0.001);
 
-        // recall
+        // single intersection at u=2
         assertEquals(0.414, RRTStar7.tSwitch(0, 1, 0.5, 1, 2), 0.001);
         assertEquals(1.000, RRTStar7.tLimit(0, 1, 0.5, 1, 2), 0.001);
         assertEquals(1.000, RRTStar7.tMirror(0, 1, 0.5, 1, 2), 0.001);
-        // but this is NaN
-        // assertEquals(2.0, RRTStar7.slowU(0, 1, 0.5, 1, 0.75), 0.001);
+        // finds the tswitch u=2 solution
+        assertEquals(2.007, RRTStar7.slowU(0, 1, 0.5, 1, 0.414), 0.001);
+        // finds the tlimit u=2 solution
+        assertEquals(2.0, RRTStar7.slowU(0, 1, 0.5, 1, 1.000), 0.001);
+        // this is a loop below the axis
+        assertEquals(1.5, RRTStar7.slowU(0, 1, 0.5, 1, 2.000), 0.001);
 
+        // no limit or mirror at u=2
         assertEquals(0.732, RRTStar7.tSwitch(0, 1, 1, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1, 1, 2), 0.001);
-        // but this is NaN
-        // assertEquals(-1, RRTStar7.slowU(0, 1, 1, 1, 0.733), 0.001);
+        // discover the tswitch solution
+        assertEquals(2.000, RRTStar7.slowU(0, 1, 1, 1, 0.732), 0.001); 
+        // interesting case for the quadratic solver
+        // the correct answer is to just drift
+        assertEquals(0, RRTStar7.slowU(0, 1, 1, 1, 1.000), 0.001);
+        // down to the axis and back
+        assertEquals(1, RRTStar7.slowU(0, 1, 1, 1, 2.000), 0.001);
 
+        // no limit or mirror at u=2
         assertEquals(1.000, RRTStar7.tSwitch(0, 1, 1.5, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 1, 1.5, 1, 2), 0.001);
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 1, 1.5, 1, 2), 0.001);
-        // this is nan
-        // assertEquals(-1.000, RRTStar7.slowU(0, 1, 1.5, 1, 2), 0.001);
+        // discover tswitch
+        assertEquals(2.000, RRTStar7.slowU(0, 1, 1.5, 1, 1.000), 0.001);
+        // t=2, u=0.5, intersects at (0.75,0.5)
+        assertEquals(0.500, RRTStar7.slowU(0, 1, 1.5, 1, 2.000), 0.001);
+        // taking longer takes *more* u in order to slow down harder
+        assertEquals(0.666, RRTStar7.slowU(0, 1, 1.5, 1, 3.000), 0.001);
 
+        // a short path with limit and mirror
         assertEquals(0.449, RRTStar7.tSwitch(0, 2, 1, 2, 2), 0.001);
         assertEquals(0.585, RRTStar7.tLimit(0, 2, 1, 2, 2), 0.001);
         assertEquals(3.414, RRTStar7.tMirror(0, 2, 1, 2, 2), 0.001);
-        // nan
-        // assertEquals(-1, RRTStar7.slowU(0, 2, 1, 2, 4.0), 0.001);
+        // discover tswitch (the fast path)
+        assertEquals(2.023, RRTStar7.slowU(0, 2, 1, 2, 0.449), 0.001);
+        // discover tlimit
+        assertEquals(1.986, RRTStar7.slowU(0, 2, 1, 2, 0.585), 0.001);
+        // discover tmirror
+        assertEquals(2.000, RRTStar7.slowU(0, 2, 1, 2, 3.414), 0.001);
+        // try a couple of times between tlimit and tmirror
+        // it's possible you just need more u.
+        assertEquals(4.000, RRTStar7.slowU(0, 2, 1, 2, 1), 0.001);
+        assertEquals(3.000, RRTStar7.slowU(0, 2, 1, 2, 2), 0.001);
 
-        // maybe just cases that start at idot=0 work
+        // up from zero
         assertEquals(1, RRTStar7.tSwitch(1, 0, 2, 2, 2), 0.001);
-        // hm
         assertEquals(2, RRTStar7.slowU(1, 0, 2, 2, 1), 0.001);
 
-        // negative idot?
+        // from negative idot, cross the axis, switch.
         assertEquals(2.645, RRTStar7.tSwitch(0, -1, 3, 1, 2), 0.001);
-        // hm
-        assertEquals(1.609, RRTStar7.slowU(0, -1, 3, 1, 3), 0.001);
+        // discover tswitch
+        assertEquals(2.000, RRTStar7.slowU(0, -1, 3, 1, 2.645), 0.001);
 
     }
 

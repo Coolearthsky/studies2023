@@ -906,11 +906,14 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         Double aMin = null;
         for (Double p : plus) {
             double ts = 0.5 * (tw + (gdot - idot) / p);
-            System.out.printf("p ts %f\n", ts);
-            if (p <= 0) {
+            System.out.printf("p %f ts %f\n", p, ts);
+            if (Math.abs(p) < 1e-6 && plus.size() > 1) {
+                // zero is only ok if it's the only solution
+                System.out.println("reject p = 0 with two solutions");
+                continue;
+            }
+            if (p < 0) {
                 System.out.println("reject p < 0");
-                // TODO: negative accel is generally ok, wtf? maybe "a" is
-                // defined as abs(accel)
                 continue;
             }
             if (ts < 0) {
@@ -930,8 +933,13 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         }
         for (Double m : minus) {
             double ts = 0.5 * (tw + (gdot - idot) / m);
-            System.out.printf("m ts %f\n", ts);
-            if (m <= 0) {
+            System.out.printf("m %f ts %f\n", m, ts);
+            if (Math.abs(m) < 1e-6 && minus.size() > 1) {
+                // zero is only ok if it's the only solution
+                System.out.println("reject p = 0 with two solutions");
+                continue;
+            }
+            if (m < 0) {
                 System.out.println("reject m < 0");
                 continue;
             }
