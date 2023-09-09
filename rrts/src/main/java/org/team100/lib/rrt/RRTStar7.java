@@ -486,9 +486,9 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
     static Matrix<N2,N1> SampleAxis(Trajectory.Axis a, double tSec) {
         double timeTotal = a.s1.t + a.s2.t;
         if (tSec < 0) {
-            throw new IllegalArgumentException("negative t"); // null instead?
+            return VecBuilder.fill(a.i, a.idot);
         } else if (tSec > timeTotal) {
-            throw new IllegalArgumentException("t past the end"); // null instead?
+            return VecBuilder.fill(a.g, a.gdot);
         } else if (Math.abs(tSec) < 1e-6) {
             return VecBuilder.fill(a.i, a.idot);
         } else if (Math.abs(tSec - timeTotal) < 1e-6) {

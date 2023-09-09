@@ -725,7 +725,32 @@ public class TestRRTStar7 {
         assertArrayEquals(new double[] { 0.024, -0.347 }, RRTStar7.SampleAxis(a, 1.125).getData(), 0.001);
         assertArrayEquals(new double[] { 0.000, -0.035 }, RRTStar7.SampleAxis(a, 1.25).getData(), 0.001);
         assertArrayEquals(new double[] { 0.000, 0.000 }, RRTStar7.SampleAxis(a, 1.264).getData(), 0.001);
+    }
 
+    @Test
+    void testSampleAxis2() {
+        // x: (0,1) -> (0.5,1): tswitch = 0.414, tlimit=tmirror=1
+        Axis a = new Axis();
+        a.i = 0;
+        a.idot = 1;
+        a.g = 0.5;
+        a.gdot = 1;
+        a.s1.u = -2;
+        a.s1.t = 0.2;
+        a.s2.u = 2;
+        a.s2.t = 0.2;
+        // this is completely wrong
+        blarg
+        assertArrayEquals(new double[] { 0.000, 1.000 }, RRTStar7.SampleAxis(a, 0).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.047, 0.9 }, RRTStar7.SampleAxis(a, 0.05).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.090, 0.8 }, RRTStar7.SampleAxis(a, 0.1).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.127, 0.7 }, RRTStar7.SampleAxis(a, 0.15).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.74, 0.6 }, RRTStar7.SampleAxis(a, 0.2).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.672, 0.7 }, RRTStar7.SampleAxis(a, 0.25).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.610, 0.8 }, RRTStar7.SampleAxis(a, 0.3).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.552, 0.9 }, RRTStar7.SampleAxis(a, 0.35).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.5, 1.0 }, RRTStar7.SampleAxis(a, 0.4).getData(), 0.001);
+        assertArrayEquals(new double[] { 0.5, 1.0 }, RRTStar7.SampleAxis(a, 0.414).getData(), 0.001);
     }
 
     @Test
