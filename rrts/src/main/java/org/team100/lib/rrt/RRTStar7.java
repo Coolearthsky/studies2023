@@ -55,6 +55,9 @@ import edu.wpi.first.math.system.NumericalIntegration;
  * make the times of each axis match, respecting the gap if it exists
  * same routine for rewiring i guess?
  * 
+ * Note B Paden wrote a paper in 2017 about nearest-neighbor finding for
+ * nonholonomic systems, maybe useful.
+ * 
  * 
  * 
  * for rewiring and connecting, use a linear solver.
@@ -457,13 +460,50 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             Matrix<N4, N1> x_i,
             Matrix<N4, N1> x_g,
             boolean timeForward) {
-        double tOptimal;
+        Trajectory t;
         if (timeForward) {
-            tOptimal = tOptimal(x_i, x_g, MAX_U);
+            t = optimalTrajectory(x_i, x_g, MAX_U);
         } else {
-            tOptimal = tOptimal(x_g, x_i, MAX_U);
+            t = optimalTrajectory(x_g, x_i, MAX_U);
         }
         return null;
+    }
+
+    /**
+     * Since the trajectories are constant-acceleration, sampling is simple.
+     * Hauser's code yields spatial coordinates only, which i guess is all you need
+     * for collision checking, but i kinda want to see them all.
+     */
+    static Matrix<N4,N1> SampleTrajectory(Trajectory t, double tSec) {
+        Matrix<N2,N1> xSample = SampleAxis(t.x, tSec);
+        Matrix<N2,N1> ySample = SampleAxis(t.y, tSec);
+        return new Matrix<>(Nat.N4(), Nat.N1(), new double[] {
+            xSample.get(0,0), xSample.get(1,0),
+            ySample.get(0,0), ySample.get(1,0),
+        });
+    }
+
+    static Matrix<N2,N1> SampleAxis(Trajectory.Axis a, double tSec) {
+        double timeTotal = a.s1.t + a.s2.t;
+        if (tSec < 0) {
+            throw new IllegalArgumentException("negative t"); // null instead?
+        } else if (tSec > timeTotal) {
+            throw new IllegalArgumentException("t past the end"); // null instead?
+        } else if (Math.abs(tSec) < 1e-6) {
+            return VecBuilder.fill(a.i, a.idot);
+        } else if (Math.abs(tSec - timeTotal) < 1e-6) {
+            return VecBuilder.fill(a.g, a.gdot);
+        } else if (tSec < a.s1.t) {
+            // first segment
+            double x = a.i + a.idot * tSec + 0.5 * a.s1.u * tSec * tSec;
+            double xdot = a.idot + a.s1.u * tSec;
+            return VecBuilder.fill(x, xdot);
+        } else {
+            double timeToGo = timeTotal - tSec; // a positive number
+            double x = a.g + a.gdot * timeToGo + 0.5 * a.s2.u * timeToGo * timeToGo;
+            double xdot = a.gdot - a.s2.u * timeToGo;
+            return VecBuilder.fill(x, xdot);
+        }
     }
 
     public enum Solution {
@@ -477,6 +517,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
                 double t;
             }
 
+            double i; // initial position
+            double idot; // initial velocity
+            double g; // goal position
+            double gdot; // goal velocity
             Segment s1 = new Segment();
             Segment s2 = new Segment();
         }
@@ -875,7 +919,9 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
 
     }
 
-    /** Return a 4d trajectory that moves from x_i to x_g with the umax constraint, completing both axes at the same time.
+    /**
+     * Return a 4d trajectory that moves from x_i to x_g with the umax constraint,
+     * completing both axes at the same time.
      * 
      * for time reversal, the caller should swap the arguments.
      */
@@ -940,6 +986,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             if (aMin == null || p < aMin) {
                 System.out.printf("accept p %f\n", p);
                 aMin = p;
+                result.i = i;
+                result.idot = idot;
+                result.g = g;
+                result.gdot = gdot;
                 result.s1.u = aMin;
                 result.s1.t = ts;
                 result.s2.u = -aMin;
@@ -974,6 +1024,10 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             if (aMin == null || m < aMin) {
                 System.out.printf("accept m %f\n", m);
                 aMin = m;
+                result.i = i;
+                result.idot = idot;
+                result.g = g;
+                result.gdot = gdot;
                 result.s1.u = -aMin;
                 result.s1.t = ts;
                 result.s2.u = aMin;
