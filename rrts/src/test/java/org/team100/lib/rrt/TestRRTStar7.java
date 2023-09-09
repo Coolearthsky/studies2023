@@ -3,6 +3,7 @@ package org.team100.lib.rrt;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -150,7 +151,7 @@ public class TestRRTStar7 {
         assertEquals(-0.500, slowU15.s1.u, 0.001);
         assertEquals(1.0, slowU15.s1.t, 0.001);
         assertEquals(0.500, slowU15.s2.u, 0.001);
-        assertEquals(1.0, slowU15.s2.t, 0.001);  // midpoint
+        assertEquals(1.0, slowU15.s2.t, 0.001); // midpoint
         // taking longer takes *more* u in order to slow down harder, I-G+
         Axis slowU16 = RRTStar7.slowU(0, 1, 1.5, 1, 3.000);
         assertEquals(-0.666, slowU16.s1.u, 0.001);
@@ -173,7 +174,7 @@ public class TestRRTStar7 {
         assertEquals(-1.986, slowU18.s1.u, 0.001);
         assertEquals(0.292, slowU18.s1.t, 0.001);
         assertEquals(1.986, slowU18.s2.u, 0.001);
-        assertEquals(0.292, slowU18.s2.t, 0.001);  // midpoint
+        assertEquals(0.292, slowU18.s2.t, 0.001); // midpoint
         // discover tmirror I-G+
         Axis slowU19 = RRTStar7.slowU(0, 2, 1, 2, 3.414);
         assertEquals(-2.000, slowU19.s1.u, 0.001);
@@ -210,7 +211,6 @@ public class TestRRTStar7 {
         assertEquals(1.822, slowU23.s1.t, 0.001);
         assertEquals(-2.000, slowU23.s2.u, 0.001);
         assertEquals(0.822, slowU23.s2.t, 0.001);
-
     }
 
     @Test
@@ -409,8 +409,117 @@ public class TestRRTStar7 {
         assertArrayEquals(new double[] { -1, 1, 0, 0 }, near._nearest.getState().getData(), 0.001);
     }
 
-    Matrix<N4, N1> s(double x1, double x2, double x3, double x4) {
+    @Test
+    void testNearest3() {
+        /**
+         * _init = { 15.5, 0, 6.75, 0 });
+         * _goal = { 1.93, 0, 2.748, 0 });
+         */
+        final FullStateHolonomicArena arena = new FullStateHolonomicArena();
+        KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
+        KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+
+        // note small radius; this won't find anything
+        solver.setRadius(1);
+
+        System.out.println(T_a);
+
+        KDNearNode<Node<N4>> near = solver.BangBangNearest(
+                new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 0, 0, 0 }), T_a,
+                true);
+        // this should find nothing
+        assertNull(near);
+    }
+
+    static Matrix<N4, N1> s(double x1, double x2, double x3, double x4) {
         return new Matrix<>(Nat.N4(), Nat.N1(), new double[] { x1, x2, x3, x4 });
+    }
+
+    @Test
+    void testOptimalTrajectory() {
+        // same cases as below.
+        // symmetrical, diagonal
+        Trajectory t = RRTStar7.optimalTrajectory(s(0, 0, 0, 0), s(1, 0, 1, 0), 2.5);
+        assertEquals(2.5, t.x.s1.u, 0.001);
+        assertEquals(0.632, t.x.s1.t, 0.001);
+        assertEquals(-2.5, t.x.s2.u, 0.001);
+        assertEquals(0.632, t.x.s2.t, 0.001);
+        assertEquals(2.5, t.y.s1.u, 0.001);
+        assertEquals(0.632, t.y.s1.t, 0.001);
+        assertEquals(-2.5, t.y.s2.u, 0.001);
+        assertEquals(0.632, t.y.s2.t, 0.001);
+
+        // x needs to be slowed at part-throttle while y goes full
+        // both switch at the same time, in the middle.
+        // this makes an S shape.
+        t = RRTStar7.optimalTrajectory(s(0, 1, 0, 0), s(0.5, 1, 1, 0), 2.5);
+        assertEquals(-1.912, t.x.s1.u, 0.001);
+        assertEquals(0.632, t.x.s1.t, 0.001);
+        assertEquals(1.912, t.x.s2.u, 0.001);
+        assertEquals(0.632, t.x.s2.t, 0.001);
+        assertEquals(2.5, t.y.s1.u, 0.001);
+        assertEquals(0.632, t.y.s1.t, 0.001);
+        assertEquals(-2.5, t.y.s2.u, 0.001);
+        assertEquals(0.632, t.y.s2.t, 0.001);
+
+        // x states are very close together
+        // y is the same as above
+        // the y fast path is in the x gap, so y goes a little slower than optimal
+        // (without braking) to match x mirror.
+        // this makes a more exaggerated S shape
+        t = RRTStar7.optimalTrajectory(s(0, 1, 0, 0), s(0.25, 1, 1, 0), 2.5);
+        assertEquals(-2.5, t.x.s1.u, 0.001);
+        assertEquals(0.644, t.x.s1.t, 0.001);
+        assertEquals(2.5, t.x.s2.u, 0.001);
+        assertEquals(0.644, t.x.s2.t, 0.001);
+        assertEquals(2.404, t.y.s1.u, 0.001);
+        assertEquals(0.644, t.y.s1.t, 0.001);
+        assertEquals(-2.404, t.y.s2.u, 0.001);
+        assertEquals(0.644, t.y.s2.t, 0.001);
+
+        // both x and y states are very close together.
+        // as above the y fast path is in the x gap
+        // but the y points are so close together that y needs to brake to match x
+        // mirror.
+        t = RRTStar7.optimalTrajectory(s(0, 1, 0, 1), s(0.25, 1, 0.5, 1), 2.5);
+        assertEquals(-2.5, t.x.s1.u, 0.001);
+        assertEquals(0.644, t.x.s1.t, 0.001);
+        assertEquals(2.5, t.x.s2.u, 0.001);
+        assertEquals(0.644, t.x.s2.t, 0.001);
+        assertEquals(-1.898, t.y.s1.u, 0.001);
+        assertEquals(0.644, t.y.s1.t, 0.001);
+        assertEquals(1.898, t.y.s2.u, 0.001);
+        assertEquals(0.644, t.y.s2.t, 0.001);
+
+        // this shows that a diagonal not at 45 degrees involves u values
+        // proportional to the angle.
+        // it's just a straight line that speeds up in the middle.
+        t = RRTStar7.optimalTrajectory(s(0, 2, 0, 1), s(1, 2, 0.5, 1), 2.5);
+        assertEquals(2.5, t.x.s1.u, 0.001);
+        assertEquals(0.219, t.x.s1.t, 0.001);
+        assertEquals(-2.5, t.x.s2.u, 0.001);
+        assertEquals(0.219, t.x.s2.t, 0.001);
+        assertEquals(1.25, t.y.s1.u, 0.001);
+        assertEquals(0.219, t.y.s1.t, 0.001);
+        assertEquals(-1.25, t.y.s2.u, 0.001);
+        assertEquals(0.219, t.y.s2.t, 0.001);
+
+        // here's a longer-range case.  long-range cases are easier.
+        // ahead x, go to a far-away spot and stop.
+        // since there's initial velocity, the braking phase is longer.
+        // this is also an example where the switching points
+        // of the axes are not the same.
+        // TODO: velocity limit for these cases
+        t = RRTStar7.optimalTrajectory(s(0, 5, 0, 0), s(10, 0, 5, 0), 2.5);
+        assertEquals(2.5, t.x.s1.u, 0.001);
+        assertEquals(0.449, t.x.s1.t, 0.001);
+        assertEquals(-2.5, t.x.s2.u, 0.001);
+        assertEquals(2.449, t.x.s2.t, 0.001);
+        assertEquals(2.379, t.y.s1.u, 0.001);
+        assertEquals(1.449, t.y.s1.t, 0.001);
+        assertEquals(-2.379, t.y.s2.u, 0.001);
+        assertEquals(1.449, t.y.s2.t, 0.001);
     }
 
     @Test
@@ -418,30 +527,31 @@ public class TestRRTStar7 {
         // no movement = no time
 
         // same trajectory in both axes
-        // x: (0,0) -> (1,0):
+        // x: (0,0) -> (1,0)
         // y: (0,0) -> (1,0)
-        assertEquals(1.264, RRTStar7.tOptimal(s(0, 0, 0, 0), s(1, 0, 1, 0), true, 2.5), 0.001);
+        assertEquals(1.264, RRTStar7.tOptimal(s(0, 0, 0, 0), s(1, 0, 1, 0), 2.5), 0.001);
 
         // slow one is slower than tmirror
         // x: (0,1) -> (0.5,1): tswitch = 0.414, tlimit=tmirror=1
-        assertEquals(1.264, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.5, 1, 1, 0), true, 2.5), 0.001);
+        // y: (0,0) -> (1,0)
+        assertEquals(1.264, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.5, 1, 1, 0), 2.5), 0.001);
 
         // the y axis is in the gap of the x axis, so use tmirror
         // x: (0,1) -> (0.25,1) tswitch=0.224 tlimit=0.292 tmirror=1.707
         // y: (0,0) -> (1.00,0) tswitch=1.264 tlimit=nan tmirror=nan
         // note u = 2
-        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.25, 1, 1, 0), true, 2.0), 0.001);
+        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 0), s(0.25, 1, 1, 0), 2.0), 0.001);
 
         // another gap example
         // x: (0,1) -> (0.25,1) tswitch=0.224 tlimit=0.292 tmirror=1.707
         // y: (0,1) -> (0.50,1) tswitch=0.414 tlimit=1.000 tmirror=1.000
         // note u = 2
-        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 1), s(0.25, 1, 0.5, 1), true, 2.0), 0.001);
+        assertEquals(1.707, RRTStar7.tOptimal(s(0, 1, 0, 1), s(0.25, 1, 0.5, 1), 2.0), 0.001);
 
         // both are above the gap so it just picks the slower tswitch
         // x: (0,2) -> (1.0,2) tswitch=0.449 tlimit=0.585 tmirror=3.414
         // y: (0,1) -> (0.5,1) tswitch=0.414 tlimit=1.000 tmirror=1.000
-        assertEquals(0.449, RRTStar7.tOptimal(s(0, 2, 0, 1), s(1, 2, 0.5, 1), true, 2.0), 0.001);
+        assertEquals(0.449, RRTStar7.tOptimal(s(0, 2, 0, 1), s(1, 2, 0.5, 1), 2.0), 0.001);
     }
 
     @Test
