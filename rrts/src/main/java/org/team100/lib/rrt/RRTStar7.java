@@ -500,7 +500,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             return VecBuilder.fill(x, xdot);
         } else {
             double timeToGo = timeTotal - tSec; // a positive number
-            double x = a.g + a.gdot * timeToGo + 0.5 * a.s2.u * timeToGo * timeToGo;
+            double x = a.g - a.gdot * timeToGo + 0.5 * a.s2.u * timeToGo * timeToGo;
             double xdot = a.gdot - a.s2.u * timeToGo;
             return VecBuilder.fill(x, xdot);
         }
