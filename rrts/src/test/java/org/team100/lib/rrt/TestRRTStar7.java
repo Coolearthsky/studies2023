@@ -343,6 +343,15 @@ public class TestRRTStar7 {
         assertEquals(1.264, RRTStar7.tSwitch(0, 0, 1, 0, 2.5), 0.001);
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
 
+        // chasing a case i missed
+        // somehow it thinks that the I+G- path in reverse is viable.  how does it choose it?
+        assertEquals(-0.379, RRTStar7.tSwitchIplusGminus(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        // this is what it *should* choose
+        assertEquals(2.547, RRTStar7.tSwitchIminusGplus(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        // ok fixed
+        assertEquals(2.547, RRTStar7.tSwitch(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        
+
     }
 
     @Test
@@ -899,6 +908,9 @@ public class TestRRTStar7 {
 
         // (0,0) -> (1,0)
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
+
+        // ??
+        assertEquals(-1.365, RRTStar7.tLimit(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
     }
 
     @Test
@@ -920,6 +932,9 @@ public class TestRRTStar7 {
 
         // (0,0) -> (1,0)
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 0, 1, 0, 2.5), 0.001);
+
+        assertEquals(-0.379, RRTStar7.tMirror(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+
     }
 
     @Test

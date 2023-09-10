@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+import org.team100.lib.example.Arena;
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.LocalLink;
@@ -63,14 +64,14 @@ import edu.wpi.first.math.system.NumericalIntegration;
  * 
  * for rewiring and connecting, use a linear solver.
  */
-public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<N4> {
+public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     private static final boolean DEBUG = false;
     private static final double MAX_U = 2.5;
     private static final double DT = 0.6;
     private static final int MAX_CHILDREN = 1;
     private static final double BUFFER = 0.3;
     /** for testing */
-    private static final boolean BIDIRECTIONAL = true;
+    private static final boolean BIDIRECTIONAL = false;
     /** probability of branching */
     private static final double BUSHINESS = 0.2;
 
@@ -149,64 +150,73 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // includes states and controls
         Trajectory phi = BangBangSteer(_model::clear, x_nearest._nearest.getState(), x_rand, timeForward);
 
-        LocalLink<N4> randLink = SampleFree(timeForward);
+        if (phi == null)
+            return 0;
+
+        // now we have a clear trajectory from nearest to rand.
+        double tMax = Math.max(phi.x.s1.t + phi.x.s2.t, phi.y.s1.t + phi.y.s2.t);
+
+        LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new Node<>(x_rand), tMax);
+
+        // LocalLink<N4> randLink = SampleFree(timeForward);
         if (DEBUG)
             System.out.println("randLink: " + randLink);
 
-        if (CollisionFree(randLink.get_source().getState(), randLink.get_target().getState())) {
-            // new node in "this" tree
-            Node<N4> newNode = InsertNode(randLink, _T_a);
-            if (DEBUG)
-                System.out.println("NEW NODE " + newNode);
-            List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
-            Rewire(X_nearA, newNode, timeForward);
+        // if (CollisionFree(randLink.get_source().getState(),
+        // randLink.get_target().getState())) {
+        // new node in "this" tree
+        Node<N4> newNode = InsertNode(randLink, _T_a);
+        if (DEBUG)
+            System.out.println("NEW NODE " + newNode);
+        // List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
+        // Rewire(X_nearA, newNode, timeForward);
 
-            edges += 1;
+        edges += 1;
 
-            if (BIDIRECTIONAL) {
-                // is there a point in the other tree that is reachable from
-                // the node we just inserted? reachable nodes are nearby in a Euclidean
-                // sense, though most Euclidean nearby nodes are not reachable.
-                // so start with a list of near nodes and test them one by one.
+        if (BIDIRECTIONAL) {
+            // is there a point in the other tree that is reachable from
+            // the node we just inserted? reachable nodes are nearby in a Euclidean
+            // sense, though most Euclidean nearby nodes are not reachable.
+            // so start with a list of near nodes and test them one by one.
 
-                // near nodes in the other tree:
-                List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
-                Matrix<N4, N1> x1 = newNode.getState();
-                for (NearNode<N4> nearNode : X_near) {
-                    // one near node in the other tree
-                    Matrix<N4, N1> x2 = nearNode.node.getState();
+            // near nodes in the other tree:
+            List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
+            Matrix<N4, N1> x1 = newNode.getState();
+            for (NearNode<N4> nearNode : X_near) {
+                // one near node in the other tree
+                Matrix<N4, N1> x2 = nearNode.node.getState();
 
-                    ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
-                    if (sol != null) {
-                        // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
-                        if (DEBUG)
-                            System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
-                                    Util.matStr(x1), Util.matStr(x2), sol);
-                        // TODO: do something with the solution u value
-                        // add a node in a corresponding to the near node in b
-                        LocalLink<N4> newInA = new LocalLink<>(newNode, new Node<>(nearNode.node.getState()),
-                                Math.abs(sol.dt));
-                        Node<N4> newNewNode = InsertNode(newInA, _T_a);
-                        Rewire(X_near, newNewNode, timeForward);
-                        // create a path that traverses the new link.
-                        Path<N4> p = GeneratePath(newNewNode, nearNode.node);
-                        if (DEBUG)
-                            System.out.println("PATH " + p);
-                        if (_sigma_best == null) {
-                            System.out.printf("first path distance %7.3f\n", p.getDistance());
+                ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
+                if (sol != null) {
+                    // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
+                    if (DEBUG)
+                        System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
+                                Util.matStr(x1), Util.matStr(x2), sol);
+                    // TODO: do something with the solution u value
+                    // add a node in a corresponding to the near node in b
+                    LocalLink<N4> newInA = new LocalLink<>(newNode, new Node<>(nearNode.node.getState()),
+                            Math.abs(sol.dt));
+                    Node<N4> newNewNode = InsertNode(newInA, _T_a);
+                    Rewire(X_near, newNewNode, timeForward);
+                    // create a path that traverses the new link.
+                    Path<N4> p = GeneratePath(newNewNode, nearNode.node);
+                    if (DEBUG)
+                        System.out.println("PATH " + p);
+                    if (_sigma_best == null) {
+                        System.out.printf("first path distance %7.3f\n", p.getDistance());
+                        _sigma_best = p;
+                    } else {
+                        if (p.getDistance() < _sigma_best.getDistance()) {
+                            System.out.printf("new best path distance %7.3f\n", p.getDistance());
                             _sigma_best = p;
-                        } else {
-                            if (p.getDistance() < _sigma_best.getDistance()) {
-                                System.out.printf("new best path distance %7.3f\n", p.getDistance());
-                                _sigma_best = p;
-                            }
                         }
-                        // don't need more than one feasible link
-                        break;
                     }
+                    // don't need more than one feasible link
+                    break;
                 }
             }
         }
+        // }
         if (BIDIRECTIONAL)
             SwapTrees();
         return edges;
@@ -321,6 +331,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // }
         // TODO: handle time reversal
 
+
         double xTSwitch = tSwitch(
                 x_i.get(0, 0),
                 x_i.get(1, 0),
@@ -385,7 +396,8 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             }
         }
         // this should never happen; there is never not a solution.
-        throw new IllegalArgumentException(x_i.toString() + x_g.toString());
+        throw new IllegalArgumentException(String.format("%s\n%s\nx %f %f %f\ny %f %f %f\n",
+        x_i.toString() , x_g.toString(), xTSwitch, xTLimit, xTMirror, yTSwitch, yTLimit, yTMirror));
     }
 
     static void put(List<Item> opts, double t, Solution solution) {
@@ -458,7 +470,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      *         feasible.
      */
     static Trajectory BangBangSteer(
-        Predicate<Matrix<N4,N1>> free,
+            Predicate<Matrix<N4, N1>> free,
             Matrix<N4, N1> x_i,
             Matrix<N4, N1> x_g,
             boolean timeForward) {
@@ -471,8 +483,9 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         double tMax = Math.max(trajectory.x.s1.t + trajectory.x.s2.t, trajectory.y.s1.t + trajectory.y.s2.t);
         double tStep = 0.1;
         for (double tSec = 0; tSec < tMax; tSec += tStep) {
-            Matrix<N4,N1> state = SampleTrajectory(trajectory, tSec);
-            if (!free.test(state)) return null;
+            Matrix<N4, N1> state = SampleTrajectory(trajectory, tSec);
+            if (!free.test(state))
+                return null;
         }
         return trajectory;
     }
@@ -482,16 +495,16 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      * Hauser's code yields spatial coordinates only, which i guess is all you need
      * for collision checking, but i kinda want to see them all.
      */
-    static Matrix<N4,N1> SampleTrajectory(Trajectory t, double tSec) {
-        Matrix<N2,N1> xSample = SampleAxis(t.x, tSec);
-        Matrix<N2,N1> ySample = SampleAxis(t.y, tSec);
+    static Matrix<N4, N1> SampleTrajectory(Trajectory t, double tSec) {
+        Matrix<N2, N1> xSample = SampleAxis(t.x, tSec);
+        Matrix<N2, N1> ySample = SampleAxis(t.y, tSec);
         return new Matrix<>(Nat.N4(), Nat.N1(), new double[] {
-            xSample.get(0,0), xSample.get(1,0),
-            ySample.get(0,0), ySample.get(1,0),
+                xSample.get(0, 0), xSample.get(1, 0),
+                ySample.get(0, 0), ySample.get(1, 0),
         });
     }
 
-    static Matrix<N2,N1> SampleAxis(Trajectory.Axis a, double tSec) {
+    static Matrix<N2, N1> SampleAxis(Trajectory.Axis a, double tSec) {
         double timeTotal = a.s1.t + a.s2.t;
         if (tSec < 0) {
             return VecBuilder.fill(a.i, a.idot);
@@ -750,16 +763,16 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         // it's also possible for more than one path to be returned, one
         // faster than the other.
 
-        if (Double.isNaN(tIplusGminus) || tIplusGminus > 1e100) {
+        if (Double.isNaN(tIplusGminus) || tIplusGminus > 1e100 || tIplusGminus < 0) {
             // there should be at least one solution
-            if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100) {
+            if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100 || tIminusGplus < 0) {
                 throw new IllegalArgumentException(String.format("A %f %f %f %f %f %f",
                         tIplusGminus, tIminusGplus, i, idot, g, gdot));
             }
             return tIminusGplus;
 
         }
-        if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100) {
+        if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100 | tIminusGplus < 0) {
             return tIplusGminus;
         }
         // if we got here, then they're both actually numbers.
@@ -901,7 +914,6 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
         }
         double qDotLimit = qDotLimitIplusGminus;
         return (qDotLimit - idot) / umax + (gdot - qDotLimit) / (-1.0 * umax);
-
     }
 
     /**
