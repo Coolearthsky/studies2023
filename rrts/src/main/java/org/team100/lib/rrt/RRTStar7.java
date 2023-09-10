@@ -154,71 +154,88 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             return 0;
 
         // now we have a clear trajectory from nearest to rand.
-        double tMax = Math.max(phi.x.s1.t + phi.x.s2.t, phi.y.s1.t + phi.y.s2.t);
 
-        LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new Node<>(x_rand), tMax);
+        // make lots of little segments
+        double tMax = Math.max(phi.x.s1.t + phi.x.s2.t, phi.y.s1.t + phi.y.s2.t);
+        double tStep = 0.1;
+        Node<N4> source = x_nearest._nearest;
+        for (double tSec = 0; tSec < tMax; tSec += tStep) {
+            Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+            Node<N4> target = new Node<>(state);
+            LocalLink<N4> randLink = new LocalLink<>(source, target, tMax);
+            InsertNode(randLink, _T_a);
+            source = target;
+        }
+
+        // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
+        // Node<>(x_rand), tMax);
 
         // LocalLink<N4> randLink = SampleFree(timeForward);
-        if (DEBUG)
-            System.out.println("randLink: " + randLink);
+        // if (DEBUG)
+        // System.out.println("randLink: " + randLink);
 
         // if (CollisionFree(randLink.get_source().getState(),
         // randLink.get_target().getState())) {
         // new node in "this" tree
-        Node<N4> newNode = InsertNode(randLink, _T_a);
-        if (DEBUG)
-            System.out.println("NEW NODE " + newNode);
+
+        // Node<N4> newNode = InsertNode(randLink, _T_a);
+
+        // if (DEBUG)
+        // System.out.println("NEW NODE " + newNode);
+
         // List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
         // Rewire(X_nearA, newNode, timeForward);
 
         edges += 1;
 
-        if (BIDIRECTIONAL) {
-            // is there a point in the other tree that is reachable from
-            // the node we just inserted? reachable nodes are nearby in a Euclidean
-            // sense, though most Euclidean nearby nodes are not reachable.
-            // so start with a list of near nodes and test them one by one.
+        // if (BIDIRECTIONAL) {
+        // // is there a point in the other tree that is reachable from
+        // // the node we just inserted? reachable nodes are nearby in a Euclidean
+        // // sense, though most Euclidean nearby nodes are not reachable.
+        // // so start with a list of near nodes and test them one by one.
 
-            // near nodes in the other tree:
-            List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
-            Matrix<N4, N1> x1 = newNode.getState();
-            for (NearNode<N4> nearNode : X_near) {
-                // one near node in the other tree
-                Matrix<N4, N1> x2 = nearNode.node.getState();
+        // // near nodes in the other tree:
+        // List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
+        // Matrix<N4, N1> x1 = newNode.getState();
+        // for (NearNode<N4> nearNode : X_near) {
+        // // one near node in the other tree
+        // Matrix<N4, N1> x2 = nearNode.node.getState();
 
-                ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
-                if (sol != null) {
-                    // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
-                    if (DEBUG)
-                        System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
-                                Util.matStr(x1), Util.matStr(x2), sol);
-                    // TODO: do something with the solution u value
-                    // add a node in a corresponding to the near node in b
-                    LocalLink<N4> newInA = new LocalLink<>(newNode, new Node<>(nearNode.node.getState()),
-                            Math.abs(sol.dt));
-                    Node<N4> newNewNode = InsertNode(newInA, _T_a);
-                    Rewire(X_near, newNewNode, timeForward);
-                    // create a path that traverses the new link.
-                    Path<N4> p = GeneratePath(newNewNode, nearNode.node);
-                    if (DEBUG)
-                        System.out.println("PATH " + p);
-                    if (_sigma_best == null) {
-                        System.out.printf("first path distance %7.3f\n", p.getDistance());
-                        _sigma_best = p;
-                    } else {
-                        if (p.getDistance() < _sigma_best.getDistance()) {
-                            System.out.printf("new best path distance %7.3f\n", p.getDistance());
-                            _sigma_best = p;
-                        }
-                    }
-                    // don't need more than one feasible link
-                    break;
-                }
-            }
-        }
+        // ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1,
+        // x2, timeForward);
+        // if (sol != null) {
+        // // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
+        // if (DEBUG)
+        // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
+        // Util.matStr(x1), Util.matStr(x2), sol);
+        // // TODO: do something with the solution u value
+        // // add a node in a corresponding to the near node in b
+        // LocalLink<N4> newInA = new LocalLink<>(newNode, new
+        // Node<>(nearNode.node.getState()),
+        // Math.abs(sol.dt));
+        // Node<N4> newNewNode = InsertNode(newInA, _T_a);
+        // Rewire(X_near, newNewNode, timeForward);
+        // // create a path that traverses the new link.
+        // Path<N4> p = GeneratePath(newNewNode, nearNode.node);
+        // if (DEBUG)
+        // System.out.println("PATH " + p);
+        // if (_sigma_best == null) {
+        // System.out.printf("first path distance %7.3f\n", p.getDistance());
+        // _sigma_best = p;
+        // } else {
+        // if (p.getDistance() < _sigma_best.getDistance()) {
+        // System.out.printf("new best path distance %7.3f\n", p.getDistance());
+        // _sigma_best = p;
         // }
-        if (BIDIRECTIONAL)
-            SwapTrees();
+        // }
+        // // don't need more than one feasible link
+        // break;
+        // }
+        // }
+        // }
+        // // }
+        // if (BIDIRECTIONAL)
+        // SwapTrees();
         return edges;
     }
 
@@ -256,6 +273,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
     /** Sample the free state. */
     Matrix<N4, N1> SampleState() {
+        // if (random.nextDouble() >  0.9) return _model.goal();
         while (true) {
             Matrix<N4, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
@@ -331,7 +349,6 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // }
         // TODO: handle time reversal
 
-
         double xTSwitch = tSwitch(
                 x_i.get(0, 0),
                 x_i.get(1, 0),
@@ -397,7 +414,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         }
         // this should never happen; there is never not a solution.
         throw new IllegalArgumentException(String.format("%s\n%s\nx %f %f %f\ny %f %f %f\n",
-        x_i.toString() , x_g.toString(), xTSwitch, xTLimit, xTMirror, yTSwitch, yTLimit, yTMirror));
+                x_i.toString(), x_g.toString(), xTSwitch, xTLimit, xTMirror, yTSwitch, yTLimit, yTMirror));
     }
 
     static void put(List<Item> opts, double t, Solution solution) {
@@ -966,18 +983,21 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         double a = tw * tw;
         double b = 2.0 * tw * (idot + gdot) + 4.0 * (i - g);
         double c = -1.0 * (gdot - idot) * (gdot - idot);
-        System.out.printf("a %f b %f c %f\n", a, b, c);
+        if (DEBUG)
+            System.out.printf("a %f b %f c %f\n", a, b, c);
 
         List<Double> plus = quadratic(a, b, c);
         List<Double> minus = quadratic(a, -b, c);
-        System.out.printf("plus %s minus %s\n", plus, minus);
+        if (DEBUG)
+            System.out.printf("plus %s minus %s\n", plus, minus);
         // we generally want the *lowest* acceleration that will solve the problem
         Double aMin = null;
         Trajectory.Axis result = new Trajectory.Axis();
         for (Double p : plus) {
             if (Math.abs(p) < 1e-6 && plus.size() > 1) {
                 // zero is only ok if it's the only solution
-                System.out.println("reject p = 0 with two solutions");
+                if (DEBUG)
+                    System.out.println("reject p = 0 with two solutions");
                 continue;
             }
             double ts;
@@ -987,24 +1007,29 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             } else {
                 ts = 0.5 * (tw + (gdot - idot) / p);
             }
-            System.out.printf("p %f ts %f\n", p, ts);
+            if (DEBUG)
+                System.out.printf("p %f ts %f\n", p, ts);
             if (p < 0) {
-                System.out.println("reject p < 0");
+                if (DEBUG)
+                    System.out.println("reject p < 0");
                 continue;
             }
             if (ts < 0) {
-                System.out.println("reject ts < 0");
+                if (DEBUG)
+                    System.out.println("reject ts < 0");
                 continue;
             }
 
             if (ts > tw) {
                 // switching time can't be more than total time
-                System.out.println("reject ts > tw");
+                if (DEBUG)
+                    System.out.println("reject ts > tw");
                 continue;
 
             }
             if (aMin == null || p < aMin) {
-                System.out.printf("accept p %f\n", p);
+                if (DEBUG)
+                    System.out.printf("accept p %f\n", p);
                 aMin = p;
                 result.i = i;
                 result.idot = idot;
@@ -1019,7 +1044,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         for (Double m : minus) {
             if (Math.abs(m) < 1e-6 && minus.size() > 1) {
                 // zero is only ok if it's the only solution
-                System.out.println("reject p = 0 with two solutions");
+                if (DEBUG)
+                    System.out.println("reject p = 0 with two solutions");
                 continue;
             }
             double ts;
@@ -1028,21 +1054,26 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             } else {
                 ts = 0.5 * (tw + (gdot - idot) / m);
             }
-            System.out.printf("m %f ts %f\n", m, ts);
+            if (DEBUG)
+                System.out.printf("m %f ts %f\n", m, ts);
             if (m < 0) {
-                System.out.println("reject m < 0");
+                if (DEBUG)
+                    System.out.println("reject m < 0");
                 continue;
             }
             if (ts < 0) {
-                System.out.println("reject ts < 0");
+                if (DEBUG)
+                    System.out.println("reject ts < 0");
                 continue;
             }
             if (ts > tw) {
-                System.out.println("reject ts > tw");
+                if (DEBUG)
+                    System.out.println("reject ts > tw");
                 continue;
             }
             if (aMin == null || m < aMin) {
-                System.out.printf("accept m %f\n", m);
+                if (DEBUG)
+                    System.out.printf("accept m %f\n", m);
                 aMin = m;
                 result.i = i;
                 result.idot = idot;

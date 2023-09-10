@@ -98,6 +98,15 @@ public class FullStateHolonomicArena implements Arena<N4> {
      */
     @Override
     public boolean clear(Matrix<N4, N1> config) {
+        if (config.get(0, 0) - ROBOT_RADIUS < _min.get(0, 0))
+            return false;
+        if (config.get(2, 0) - ROBOT_RADIUS < _min.get(2, 0))
+            return false;
+        if (config.get(0, 0) + ROBOT_RADIUS > _max.get(0, 0))
+            return false;
+        if (config.get(2, 0) + ROBOT_RADIUS > _max.get(2, 0))
+            return false;
+
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
             if (obstacle.distToPoint(config.get(0, 0), config.get(2, 0)) < ROBOT_RADIUS)

@@ -71,7 +71,7 @@ public class FullStateArenaView extends JComponent {
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         //final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a, T_b);
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
-        solver.setRadius(10); // hoo boy
+        solver.setRadius(3); // hoo boy
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 
@@ -92,8 +92,8 @@ public class FullStateArenaView extends JComponent {
             }
         });
 
-        runner.runForDurationMS(100000);
-        //runner.runSamples(5000);
+        //runner.runForDurationMS(100000);
+        runner.runSamples(1000);
 
         Path<N4> bestPath = runner.getBestPath();
         if (bestPath == null) {
@@ -173,7 +173,7 @@ public class FullStateArenaView extends JComponent {
             g.fill(obstacle.shape());
         }
 
-        renderRRTTree(g);
+        renderRRTTree(g, scale);
 
         renderPaths(link, g, scale);
 
@@ -183,13 +183,13 @@ public class FullStateArenaView extends JComponent {
 
     private static final boolean renderTree = true;
 
-    public void renderRRTTree(Graphics2D g) {
+    public void renderRRTTree(Graphics2D g, double scale) {
         if (!renderTree)
             return;
         if (DEBUG)
             System.out.println("renderRRTTree");
         Line2D.Double line = new Line2D.Double();
-
+        g.setStroke(new BasicStroke((float)(1.0/scale)));
         for (Node<N4> node : KDTree.values(_T_a)) {
             LinkInterface<N4> incoming = node.getIncoming();
             if (incoming != null) {
@@ -226,7 +226,7 @@ public class FullStateArenaView extends JComponent {
         }
 
         Line2D.Double line = new Line2D.Double();
-        g.setStroke(new BasicStroke((float) (5 / scale)));
+        g.setStroke(new BasicStroke((float)(5.0/scale)));
 
         List<Matrix<N4,N1>> statesA = path.getStatesA();
         if (statesA.size() > 1) {
@@ -276,7 +276,7 @@ public class FullStateArenaView extends JComponent {
                 size.width / (max.get(0,0) - min.get(0,0)),
                 size.height / (max.get(2,0) - min.get(2,0)));
         g.scale(scale, scale);
-        g.setStroke(new BasicStroke((float) (0.25 / scale)));
+       // g.setStroke(new BasicStroke((float) (2 / scale)));
         return scale;
     }
 }
