@@ -6,9 +6,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.awt.Color;
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.Test;
+import org.team100.lib.geom.Obstacle;
+import org.team100.lib.geom.Polygon;
 import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
@@ -45,8 +49,8 @@ public class TestRRTStar7 {
         Axis slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.5);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(4.828, slowU.s1.u, 0.001);
         assertEquals(0.353, slowU.s1.t, 0.001);
         assertEquals(-4.828, slowU.s2.u, 0.001);
@@ -56,8 +60,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.724);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(2.004, slowU.s1.u, 0.001);
         assertEquals(0.611, slowU.s1.t, 0.001);
         assertEquals(-2.004, slowU.s2.u, 0.001);
@@ -67,8 +71,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 0.9);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(1.241, slowU.s1.u, 0.001);
         assertEquals(0.852, slowU.s1.t, 0.001);
         assertEquals(-1.241, slowU.s2.u, 0.001);
@@ -78,8 +82,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 1);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(1.000, slowU.s1.u, 0.001);
         assertEquals(1.000, slowU.s1.t, 0.001);
         assertEquals(-1.000, slowU.s2.u, 0.001);
@@ -89,8 +93,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 1.1);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.995, slowU.s1.u, 0.001);
         assertEquals(1.052, slowU.s1.t, 0.001);
         assertEquals(0.995, slowU.s2.u, 0.001);
@@ -100,8 +104,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 2);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.809, slowU.s1.u, 0.001);
         assertEquals(1.618, slowU.s1.t, 0.001);
         assertEquals(0.809, slowU.s2.u, 0.001);
@@ -111,8 +115,8 @@ public class TestRRTStar7 {
         slowU = RRTStar7.slowU(0, 0, -0.5, -1.0, 2);
         assertEquals(0, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(-0.5, slowU.g, 0.001);
+        assertEquals(-1, slowU.gdot, 0.001);
         assertEquals(0.809, slowU.s1.u, 0.001);
         assertEquals(0.381, slowU.s1.t, 0.001);
         assertEquals(-0.809, slowU.s2.u, 0.001);
@@ -125,9 +129,9 @@ public class TestRRTStar7 {
         // finds the tswitch u=2 solution, I+G-
         slowU = RRTStar7.slowU(0, 1, 0.5, 1, 0.414);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(2.007, slowU.s1.u, 0.001);
         assertEquals(0.207, slowU.s1.t, 0.001);
         assertEquals(-2.007, slowU.s2.u, 0.001);
@@ -135,9 +139,9 @@ public class TestRRTStar7 {
         // finds the tlimit u=2 solution, I-G+
         slowU = RRTStar7.slowU(0, 1, 0.5, 1, 1.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-2.0, slowU.s1.u, 0.001);
         assertEquals(0.5, slowU.s1.t, 0.001);
         assertEquals(2.0, slowU.s2.u, 0.001);
@@ -145,9 +149,9 @@ public class TestRRTStar7 {
         // this is a loop below the axis, I-G+
         slowU = RRTStar7.slowU(0, 1, 0.5, 1, 2.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(0.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-1.5, slowU.s1.u, 0.001);
         assertEquals(1.0, slowU.s1.t, 0.001);
         assertEquals(1.5, slowU.s2.u, 0.001);
@@ -160,9 +164,9 @@ public class TestRRTStar7 {
         // discover the tswitch solution
         slowU = RRTStar7.slowU(0, 1, 1, 1, 0.732);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(2.000, slowU.s1.u, 0.001);
         assertEquals(0.366, slowU.s1.t, 0.001);
         assertEquals(-2.000, slowU.s2.u, 0.001);
@@ -170,9 +174,9 @@ public class TestRRTStar7 {
         System.out.println("the correct answer is to just drift, u=0");
         slowU = RRTStar7.slowU(0, 1, 1, 1, 1.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(0, slowU.s1.u, 0.001);
         assertEquals(1.000, slowU.s1.t, 0.001);
         assertEquals(0, slowU.s2.u, 0.001);
@@ -180,9 +184,9 @@ public class TestRRTStar7 {
         // down to the axis and back, I-G+
         slowU = RRTStar7.slowU(0, 1, 1, 1, 2.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-1, slowU.s1.u, 0.001);
         assertEquals(1, slowU.s1.t, 0.001);
         assertEquals(1, slowU.s2.u, 0.001);
@@ -195,9 +199,9 @@ public class TestRRTStar7 {
         // discover tswitch, I+G-
         slowU = RRTStar7.slowU(0, 1, 1.5, 1, 1.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(2.000, slowU.s1.u, 0.001);
         assertEquals(0.5, slowU.s1.t, 0.001);
         assertEquals(-2.000, slowU.s2.u, 0.001);
@@ -205,9 +209,9 @@ public class TestRRTStar7 {
         // t=2, u=0.5, intersects at (0.75,0.5), I-G+
         slowU = RRTStar7.slowU(0, 1, 1.5, 1, 2.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.500, slowU.s1.u, 0.001);
         assertEquals(1.0, slowU.s1.t, 0.001);
         assertEquals(0.500, slowU.s2.u, 0.001);
@@ -215,9 +219,9 @@ public class TestRRTStar7 {
         // taking longer takes *more* u in order to slow down harder, I-G+
         slowU = RRTStar7.slowU(0, 1, 1.5, 1, 3.000);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(1, slowU.idot, 0.001);
+        assertEquals(1.5, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.666, slowU.s1.u, 0.001);
         assertEquals(1.5, slowU.s1.t, 0.001);
         assertEquals(0.666, slowU.s2.u, 0.001);
@@ -230,9 +234,9 @@ public class TestRRTStar7 {
         // discover tswitch (the fast path) I+G-
         slowU = RRTStar7.slowU(0, 2, 1, 2, 0.449);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(2.023, slowU.s1.u, 0.001);
         assertEquals(0.224, slowU.s1.t, 0.001);
         assertEquals(-2.023, slowU.s2.u, 0.001);
@@ -240,9 +244,9 @@ public class TestRRTStar7 {
         // discover tlimit I-G+
         slowU = RRTStar7.slowU(0, 2, 1, 2, 0.585);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(-1.986, slowU.s1.u, 0.001);
         assertEquals(0.292, slowU.s1.t, 0.001);
         assertEquals(1.986, slowU.s2.u, 0.001);
@@ -250,9 +254,9 @@ public class TestRRTStar7 {
         // discover tmirror I-G+
         slowU = RRTStar7.slowU(0, 2, 1, 2, 3.414);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(-2.000, slowU.s1.u, 0.001);
         assertEquals(1.707, slowU.s1.t, 0.001);
         assertEquals(2.000, slowU.s2.u, 0.001);
@@ -261,9 +265,9 @@ public class TestRRTStar7 {
         // it's possible you just need more u. I-G+
         slowU = RRTStar7.slowU(0, 2, 1, 2, 1);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(-4.000, slowU.s1.u, 0.001);
         assertEquals(0.5, slowU.s1.t, 0.001);
         assertEquals(4.000, slowU.s2.u, 0.001);
@@ -271,9 +275,9 @@ public class TestRRTStar7 {
         // I-G+
         slowU = RRTStar7.slowU(0, 2, 1, 2, 2);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.idot, 0.001);
+        assertEquals(1, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(-3.000, slowU.s1.u, 0.001);
         assertEquals(1.0, slowU.s1.t, 0.001);
         assertEquals(3.000, slowU.s2.u, 0.001);
@@ -282,10 +286,10 @@ public class TestRRTStar7 {
         // up from zero I+G-
         assertEquals(1, RRTStar7.tSwitch(1, 0, 2, 2, 2), 0.001);
         slowU = RRTStar7.slowU(1, 0, 2, 2, 1);
-        assertEquals(0, slowU.i, 0.001);
+        assertEquals(1, slowU.i, 0.001);
         assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(2, slowU.g, 0.001);
+        assertEquals(2, slowU.gdot, 0.001);
         assertEquals(2.0, slowU.s1.u, 0.001);
         assertEquals(1.0, slowU.s1.t, 0.001);
         assertEquals(-2.0, slowU.s2.u, 0.001);
@@ -296,9 +300,9 @@ public class TestRRTStar7 {
         // discover tswitch
         slowU = RRTStar7.slowU(0, -1, 3, 1, 2.645);
         assertEquals(0, slowU.i, 0.001);
-        assertEquals(0, slowU.idot, 0.001);
-        assertEquals(0, slowU.g, 0.001);
-        assertEquals(0, slowU.gdot, 0.001);
+        assertEquals(-1, slowU.idot, 0.001);
+        assertEquals(3, slowU.g, 0.001);
+        assertEquals(1, slowU.gdot, 0.001);
         assertEquals(2.000, slowU.s1.u, 0.001);
         assertEquals(1.822, slowU.s1.t, 0.001);
         assertEquals(-2.000, slowU.s2.u, 0.001);
@@ -535,7 +539,7 @@ public class TestRRTStar7 {
         Trajectory t = RRTStar7.optimalTrajectory(s(0, 0, 0, 0), s(1, 0, 1, 0), 2.5);
         assertEquals(0, t.x.i, 0.001);
         assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
+        assertEquals(1, t.x.g, 0.001);
         assertEquals(0, t.x.gdot, 0.001);
         assertEquals(2.5, t.x.s1.u, 0.001);
         assertEquals(0.632, t.x.s1.t, 0.001);
@@ -543,7 +547,7 @@ public class TestRRTStar7 {
         assertEquals(0.632, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
         assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
+        assertEquals(1, t.y.g, 0.001);
         assertEquals(0, t.y.gdot, 0.001);
         assertEquals(2.5, t.y.s1.u, 0.001);
         assertEquals(0.632, t.y.s1.t, 0.001);
@@ -555,16 +559,16 @@ public class TestRRTStar7 {
         // this makes an S shape.
         t = RRTStar7.optimalTrajectory(s(0, 1, 0, 0), s(0.5, 1, 1, 0), 2.5);
         assertEquals(0, t.x.i, 0.001);
-        assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
-        assertEquals(0, t.x.gdot, 0.001);
+        assertEquals(1, t.x.idot, 0.001);
+        assertEquals(0.5, t.x.g, 0.001);
+        assertEquals(1, t.x.gdot, 0.001);
         assertEquals(-1.912, t.x.s1.u, 0.001);
         assertEquals(0.632, t.x.s1.t, 0.001);
         assertEquals(1.912, t.x.s2.u, 0.001);
         assertEquals(0.632, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
         assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
+        assertEquals(1, t.y.g, 0.001);
         assertEquals(0, t.y.gdot, 0.001);
         assertEquals(2.5, t.y.s1.u, 0.001);
         assertEquals(0.632, t.y.s1.t, 0.001);
@@ -578,16 +582,16 @@ public class TestRRTStar7 {
         // this makes a more exaggerated S shape
         t = RRTStar7.optimalTrajectory(s(0, 1, 0, 0), s(0.25, 1, 1, 0), 2.5);
         assertEquals(0, t.x.i, 0.001);
-        assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
-        assertEquals(0, t.x.gdot, 0.001);
+        assertEquals(1, t.x.idot, 0.001);
+        assertEquals(0.25, t.x.g, 0.001);
+        assertEquals(1, t.x.gdot, 0.001);
         assertEquals(-2.5, t.x.s1.u, 0.001);
         assertEquals(0.644, t.x.s1.t, 0.001);
         assertEquals(2.5, t.x.s2.u, 0.001);
         assertEquals(0.644, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
         assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
+        assertEquals(1, t.y.g, 0.001);
         assertEquals(0, t.y.gdot, 0.001);
         assertEquals(2.404, t.y.s1.u, 0.001);
         assertEquals(0.644, t.y.s1.t, 0.001);
@@ -600,17 +604,17 @@ public class TestRRTStar7 {
         // mirror.
         t = RRTStar7.optimalTrajectory(s(0, 1, 0, 1), s(0.25, 1, 0.5, 1), 2.5);
         assertEquals(0, t.x.i, 0.001);
-        assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
-        assertEquals(0, t.x.gdot, 0.001);
+        assertEquals(1, t.x.idot, 0.001);
+        assertEquals(0.25, t.x.g, 0.001);
+        assertEquals(1, t.x.gdot, 0.001);
         assertEquals(-2.5, t.x.s1.u, 0.001);
         assertEquals(0.644, t.x.s1.t, 0.001);
         assertEquals(2.5, t.x.s2.u, 0.001);
         assertEquals(0.644, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
-        assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
-        assertEquals(0, t.y.gdot, 0.001);
+        assertEquals(1, t.y.idot, 0.001);
+        assertEquals(0.5, t.y.g, 0.001);
+        assertEquals(1, t.y.gdot, 0.001);
         assertEquals(-1.898, t.y.s1.u, 0.001);
         assertEquals(0.644, t.y.s1.t, 0.001);
         assertEquals(1.898, t.y.s2.u, 0.001);
@@ -621,17 +625,17 @@ public class TestRRTStar7 {
         // it's just a straight line that speeds up in the middle.
         t = RRTStar7.optimalTrajectory(s(0, 2, 0, 1), s(1, 2, 0.5, 1), 2.5);
         assertEquals(0, t.x.i, 0.001);
-        assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
-        assertEquals(0, t.x.gdot, 0.001);
+        assertEquals(2, t.x.idot, 0.001);
+        assertEquals(1, t.x.g, 0.001);
+        assertEquals(2, t.x.gdot, 0.001);
         assertEquals(2.5, t.x.s1.u, 0.001);
         assertEquals(0.219, t.x.s1.t, 0.001);
         assertEquals(-2.5, t.x.s2.u, 0.001);
         assertEquals(0.219, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
-        assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
-        assertEquals(0, t.y.gdot, 0.001);
+        assertEquals(1, t.y.idot, 0.001);
+        assertEquals(0.5, t.y.g, 0.001);
+        assertEquals(1, t.y.gdot, 0.001);
         assertEquals(1.25, t.y.s1.u, 0.001);
         assertEquals(0.219, t.y.s1.t, 0.001);
         assertEquals(-1.25, t.y.s2.u, 0.001);
@@ -645,8 +649,8 @@ public class TestRRTStar7 {
         // TODO: velocity limit for these cases
         t = RRTStar7.optimalTrajectory(s(0, 5, 0, 0), s(10, 0, 5, 0), 2.5);
         assertEquals(0, t.x.i, 0.001);
-        assertEquals(0, t.x.idot, 0.001);
-        assertEquals(0, t.x.g, 0.001);
+        assertEquals(5, t.x.idot, 0.001);
+        assertEquals(10, t.x.g, 0.001);
         assertEquals(0, t.x.gdot, 0.001);
         assertEquals(2.5, t.x.s1.u, 0.001);
         assertEquals(0.449, t.x.s1.t, 0.001);
@@ -654,7 +658,7 @@ public class TestRRTStar7 {
         assertEquals(2.449, t.x.s2.t, 0.001);
         assertEquals(0, t.y.i, 0.001);
         assertEquals(0, t.y.idot, 0.001);
-        assertEquals(0, t.y.g, 0.001);
+        assertEquals(5, t.y.g, 0.001);
         assertEquals(0, t.y.gdot, 0.001);
         assertEquals(2.379, t.y.s1.u, 0.001);
         assertEquals(1.449, t.y.s1.t, 0.001);
@@ -703,7 +707,7 @@ public class TestRRTStar7 {
     void testSampleAxis() {
         // case from elsewhere
         // (1,0) -> (0,0) takes 1.264
-        //assertEquals(1.264, RRTStar7.tSwitch(1, 0, 0, 0, 2.5), 0.001);
+        // assertEquals(1.264, RRTStar7.tSwitch(1, 0, 0, 0, 2.5), 0.001);
         Axis a = new Axis();
         a.i = 1;
         a.idot = 0;
@@ -798,30 +802,56 @@ public class TestRRTStar7 {
     }
 
     @Test
-    void testSteer() {
+    void testSteerFree() {
+        Predicate<Matrix<N4, N1>> free = new Predicate<>() {
+            @Override
+            public boolean test(Matrix<N4, N1> config) {
+                return true;
+            }
+        };
         // x: (0,0) -> (1,0)
         // y: (0,0) -> (1,0)
         Matrix<N4, N1> x_i = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, 0, 0, 0 });
         Matrix<N4, N1> x_g = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 0, 1, 0 });
-        Trajectory phi = RRTStar7.BangBangSteer(x_i, x_g, true);
+        Trajectory phi = RRTStar7.BangBangSteer(free, x_i, x_g, true);
         assertEquals(0, phi.x.i, 0.001);
         assertEquals(0, phi.x.idot, 0.001);
-        assertEquals(0, phi.x.g, 0.001);
+        assertEquals(1, phi.x.g, 0.001);
         assertEquals(0, phi.x.gdot, 0.001);
-        assertEquals(100, phi.x.s1.u, 0.001);
-        assertEquals(100, phi.x.s1.t, 0.001);
-        assertEquals(100, phi.x.s2.u, 0.001);
-        assertEquals(100, phi.x.s2.t, 0.001);
+        assertEquals(2.5, phi.x.s1.u, 0.001);
+        assertEquals(0.632, phi.x.s1.t, 0.001);
+        assertEquals(-2.5, phi.x.s2.u, 0.001);
+        assertEquals(0.632, phi.x.s2.t, 0.001);
         assertEquals(0, phi.y.i, 0.001);
         assertEquals(0, phi.y.idot, 0.001);
-        assertEquals(0, phi.y.g, 0.001);
+        assertEquals(1, phi.y.g, 0.001);
         assertEquals(0, phi.y.gdot, 0.001);
-        assertEquals(100, phi.y.s1.u, 0.001);
-        assertEquals(100, phi.y.s1.t, 0.001);
-        assertEquals(100, phi.y.s2.u, 0.001);
-        assertEquals(100, phi.y.s2.t, 0.001);
-
+        assertEquals(2.5, phi.y.s1.u, 0.001);
+        assertEquals(0.632, phi.y.s1.t, 0.001);
+        assertEquals(-2.5, phi.y.s2.u, 0.001);
+        assertEquals(0.632, phi.y.s2.t, 0.001);
     }
+
+    @Test
+    void testSteerObstructed() {
+        Obstacle obstacle = new Polygon(Color.BLACK, 0.25, 0.25, 0.75, 0.25, 0.75, 0.75, 0.25, 0.75);
+        Predicate<Matrix<N4, N1>> free = new Predicate<>() {
+            @Override
+            public boolean test(Matrix<N4, N1> config) {
+                if (obstacle.distToPoint(config.get(0, 0), config.get(2, 0)) < 0.1)
+                    return false;
+                return true;
+
+            }
+        };
+        // x: (0,0) -> (1,0)
+        // y: (0,0) -> (1,0)
+        Matrix<N4, N1> x_i = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, 0, 0, 0 });
+        Matrix<N4, N1> x_g = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 0, 1, 0 });
+        Trajectory phi = RRTStar7.BangBangSteer(free, x_i, x_g, true);
+        assertNull(phi);
+    }
+
 
     @Test
     void testTLimit() {

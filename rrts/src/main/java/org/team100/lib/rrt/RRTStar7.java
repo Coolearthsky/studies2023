@@ -12,6 +12,7 @@ import java.util.ListIterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
@@ -146,7 +147,7 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
             return 0;
 
         // includes states and controls
-        Trajectory phi = BangBangSteer(x_nearest._nearest.getState(), x_rand, timeForward);
+        Trajectory phi = BangBangSteer(_model::clear, x_nearest._nearest.getState(), x_rand, timeForward);
 
         LocalLink<N4> randLink = SampleFree(timeForward);
         if (DEBUG)
@@ -457,16 +458,23 @@ public class RRTStar7<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
      *         feasible.
      */
     static Trajectory BangBangSteer(
+        Predicate<Matrix<N4,N1>> free,
             Matrix<N4, N1> x_i,
             Matrix<N4, N1> x_g,
             boolean timeForward) {
-        Trajectory t;
+        Trajectory trajectory;
         if (timeForward) {
-            t = optimalTrajectory(x_i, x_g, MAX_U);
+            trajectory = optimalTrajectory(x_i, x_g, MAX_U);
         } else {
-            t = optimalTrajectory(x_g, x_i, MAX_U);
+            trajectory = optimalTrajectory(x_g, x_i, MAX_U);
         }
-        return null;
+        double tMax = Math.max(trajectory.x.s1.t + trajectory.x.s2.t, trajectory.y.s1.t + trajectory.y.s2.t);
+        double tStep = 0.1;
+        for (double tSec = 0; tSec < tMax; tSec += tStep) {
+            Matrix<N4,N1> state = SampleTrajectory(trajectory, tSec);
+            if (!free.test(state)) return null;
+        }
+        return trajectory;
     }
 
     /**
