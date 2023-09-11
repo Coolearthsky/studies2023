@@ -47,8 +47,8 @@ class PathTest {
         l1.add(new SinglePath.Link<>(VecBuilder.fill(1), VecBuilder.fill(2), 1));
         a1.add(VecBuilder.fill(3));
         l1.add(new SinglePath.Link<>(VecBuilder.fill(2), VecBuilder.fill(3), 1));
-        SinglePath<N1> p1 = new SinglePath<>(2, a1, l1);
-        assertEquals(2, p1.getDistance());
+        SinglePath<N1> p1 = new SinglePath<>(a1, l1);
+        assertEquals(3, p1.getDistance());
 
         List<Matrix<N1, N1>> a2 = new ArrayList<>();
         List<SinglePath.Link<N1>> l2 = new ArrayList<>();
@@ -59,8 +59,8 @@ class PathTest {
         l2.add(new SinglePath.Link<>(VecBuilder.fill(2), VecBuilder.fill(3), 1));
         a2.add(VecBuilder.fill(4));
         l2.add(new SinglePath.Link<>(VecBuilder.fill(3), VecBuilder.fill(4), 1));
-        SinglePath<N1> p2 = new SinglePath<>(3, a2, l2);
-        assertEquals(3, p2.getDistance());
+        SinglePath<N1> p2 = new SinglePath<>(a2, l2);
+        assertEquals(4, p2.getDistance());
 
         assertTrue(p1.getDistance() < p2.getDistance());
     }

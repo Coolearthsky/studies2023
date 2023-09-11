@@ -340,21 +340,29 @@ public class FullStateArenaView extends JComponent {
         Line2D.Double line = new Line2D.Double();
         g.setStroke(new BasicStroke((float) (3.0 / scale)));
 
-        List<Matrix<N4, N1>> states = path.getStates();
-        if (states.size() > 1) {
+        // List<Matrix<N4, N1>> states = path.getStates();
+        List<SinglePath.Link<N4>> links = path.getLinks();
+        // if (states.size() > 1) {
+        if (links.size() > 1) {
             // first the line
             {
-                Iterator<Matrix<N4, N1>> pathIter = states.iterator();
-                Matrix<N4, N1> prev = pathIter.next();
-                final int statect = states.size();
+                Iterator<SinglePath.Link<N4>> linkIter = links.iterator();
+                // Iterator<Matrix<N4, N1>> pathIter = states.iterator();
+                // Matrix<N4, N1> prev = pathIter.next();
+                // final int statect = states.size();
+                final int linkct = links.size();
                 int statei = 0;
-                while (pathIter.hasNext()) {
+                // while (pathIter.hasNext()) {
+                while (linkIter.hasNext()) {
                     // TODO: make this reflect cost
-                    g.setColor(new Color(1, (float)statei/statect, (float)(1.0-(float)statei/statect)));
-                    Matrix<N4, N1> curr = pathIter.next();
-                    line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                    // g.setColor(new Color(1, (float) statei / statect, (float) (1.0 - (float) statei / statect)));
+                    g.setColor(new Color(1, (float) statei / linkct, (float) (1.0 - (float) statei / linkct)));
+                    // Matrix<N4, N1> curr = pathIter.next();
+                    SinglePath.Link<N4> link = linkIter.next();
+                    // line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                    line.setLine(link.x_i.get(0, 0), link.x_i.get(2, 0), link.x_g.get(0, 0), link.x_g.get(2, 0));
                     g.draw(line);
-                    prev = curr;
+                    // prev = curr;
                     ++statei;
                 }
             }
@@ -362,10 +370,14 @@ public class FullStateArenaView extends JComponent {
             {
                 double r = 0.02;
                 g.setColor(Color.BLACK);
-                Iterator<Matrix<N4, N1>> pathIter = states.iterator();
-                while (pathIter.hasNext()) {
-                    Matrix<N4, N1> curr = pathIter.next();
-                    g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
+                Iterator<SinglePath.Link<N4>> linkIter = links.iterator();
+                // Iterator<Matrix<N4, N1>> pathIter = states.iterator();
+                while (linkIter.hasNext()) {
+                    // while (pathIter.hasNext()) {
+                    // Matrix<N4, N1> curr = pathIter.next();
+                    SinglePath.Link<N4> link = linkIter.next();
+                    // g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
+                    g.fill(new Ellipse2D.Double(link.x_i.get(0, 0) - r, link.x_i.get(2, 0) - r, 2 * r, 2 * r));
                 }
             }
         }

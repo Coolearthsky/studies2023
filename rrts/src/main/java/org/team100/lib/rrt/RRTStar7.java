@@ -490,7 +490,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             System.out.println("p2 " + p_2);
         // either p_1 or p_2 are the initial tree
         //
-        boolean root1 = same(_T_a.getValue().getState(), p_1.getRoot());
+        // boolean root1 = same(_T_a.getValue().getState(), p_1.getRoot());
+        boolean root1 = same(_T_a.getValue().getState(), p_1.getFirstLink().x_i);
         if (!root1) {
             // swap them
             SinglePath<N4> tmp = p_1;
@@ -526,7 +527,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         resultLinks.addAll(revLinks1);
         resultLinks.addAll(links2);
 
-        return new SinglePath<>(p_1.getDistance() + p_2.getDistance(), result, resultLinks);
+        return new SinglePath<>(result, resultLinks);
     }
 
     boolean CollisionFree(Matrix<N4, N1> from, Matrix<N4, N1> to) {
@@ -1640,7 +1641,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // but note that the caller is going to reverse one of them again,
         // so let's not do that.
 
-        return new SinglePath<>(totalDistance, configs, links);
+        return new SinglePath<>(configs, links);
     }
 
     @Override

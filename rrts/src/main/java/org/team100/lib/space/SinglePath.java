@@ -23,15 +23,12 @@ public class SinglePath<States extends Num> {
         }
     }
 
-    /** The total length of the computed path */
-    private final double distance;
-
     /** The states along the path. */
     private final List<Matrix<States, N1>> states;
     private final List<Link<States>> links;
 
-    public SinglePath(double distance, List<Matrix<States, N1>> states, List<Link<States>> links) {
-        this.distance = distance;
+    public SinglePath(List<Matrix<States, N1>> states, List<Link<States>> links) {
+        // this.distance = distance;
         this.states = states;
         this.links = links;
 
@@ -59,8 +56,13 @@ public class SinglePath<States extends Num> {
         }
     }
 
+    /** Sum of link cost via full scan. */
     public double getDistance() {
-        return distance;
+        double result = 0;
+        for (Link<States> l:links) {
+            result += l.cost;
+        }
+        return result;
     }
 
     public List<Matrix<States, N1>> getStates() {
@@ -74,10 +76,6 @@ public class SinglePath<States extends Num> {
         List<Link<States>> allLinks = new ArrayList<>();
         allLinks.addAll(links);
         return allLinks;
-    }
-
-    public Matrix<States, N1> getRoot() {
-        return states.get(0);
     }
 
     public Link<States> getFirstLink() {
