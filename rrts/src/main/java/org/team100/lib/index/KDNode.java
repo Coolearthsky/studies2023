@@ -7,6 +7,7 @@ import edu.wpi.first.math.Num;
 public final class KDNode<V extends Point<? extends Num>> {
     private final V value;
     private KDNode<V> a;
+
     private KDNode<V> b;
 
     public KDNode(V v) {
@@ -33,5 +34,10 @@ public final class KDNode<V extends Point<? extends Num>> {
 
     public V getValue() {
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return "KDNode [value=" + value + ", a=" + a + ", b=" + b + "]";
     }
 }

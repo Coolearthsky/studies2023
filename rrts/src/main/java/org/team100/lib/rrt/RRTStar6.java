@@ -26,6 +26,7 @@ import org.team100.lib.planner.Solver;
 import org.team100.lib.random.MersenneTwister;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 import org.team100.lib.util.Util;
 
 import edu.wpi.first.math.Matrix;
@@ -530,5 +531,11 @@ public class RRTStar6<T extends KDModel<N4> & RobotModel<N4>> implements Solver<
 
     static boolean same(Matrix<N4, N1> a, Matrix<N4, N1> b) {
         return a.isEqual(b, 0.0001);
+    }
+
+    @Override
+    public SinglePath<N4> getBestSinglePath() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBestSinglePath'");
     }
 }

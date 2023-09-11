@@ -4,11 +4,14 @@ import java.util.List;
 
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
+import org.team100.lib.space.SinglePath;
 
 import edu.wpi.first.math.Num;
 
 /**
  * Runs the specified steps or time.
+ * 
+ * TODO: get rid of this class
  */
 public class Runner<States extends Num> {
     private static final boolean DEBUG = false;
@@ -55,7 +58,10 @@ public class Runner<States extends Num> {
     public Path<States> getBestPath() {
         return _solver.getBestPath();
     }
-
+    
+    public SinglePath<States> getBestSinglePath() {
+        return _solver.getBestSinglePath();
+    }
     /////////////////////////////////////////
 
     private void run(int sampleLimit, long timeLimitNS) {
@@ -68,11 +74,21 @@ public class Runner<States extends Num> {
             if (actualLimit > 10000)
                 break;
             _solver.setStepNo(_stepNo);
-            if (_solver.step() > 0) {
+
+            int step = _solver.step();
+            if (step < 0) return; // solver says "stop".
+            if (step > 0) {
                 _stepNo++;
                 if (_stepNo > sampleLimit) {
                     return;
                 }
+                // this is so i can see what it's doing
+                // try {
+                //     Thread.sleep(50);
+                // } catch (InterruptedException e) {
+                //     // TODO Auto-generated catch block
+                //     e.printStackTrace();
+                // }
             }
 
             if (timeLimitNS > 0) {

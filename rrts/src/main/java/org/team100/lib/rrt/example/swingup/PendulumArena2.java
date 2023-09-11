@@ -29,15 +29,11 @@ import edu.wpi.first.math.numbers.N2;
  * A = [ 0 1, -sin x1 0]
  * B = [0, 1]
  * 
- * the general idea is
- */
-public class PendulumArena2 implements Arena<N2> {
-    /**
      * zeroth dimension is position (radians, down is zero).
      * first dimension is velocity (radians per second).
-     */
-    private static final int DIMENSIONS = 2;
-
+      */
+public class PendulumArena2 implements Arena<N2> {
+    
     private static final double MIN_U = -0.5;
     private static final double MAX_U = 0.5;
     private static final double MIN_DT = 0.01;
@@ -69,11 +65,6 @@ public class PendulumArena2 implements Arena<N2> {
         _goal = goal;
         _g = gravity;
 
-    }
-
-    @Override
-    public int dimensions() {
-        return DIMENSIONS;
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 import org.team100.lib.util.Util;
 
 import edu.wpi.first.math.Matrix;
@@ -490,5 +491,11 @@ public class RRTStar5<T extends KDModel<N2> & RobotModel<N2>> implements Solver<
 
     static boolean same(Matrix<N2, N1> a, Matrix<N2, N1> b) {
         return a.isEqual(b, 0.0001);
+    }
+
+    @Override
+    public SinglePath<N2> getBestSinglePath() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBestSinglePath'");
     }
 }

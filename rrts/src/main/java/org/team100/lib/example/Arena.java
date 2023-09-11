@@ -6,7 +6,7 @@ import org.team100.lib.planner.RobotModel;
 
 import edu.wpi.first.math.Num;
 
-public interface Arena<States extends Num> extends RobotModel<States>, KDModel<States> {
+public interface Arena<States extends Num> extends  KDModel<States>, RobotModel<States> {
 
     Obstacle[] obstacles();
     

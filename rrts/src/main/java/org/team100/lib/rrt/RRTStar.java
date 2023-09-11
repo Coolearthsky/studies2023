@@ -19,6 +19,7 @@ import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -71,7 +72,7 @@ public class RRTStar<States extends Num, T extends KDModel<States> & RobotModel<
 
         double radius = _gamma * Math.pow(
                 Math.log(stepNo + 1) / (stepNo + 1),
-                1.0 / _model.dimensions());
+                1.0 /  _rootNode.getValue().getState().getNumRows());
 
         List<NearNode<States>> nearNodes = new ArrayList<>();
         KDTree.near(_model, _rootNode, x_rand, radius, (node, dist) -> {
@@ -181,5 +182,11 @@ public class RRTStar<States extends Num, T extends KDModel<States> & RobotModel<
         Collections.reverse(configs);
 
         return new Path<>(totalDistance, configs, new LinkedList<>());
+    }
+
+    @Override
+    public SinglePath<States> getBestSinglePath() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBestSinglePath'");
     }
 }

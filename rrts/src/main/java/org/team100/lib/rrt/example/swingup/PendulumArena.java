@@ -1,4 +1,5 @@
 package org.team100.lib.rrt.example.swingup;
+
 import org.team100.lib.example.Arena;
 import org.team100.lib.geom.Obstacle;
 import org.team100.lib.graph.Node;
@@ -35,35 +36,32 @@ import edu.wpi.first.math.system.Discretization;
  * The math here follows
  * https://github.com/MahanFathi/LQR-RRTstar
  * http://people.csail.mit.edu/tlp/pdf/2012/ICRA12_1657_FI.pdf
+ * 
+ * zeroth dimension is position (radians, down is zero).
+ * first dimension is velocity (radians per second).
  */
 public class PendulumArena implements Arena<N2> {
-    /**
-     * zeroth dimension is position (radians, down is zero).
-     * first dimension is velocity (radians per second).
-     */
-    private static final int DIMENSIONS = 2;
-
     private static final double POSITION_TOLERANCE = 0.25;
     private static final double VELOCITY_TOLERANCE = 0.25;
 
-    private final Matrix<N2,N1> _init;
-    private final Matrix<N2,N1> _goal;
+    private final Matrix<N2, N1> _init;
+    private final Matrix<N2, N1> _goal;
     /** same as the paper */
-    private static final Matrix<N2,N1> _min =  new Matrix<>(Nat.N2(),Nat.N1(), new double[] { -4, -8 });
-    private static final Matrix<N2,N1> _max =  new Matrix<>(Nat.N2(),Nat.N1(), new double[] { 4, 8 });
+    private static final Matrix<N2, N1> _min = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { -4, -8 });
+    private static final Matrix<N2, N1> _max = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 4, 8 });
 
     Obstacle[] _obstacles = new Obstacle[] {};
 
     // Q is x norm coord
-    //Vector<N2> qelms = VecBuilder.fill(1, 1);
+    // Vector<N2> qelms = VecBuilder.fill(1, 1);
     // R is u norm coord
-  //  Vector<N1> relms = VecBuilder.fill(50);
+    // Vector<N1> relms = VecBuilder.fill(50);
 
-    //Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
-//    Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
+    // Matrix<N2, N2> Q = StateSpaceUtil.makeCostMatrix(qelms);
+    // Matrix<N1, N1> R = StateSpaceUtil.makeCostMatrix(relms);
 
-    Matrix<N2,N2> Q = Matrix.eye(Nat.N2());
-    Matrix<N1,N1> R = VecBuilder.fill(50);
+    Matrix<N2, N2> Q = Matrix.eye(Nat.N2());
+    Matrix<N1, N1> R = VecBuilder.fill(50);
 
     double h = 0.1; // TODO: this is surely wrong. what time interval to use?
 
@@ -76,7 +74,7 @@ public class PendulumArena implements Arena<N2> {
     // private int stepNo;
     // private double radius;
 
-    public PendulumArena(Matrix<N2,N1> init, Matrix<N2,N1> goal, double gravity) {
+    public PendulumArena(Matrix<N2, N1> init, Matrix<N2, N1> goal, double gravity) {
         _init = init;
         _goal = goal;
         _g = gravity;
@@ -87,7 +85,7 @@ public class PendulumArena implements Arena<N2> {
     public Matrix<N2, N2> getA(Matrix<N2, N1> x) {
         return Matrix.mat(Nat.N2(), Nat.N2()).fill(
                 0, 1,
-                -_g * Math.cos(x.get(0,0)), -b / (m * Math.pow(l, 2)));
+                -_g * Math.cos(x.get(0, 0)), -b / (m * Math.pow(l, 2)));
 
     }
 
@@ -124,18 +122,13 @@ public class PendulumArena implements Arena<N2> {
     }
 
     @Override
-    public int dimensions() {
-        return DIMENSIONS;
+    public Matrix<N2, N1> getMin() {
+        return _min.copy();
     }
 
     @Override
-    public Matrix<N2,N1> getMin() {
-        return _min.copy();        
-    }
-
-    @Override
-    public Matrix<N2,N1> getMax() {
-        return _max.copy();        
+    public Matrix<N2, N1> getMax() {
+        return _max.copy();
     }
 
     /**
@@ -144,20 +137,20 @@ public class PendulumArena implements Arena<N2> {
      * for each sample.
      */
     @Override
-    public double dist(Matrix<N2,N1> start, Matrix<N2,N1> end) {
+    public double dist(Matrix<N2, N1> start, Matrix<N2, N1> end) {
         Matrix<N2, N2> S = getS(start);
-        Matrix<N2, N1> dx = VecBuilder.fill(end.get(0,0) - start.get(0,0), end.get(1,0) - start.get(1,0));
+        Matrix<N2, N1> dx = VecBuilder.fill(end.get(0, 0) - start.get(0, 0), end.get(1, 0) - start.get(1, 0));
         return dx.transpose().times(S).times(dx).get(0, 0);
     }
 
     @Override
     public void setStepNo(int stepNo) {
-       // this.stepNo = stepNo;
+        // this.stepNo = stepNo;
     }
 
     @Override
     public void setRadius(double radius) {
-        //this.radius = radius;
+        // this.radius = radius;
     }
 
     /**
@@ -166,8 +159,8 @@ public class PendulumArena implements Arena<N2> {
      * point to the new point, and then integrate forward to find the new point.
      */
     @Override
-    public Matrix<N2,N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2,N1> newConfig) {
-        Matrix<N2,N1> nearConfig = x_nearest._nearest.getState();
+    public Matrix<N2, N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2, N1> newConfig) {
+        Matrix<N2, N1> nearConfig = x_nearest._nearest.getState();
 
         // see pend_rrt.m
         Matrix<N2, N1> x_near = nearConfig;
@@ -178,33 +171,33 @@ public class PendulumArena implements Arena<N2> {
         u = Math.max(-3, u);
         u = Math.min(3, u);
         Matrix<N2, N1> xdot = VecBuilder.fill(
-                nearConfig.get(1,0),
-                (u - b * nearConfig.get(1,0) - m * _g * l * Math.sin(nearConfig.get(0,0))));
+                nearConfig.get(1, 0),
+                (u - b * nearConfig.get(1, 0) - m * _g * l * Math.sin(nearConfig.get(0, 0))));
         return x_near.plus(xdot.times(h));
     }
 
     @Override
-    public Matrix<N2,N1> initial() {
+    public Matrix<N2, N1> initial() {
         return _init;
     }
 
     @Override
-    public Matrix<N2,N1> goal() {
+    public Matrix<N2, N1> goal() {
         return _goal;
     }
 
     @Override
-    public boolean goal(Matrix<N2,N1> config) {
-        if (Math.abs(config.get(0,0) - _goal.get(0,0)) > POSITION_TOLERANCE)
+    public boolean goal(Matrix<N2, N1> config) {
+        if (Math.abs(config.get(0, 0) - _goal.get(0, 0)) > POSITION_TOLERANCE)
             return false;
-        if (Math.abs(config.get(1,0) - _goal.get(1,0)) > VELOCITY_TOLERANCE)
+        if (Math.abs(config.get(1, 0) - _goal.get(1, 0)) > VELOCITY_TOLERANCE)
             return false;
         return true;
     }
 
     /** There aren't really obstacles, but this will come in handy later. */
     @Override
-    public boolean clear(Matrix<N2,N1> config) {
+    public boolean clear(Matrix<N2, N1> config) {
         return true;
     }
 
@@ -213,7 +206,7 @@ public class PendulumArena implements Arena<N2> {
      * aren't any obstacles.
      */
     @Override
-    public boolean link(Matrix<N2,N1> a, Matrix<N2,N1> b) {
+    public boolean link(Matrix<N2, N1> a, Matrix<N2, N1> b) {
         return true;
     }
 

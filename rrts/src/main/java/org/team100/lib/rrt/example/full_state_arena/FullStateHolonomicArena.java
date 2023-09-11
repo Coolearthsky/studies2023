@@ -15,20 +15,21 @@ import edu.wpi.first.math.numbers.N4;
 
 /**
  * this only works for 4d full state
- * TODO: remove the whole "dimensions" idea and all these arrays, use type-safe
- * wpi stuff
  */
 public class FullStateHolonomicArena implements Arena<N4> {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;
-    private static final int DIMENSIONS = 4;
 
     // init and goal are motionless
+
     private static final Matrix<N4, N1> _init = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 15.5, 0, 6.75, 0 });
     private static final Matrix<N4, N1> _goal = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1.93, 0, 2.748, 0 });
-    private static final Matrix<N4, N1> _min = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, -6, 0, -6 });
-    private static final Matrix<N4, N1> _max = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 16, 6, 8, 6 });
+    // private static final Matrix<N4, N1> _init = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 10, 0, 4, 0 });
+    // private static final Matrix<N4, N1> _goal = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 6, 0, 2, 0 });
+   
+    private static final Matrix<N4, N1> _min = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, -3, 0, -3 });
+    private static final Matrix<N4, N1> _max = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 16, 3, 8, 3 });
 
     // used for steering
     // private final double _gamma;
@@ -61,11 +62,6 @@ public class FullStateHolonomicArena implements Arena<N4> {
     }
 
     @Override
-    public int dimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
     public Matrix<N4, N1> getMin() {
         return _min.copy();
     }
@@ -77,13 +73,7 @@ public class FullStateHolonomicArena implements Arena<N4> {
 
     @Override
     public double dist(Matrix<N4, N1> start, Matrix<N4, N1> end) {
-        double dist = 0;
-        for (int i = 0; i < DIMENSIONS; i += 2) {
-            double dx = start.get(i, 0) - end.get(i, 0);
-            double dy = start.get(i + 1, 0) - end.get(i + 1, 0);
-            dist += dx * dx + dy * dy;
-        }
-        return Math.sqrt(dist);
+        return start.minus(end).normF();
     }
 
     @Override
@@ -99,19 +89,11 @@ public class FullStateHolonomicArena implements Arena<N4> {
     @Override
     public Matrix<N4, N1> steer(KDNearNode<Node<N4>> x_nearest, Matrix<N4, N1> x_rand) {
         double dist = radius / x_nearest._dist;
-
         // if it's close enough then just return it
         if (x_nearest._dist < radius)
             return x_rand;
-
         Matrix<N4, N1> nearConfig = x_nearest._nearest.getState();
-        Matrix<N4, N1> result = getMin();
-        result.fill(0);
-        for (int i = 0; i < DIMENSIONS; ++i) {
-            result.set(i, 0, nearConfig.get(i, 0) + (x_rand.get(i, 0) - nearConfig.get(i, 0)) * dist);
-        }
-        return result;
-
+        return nearConfig.plus(x_rand.minus(nearConfig).times(dist));
     }
 
     /**
@@ -120,6 +102,24 @@ public class FullStateHolonomicArena implements Arena<N4> {
      */
     @Override
     public boolean clear(Matrix<N4, N1> config) {
+        if (config.get(0, 0) - ROBOT_RADIUS < _min.get(0, 0))
+            return false;
+        if (config.get(2, 0) - ROBOT_RADIUS < _min.get(2, 0))
+            return false;
+        if (config.get(0, 0) + ROBOT_RADIUS > _max.get(0, 0))
+            return false;
+        if (config.get(2, 0) + ROBOT_RADIUS > _max.get(2, 0))
+            return false;
+            // poor-man's velocity limit.  TODO: add bang-cruise-bang solutions.
+        if (config.get(1, 0) < _min.get(1, 0))
+            return false;
+        if (config.get(3, 0) < _min.get(3, 0))
+            return false;
+        if (config.get(1, 0) > _max.get(1, 0))
+            return false;
+        if (config.get(3, 0) > _max.get(3, 0))
+            return false;
+
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
             if (obstacle.distToPoint(config.get(0, 0), config.get(2, 0)) < ROBOT_RADIUS)
@@ -130,28 +130,14 @@ public class FullStateHolonomicArena implements Arena<N4> {
 
     @Override
     public boolean link(Matrix<N4, N1> a, Matrix<N4, N1> b) {
-        double dist = 0;
-        for (int i = 0; i < DIMENSIONS; ++i) {
-            double dx = b.get(i, 0) - a.get(i, 0);
-            dist += dx * dx;
-        }
-
-        dist = Math.sqrt(dist);
-
+        double dist = b.minus(a).normF();
         int steps = (int) Math.floor(dist / DISCRETIZATION) + 2;
-
-        Matrix<N4, N1> p = getMin();
-        p.fill(0);
-
         for (int i = 0; i <= steps; ++i) {
-            for (int j = 0; j < DIMENSIONS; ++j) {
-                p.set(j, 0, (a.get(j, 0) * (steps - i) + b.get(j, 0) * i) / steps);
-            }
+            Matrix<N4, N1> p = a.times(steps - i).plus(b.times(i)).div(steps);
             if (!clear(p)) {
                 return false;
             }
         }
-
         return true;
     }
 

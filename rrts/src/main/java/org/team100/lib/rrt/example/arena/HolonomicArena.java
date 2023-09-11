@@ -18,7 +18,6 @@ public class HolonomicArena implements Arena<N2> {
     private static final double DISCRETIZATION = 0.25;
     private static final double ROBOT_RADIUS = .4;
     private static final double GOAL_RADIUS = 0.4;
-    private static final int DIMENSIONS = 2;
 
     private static final Matrix<N2, N1> _init = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 15.5, 6.75 });
     private static final Matrix<N2, N1> _goal = new Matrix<>(Nat.N2(), Nat.N1(), new double[] { 1.93, 2.748 });
@@ -56,11 +55,6 @@ public class HolonomicArena implements Arena<N2> {
     }
 
     @Override
-    public int dimensions() {
-        return DIMENSIONS;
-    }
-
-    @Override
     public Matrix<N2, N1> getMin() {
         return _min.copy();
     }
@@ -72,13 +66,7 @@ public class HolonomicArena implements Arena<N2> {
 
     @Override
     public double dist(Matrix<N2, N1> start, Matrix<N2, N1> end) {
-        double dist = 0;
-        for (int i = 0; i < DIMENSIONS; i += 2) {
-            double dx = start.get(i, 0) - end.get(i, 0);
-            double dy = start.get(i + 1, 0) - end.get(i + 1, 0);
-            dist += dx * dx + dy * dy;
-        }
-        return Math.sqrt(dist);
+        return start.minus(end).normF();
     }
 
     @Override
@@ -94,29 +82,19 @@ public class HolonomicArena implements Arena<N2> {
     @Override
     public Matrix<N2, N1> steer(KDNearNode<Node<N2>> x_nearest, Matrix<N2, N1> x_rand) {
         double dist = radius / x_nearest._dist;
-
         // if it's close enough then just return it
         if (x_nearest._dist < radius)
             return x_rand;
-
         Matrix<N2, N1> nearConfig = x_nearest._nearest.getState();
-        Matrix<N2, N1> result = getMin();
-        result.fill(0);
-        for (int i = 0; i < DIMENSIONS; ++i) {
-            result.set(i, 0, nearConfig.get(i, 0) + (x_rand.get(i, 0) - nearConfig.get(i, 0)) * dist);
-        }
-        return result;
-
+        return nearConfig.plus(x_rand.minus(nearConfig).times(dist));
     }
 
     @Override
     public boolean clear(Matrix<N2, N1> config) {
         // robot-obstacle collision
         for (Obstacle obstacle : _obstacles) {
-            for (int j = 0; j < DIMENSIONS; j += 2) {
-                if (obstacle.distToPoint(config.get(j, 0), config.get(j + 1, 0)) < ROBOT_RADIUS) {
-                    return false;
-                }
+            if (obstacle.distToPoint(config.get(0, 0), config.get(1, 0)) < ROBOT_RADIUS) {
+                return false;
             }
         }
         return true;
@@ -124,28 +102,14 @@ public class HolonomicArena implements Arena<N2> {
 
     @Override
     public boolean link(Matrix<N2, N1> a, Matrix<N2, N1> b) {
-        double dist = 0;
-        for (int i = 0; i < DIMENSIONS; ++i) {
-            double dx = b.get(i, 0) - a.get(i, 0);
-            dist += dx * dx;
-        }
-
-        dist = Math.sqrt(dist);
-
+        double dist = b.minus(a).normF();
         int steps = (int) Math.floor(dist / DISCRETIZATION) + 2;
-
-        Matrix<N2, N1> p = getMin();
-        p.fill(0);
-
         for (int i = 0; i <= steps; ++i) {
-            for (int j = 0; j < DIMENSIONS; ++j) {
-                p.set(j, 0, (a.get(j, 0) * (steps - i) + b.get(j, 0) * i) / steps);
-            }
+            Matrix<N2, N1> p = a.times(steps - i).plus(b.times(i)).div(steps);
             if (!clear(p)) {
                 return false;
             }
         }
-
         return true;
     }
 

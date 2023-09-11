@@ -1,6 +1,7 @@
 package org.team100.lib.rrt.example.arena;
 
 import java.awt.BasicStroke;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
@@ -10,18 +11,26 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.Iterator;
 
 import javax.swing.JComponent;
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
 import org.team100.lib.example.Arena;
 import org.team100.lib.geom.Obstacle;
+import org.team100.lib.graph.Graph;
 import org.team100.lib.graph.LinkInterface;
 import org.team100.lib.graph.Node;
 import org.team100.lib.planner.Runner;
+import org.team100.lib.planner.Solver;
+import org.team100.lib.rrt.RRTStar3;
+import org.team100.lib.rrt.RRTStar4;
 import org.team100.lib.space.Path;
+import org.team100.lib.space.Sample;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.numbers.N1;
@@ -41,6 +50,87 @@ public class ArenaView extends JComponent {
         _rrtStar = rrtStar;
         _robotModel = arena;
     }
+
+    public static void main(String[] args) throws InterruptedException, InvocationTargetException {
+        // int ct = 10;
+        int ct = 1;
+        double steps = 0;
+        double steps2 = 0;
+        double dist = 0;
+        double dist2 = 0;
+        for (int i = 0; i < ct; ++i) {
+
+            // experiment results:
+            //
+            // RRTStar and RRTStar2 are about the same speed;
+            // the second one actually produces better paths; there's something
+            // wrong with the first one.
+            //
+            // path distance caching is faster than recalculating the path
+            // distance every time, even though it requires walking the child
+            // tree on every update. updates are rare compared to queries, i guess?
+
+            final HolonomicArena arena = new HolonomicArena(6);
+            final Solver<N2> rrtstar = new RRTStar3<>(arena, new Sample<>(arena), 6);
+            final Runner<N2> runner = new Runner<>(rrtstar);
+            Graph.linkTypeCaching = true;
+
+            JFrame frame = new JFrame();
+            frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            frame.getContentPane().setLayout(new BorderLayout());
+            frame.getContentPane().add(new ArenaView(arena, runner));
+            SwingUtilities.invokeAndWait(new Runnable() {
+                @Override
+                public void run() {
+                    frame.setSize(1600, 800);
+                    frame.setVisible(true);
+                    frame.repaint();
+                }
+            });
+            
+            runner.runForDurationMS(20);
+            // runner.runSamples(500);
+
+            // final RRTStar2<HolonomicArena> rrtstar2 = new RRTStar2<>(arena, new
+            // Sample(arena), 6);
+            final RRTStar4<N2, HolonomicArena> rrtstar4 = new RRTStar4<>(arena, new Sample<>(arena), 6);
+            final Runner<N2> runner2 = new Runner<>(rrtstar4);
+            Graph.linkTypeCaching = true;
+            JFrame frame2 = new JFrame();
+            frame2.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+            frame2.getContentPane().setLayout(new BorderLayout());
+            frame2.getContentPane().add(new ArenaView(arena, runner2));
+            SwingUtilities.invokeAndWait(new Runnable() {
+                @Override
+                public void run() {
+                    frame2.setSize(1600, 800);
+                    frame2.setVisible(true);
+                    frame2.repaint();
+                }
+            });
+            
+            runner2.runForDurationMS(20);
+            // runner.runSamples(500);
+
+            System.out.printf("2 steps %d distance %5.2f\n",
+                    runner2.getStepNo(), runner2.getBestPath().getDistance());
+            System.out.printf("full distance %5.2f\n", rrtstar4.getFullBestPath().getDistance());
+            System.out.printf("1 steps %d distance %5.2f --- 2 steps %d distance %5.2f\n",
+                    runner.getStepNo(), runner.getBestPath().getDistance(),
+                    runner2.getStepNo(), runner2.getBestPath().getDistance());
+            steps += runner.getStepNo();
+            steps2 += runner2.getStepNo();
+            dist += runner.getBestPath().getDistance();
+            dist2 += runner2.getBestPath().getDistance();
+        }
+        System.out.println("means");
+        System.out.printf("1 steps %7.2f distance %5.2f --- 2 steps %7.2f distance %5.2f\n",
+                steps / ct, dist / ct, steps2 / ct, dist2 / ct);
+    }
+
+
+
+
 
     @Override
     protected void paintComponent(Graphics graphics) {

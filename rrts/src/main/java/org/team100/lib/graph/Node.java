@@ -1,5 +1,6 @@
 package org.team100.lib.graph;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -47,7 +48,8 @@ public class Node<States extends Num> implements Point<States> {
     }
 
     public Iterator<LinkInterface<States>> getOutgoing() {
-        return outgoing.iterator();
+        // copy to avoid concurrent modification exception
+        return new ArrayList<>(outgoing).iterator();
     }
 
     public int getOutgoingCount() {

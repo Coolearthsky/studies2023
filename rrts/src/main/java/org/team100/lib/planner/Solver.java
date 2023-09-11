@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.team100.lib.graph.Node;
 import org.team100.lib.space.Path;
+import org.team100.lib.space.SinglePath;
 
 import edu.wpi.first.math.Num;
 
@@ -24,4 +25,5 @@ public interface Solver<States extends Num> {
 
     /** The best path so far, or null if no path spans the start and end states. */
     Path<States> getBestPath();
+    SinglePath<States> getBestSinglePath();
 }
