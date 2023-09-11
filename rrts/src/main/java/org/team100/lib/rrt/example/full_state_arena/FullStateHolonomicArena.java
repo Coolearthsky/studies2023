@@ -24,8 +24,8 @@ public class FullStateHolonomicArena implements Arena<N4> {
     // init and goal are motionless
     private static final Matrix<N4, N1> _init = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 15.5, 0, 6.75, 0 });
     private static final Matrix<N4, N1> _goal = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1.93, 0, 2.748, 0 });
-    private static final Matrix<N4, N1> _min = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, -6, 0, -6 });
-    private static final Matrix<N4, N1> _max = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 16, 6, 8, 6 });
+    private static final Matrix<N4, N1> _min = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 0, -3, 0, -3 });
+    private static final Matrix<N4, N1> _max = new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 16, 3, 8, 3 });
 
     // used for steering
     // private final double _gamma;
@@ -105,6 +105,15 @@ public class FullStateHolonomicArena implements Arena<N4> {
         if (config.get(0, 0) + ROBOT_RADIUS > _max.get(0, 0))
             return false;
         if (config.get(2, 0) + ROBOT_RADIUS > _max.get(2, 0))
+            return false;
+            // poor-man's velocity limit.  TODO: add bang-cruise-bang solutions.
+        if (config.get(1, 0) < _min.get(1, 0))
+            return false;
+        if (config.get(3, 0) < _min.get(3, 0))
+            return false;
+        if (config.get(1, 0) > _max.get(1, 0))
+            return false;
+        if (config.get(3, 0) > _max.get(3, 0))
             return false;
 
         // robot-obstacle collision

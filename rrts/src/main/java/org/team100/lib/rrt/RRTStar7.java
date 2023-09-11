@@ -65,12 +65,13 @@ import edu.wpi.first.math.system.NumericalIntegration;
  * for rewiring and connecting, use a linear solver.
  */
 public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
-    private static final boolean DEBUG = false;
+    public static boolean DEBUG = false;
     private static final double MAX_U = 2.5;
     private static final double DT = 0.6;
     private static final int MAX_CHILDREN = 1;
     private static final double BUFFER = 0.3;
     /** for testing */
+    // TODO: i think the source/dest are reversed for time-reversed?
     private static final boolean BIDIRECTIONAL = false;
     /** probability of branching */
     private static final double BUSHINESS = 0.2;
@@ -124,11 +125,14 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return result;
     };
 
+    public boolean curves = true;
+
     /**
      * Note this isn't quite the same as https://arxiv.org/pdf/1703.08944.pdf
      * because it doesn't use Extend, so it doesn't try to connect unless
      * a new node is actually inserted.
      * 
+     * @param curves add lots of little segments
      * @return true if a new sample was added.
      */
     @Override
@@ -152,19 +156,31 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
         if (phi == null)
             return 0;
+        if (DEBUG)
+            System.out.println(phi);
 
         // now we have a clear trajectory from nearest to rand.
 
-        // make lots of little segments
         double tMax = Math.max(phi.x.s1.t + phi.x.s2.t, phi.y.s1.t + phi.y.s2.t);
-        double tStep = 0.1;
-        Node<N4> source = x_nearest._nearest;
-        for (double tSec = 0; tSec < tMax; tSec += tStep) {
-            Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
-            Node<N4> target = new Node<>(state);
-            LocalLink<N4> randLink = new LocalLink<>(source, target, tMax);
+
+        if (curves) {
+            // make lots of little segments
+            double tStep = 0.1;
+            Node<N4> source = x_nearest._nearest;
+            if (DEBUG) System.out.printf("phi %s\n", phi);
+            for (double tSec = tStep; tSec <= tMax; tSec += tStep) {
+                Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+                if (DEBUG) System.out.printf("stepstate %s\n", state);
+                Node<N4> target = new Node<>(state);
+                LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                InsertNode(randLink, _T_a);
+                source = target;
+            }
+        } else {
+            // just make one segment
+            Node<N4> target = new Node<>(x_rand);
+            LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
             InsertNode(randLink, _T_a);
-            source = target;
         }
 
         // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
@@ -234,8 +250,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // }
         // }
         // // }
-        // if (BIDIRECTIONAL)
-        // SwapTrees();
+        if (BIDIRECTIONAL)
+            SwapTrees();
         return edges;
     }
 
@@ -273,7 +289,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
     /** Sample the free state. */
     Matrix<N4, N1> SampleState() {
-        // if (random.nextDouble() >  0.9) return _model.goal();
+        // if (random.nextDouble() > 0.9) return _model.goal();
         while (true) {
             Matrix<N4, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
@@ -290,23 +306,23 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * using the tOptimal function. in time-reversed mode the initial and final
      * nodes are swapped.
      * 
-     * @param xInitial the initial state (x xdot y ydot)
+     * @param xNew     the goal state (x xdot y ydot)
      * @param rootNode the tree to look through
      */
-    KDNearNode<Node<N4>> BangBangNearest(Matrix<N4, N1> xInitial, KDNode<Node<N4>> rootNode, boolean timeForward) {
+    KDNearNode<Node<N4>> BangBangNearest(Matrix<N4, N1> xNew, KDNode<Node<N4>> rootNode, boolean timeForward) {
         // For now, use the Near function, which uses the "radius". Maybe
         // it would be better to choose top-N-near, or use a different radius,
         // or whatever.
-        ArrayList<NearNode<N4>> nodes = Near(xInitial, rootNode);
+        ArrayList<NearNode<N4>> nodes = Near(xNew, rootNode);
         double tMin = Double.MAX_VALUE;
         Node<N4> bestNode = null;
         for (NearNode<N4> node : nodes) {
             // rescore each node.
             double tOptimal;
             if (timeForward) {
-                tOptimal = tOptimal(xInitial, node.node.getState(), MAX_U);
+                tOptimal = tOptimal(node.node.getState(), xNew, MAX_U);
             } else {
-                tOptimal = tOptimal(node.node.getState(), xInitial, MAX_U);
+                tOptimal = tOptimal(xNew, node.node.getState(), MAX_U);
             }
             if (tOptimal < tMin) {
                 tMin = tOptimal;
@@ -329,8 +345,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      *
      * States are (x, xdot, y, ydot)
      * 
-     * @param x1   initial when time is forward
-     * @param x2   goal when time is forward
+     * @param x_i  initial state
+     * @param x_g  goal state
      * @param umax
      */
     static double tOptimal(
@@ -386,6 +402,10 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                 x_g.get(3, 0),
                 umax);
 
+        if (DEBUG)
+            System.out.printf("xs %5.3f xl %5.3f xm %5.3f ys %5.3f yl %5.3f ym %5.3f\n",
+                    xTSwitch, xTLimit, xTMirror, yTSwitch, yTLimit, yTMirror);
+
         List<Item> opts = new ArrayList<>();
         put(opts, xTSwitch, Solution.SWITCH);
         put(opts, yTSwitch, Solution.SWITCH);
@@ -409,6 +429,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                     break;
             }
             if (solved == 2) {
+                if (DEBUG)
+                    System.out.printf("returning t %5.3f\n", item.t);
                 return item.t;
             }
         }
@@ -481,8 +503,10 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * 
      * so we need a way to sample the trajectory.
      * 
-     * @param x_i initial state
-     * @param x_g goal state
+     * @param free        predicate indicating collision-free
+     * @param x_i         initial state
+     * @param x_g         goal state
+     * @param timeForward
      * @return a feasible trajectory from initial to goal, or null if none is
      *         feasible.
      */
@@ -553,6 +577,11 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             public static class Segment {
                 double u;
                 double t;
+
+                @Override
+                public String toString() {
+                    return "Segment [u=" + u + ", t=" + t + "]";
+                }
             }
 
             double i; // initial position
@@ -561,10 +590,22 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             double gdot; // goal velocity
             Segment s1 = new Segment();
             Segment s2 = new Segment();
+
+            @Override
+            public String toString() {
+                return "Axis [i=" + i + ", idot=" + idot + ", g=" + g + ", gdot=" + gdot + ",\n s1=" + s1 + ",\n s2="
+                        + s2
+                        + "]";
+            }
         }
 
         Axis x = new Axis();
         Axis y = new Axis();
+
+        @Override
+        public String toString() {
+            return "Trajectory [\nx=" + x + ",\n y=" + y + "]";
+        }
     }
 
     Matrix<N4, N1> sample(Trajectory traj, double t) {
@@ -815,6 +856,31 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // time from switching to final, note i think this is a mistake
         // in the paper.
         double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
+        if (DEBUG)
+            System.out.printf("I+G- qdotsw %5.3f t1 %5.3f t2 %5.3f\n", q_dot_switch, t_1, t_2);
+        if (t_1 < 0 || t_2 < 0)
+            return Double.NaN;
+        return t_1 + t_2;
+    }
+
+    /**
+     * Time to traverse x_i x_switch x_g.
+     * 
+     * This is for the I-G+ path.
+     * 
+     * for this path,
+     */
+    static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
+        double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
+        // time from initial to switching point
+        double t_1 = (q_dot_switch - idot) / (-1.0 * umax);
+        // time from switching to final, note i think this is a mistake
+        // in the paper.
+        double t_2 = (gdot - q_dot_switch) / umax;
+        if (DEBUG)
+            System.out.printf("I-G+ qdotsw %5.3f t1 %5.3f t2 %5.3f\n", q_dot_switch, t_1, t_2);
+        if (t_1 < 0 || t_2 < 0)
+            return Double.NaN;
         return t_1 + t_2;
     }
 
@@ -856,6 +922,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * This is for the I-G+ path.
      * 
      * For this path qDotSwitch is always negative, otherwise it's an x_switch path.
+     * 
+     * Note the intersection here may imply negative-time traversal of one of the
+     * segments.
      */
     static double qDotSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
         return -1.0 * Math.sqrt(
@@ -886,23 +955,6 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                 2 * umax * (qSwitchIminusGplus(i, idot, g, gdot, umax) - c_plus(g, gdot, umax)));
     }
 
-    /**
-     * Time to traverse x_i x_switch x_g.
-     * 
-     * This is for the I-G+ path.
-     * 
-     * for this path,
-     */
-    static double tSwitchIminusGplus(double i, double idot, double g, double gdot, double umax) {
-        double q_dot_switch = qDotSwitchIminusGplus(i, idot, g, gdot, umax);
-        // time from initial to switching point
-        double t_1 = (q_dot_switch - idot) / (-1.0 * umax);
-        // time from switching to final, note i think this is a mistake
-        // in the paper.
-        double t_2 = (gdot - q_dot_switch) / umax;
-        return t_1 + t_2;
-    }
-
     /** Intercept of negative-U path intersecting the state */
     static double c_minus(double x, double xdot, double umax) {
         return x - Math.pow(xdot, 2) / (-2.0 * umax);
@@ -927,10 +979,18 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // the slow path involves the smaller of the two qDot values
         if (Math.abs(qDotLimitIplusGminus) > Math.abs(qDotLimitIminusGplus)) {
             double qDotLimit = qDotLimitIminusGplus;
-            return (qDotLimit - idot) / (-1.0 * umax) + (gdot - qDotLimit) / umax;
+            double t_1 = (qDotLimit - idot) / (-1.0 * umax);
+            double t_2 = (gdot - qDotLimit) / umax;
+            if (t_1 < 0 || t_2 < 0)
+                return Double.NaN;
+            return t_1 + t_2;
         }
         double qDotLimit = qDotLimitIplusGminus;
-        return (qDotLimit - idot) / umax + (gdot - qDotLimit) / (-1.0 * umax);
+        double t_1 = (qDotLimit - idot) / umax;
+        double t_2 = (gdot - qDotLimit) / (-1.0 * umax);
+        if (t_1 < 0 || t_2 < 0)
+            return Double.NaN;
+        return t_1 + t_2;
     }
 
     /**
@@ -949,11 +1009,18 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // use the slow one
         if (Math.abs(qDotLimitIplusGminus) > Math.abs(qDotLimitIminusGplus)) {
             double qDotLimit = qDotLimitIminusGplus;
-            return tLimit + 2.0 * qDotLimit / umax - 2.0 * qDotLimit / (-1.0 * umax);
+            double t_1 = 2.0 * qDotLimit / umax;
+            double t_2 = -2.0 * qDotLimit / (-1.0 * umax);
+            if (t_1 < 0 || t_2 < 0)
+                return Double.NaN;
+            return tLimit + t_1 + t_2;
         }
         double qDotLimit = qDotLimitIplusGminus;
-        return tLimit + 2.0 * qDotLimit / (-1.0 * umax) - 2.0 * qDotLimit / umax;
-
+        double t_1 = 2.0 * qDotLimit / (-1.0 * umax);
+        double t_2 = -2.0 * qDotLimit / umax;
+        if (t_1 < 0 || t_2 < 0)
+            return Double.NaN;
+        return tLimit + t_1 + t_2;
     }
 
     /**
@@ -977,6 +1044,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * so the paper says solve the quadratic
      * T^2a^2 + sigma(2T(idot+gdot) + 4(i-g))a - (gdot-idot)^2 = 0.
      * 
+     * Note that the ParabolicRamp code works differently from this
+     * TODO: try that method
+     * 
      * returns a two-part trajectory for one axis
      */
     static Trajectory.Axis slowU(double i, double idot, double g, double gdot, double tw) {
@@ -986,7 +1056,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         if (DEBUG)
             System.out.printf("a %f b %f c %f\n", a, b, c);
 
+        // I+G-
         List<Double> plus = quadratic(a, b, c);
+        // I-G+
         List<Double> minus = quadratic(a, -b, c);
         if (DEBUG)
             System.out.printf("plus %s minus %s\n", plus, minus);
@@ -1035,7 +1107,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                 result.idot = idot;
                 result.g = g;
                 result.gdot = gdot;
-                result.s1.u = aMin;
+                result.s1.u = aMin; // I+G-
                 result.s1.t = ts;
                 result.s2.u = -aMin;
                 result.s2.t = tw - ts;
@@ -1052,7 +1124,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             if (Math.abs(m) < 1e-6) {
                 ts = tw;
             } else {
-                ts = 0.5 * (tw + (gdot - idot) / m);
+                // ts = 0.5 * (tw + (gdot - idot) / m);
+                // is this right?  switching i and g for minus?
+                ts = 0.5 * (tw + (idot - gdot) / m);
             }
             if (DEBUG)
                 System.out.printf("m %f ts %f\n", m, ts);
@@ -1079,7 +1153,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                 result.idot = idot;
                 result.g = g;
                 result.gdot = gdot;
-                result.s1.u = -aMin;
+                result.s1.u = -aMin; // I-G+
                 result.s1.t = ts;
                 result.s2.u = aMin;
                 result.s2.t = tw - ts;

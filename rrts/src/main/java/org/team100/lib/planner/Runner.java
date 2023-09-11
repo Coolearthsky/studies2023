@@ -73,6 +73,12 @@ public class Runner<States extends Num> {
                 if (_stepNo > sampleLimit) {
                     return;
                 }
+                // try {
+                //     Thread.sleep(2000);
+                // } catch (InterruptedException e) {
+                //     // TODO Auto-generated catch block
+                //     e.printStackTrace();
+                // }
             }
 
             if (timeLimitNS > 0) {

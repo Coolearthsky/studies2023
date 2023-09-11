@@ -18,11 +18,15 @@ public class Sample<States extends Num> {
     private final Matrix<States, N1> _sampleMax;
     private final Random _random;
 
-    public Sample(KDModel<States> kdModel) {
+    public Sample(KDModel<States> kdModel, int seed) {
         _kdModel = kdModel;
-        _random = new MersenneTwister(0);
+        _random = new MersenneTwister(seed);
         _sampleMin = _kdModel.getMin();
         _sampleMax = _kdModel.getMax();
+    }
+
+    public Sample(KDModel<States> kdModel) {
+        this(kdModel, 0);
     }
 
     public Matrix<States, N1> get() {

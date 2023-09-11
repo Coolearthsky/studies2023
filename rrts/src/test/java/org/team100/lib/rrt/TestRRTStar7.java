@@ -96,9 +96,9 @@ public class TestRRTStar7 {
         assertEquals(0.5, slowU.g, 0.001);
         assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.995, slowU.s1.u, 0.001);
-        assertEquals(1.052, slowU.s1.t, 0.001);
+        assertEquals(0.047, slowU.s1.t, 0.001);
         assertEquals(0.995, slowU.s2.u, 0.001);
-        assertEquals(0.047, slowU.s2.t, 0.001);
+        assertEquals(1.052, slowU.s2.t, 0.001);
 
         System.out.println("much slower I-G+");
         slowU = RRTStar7.slowU(0, 0, 0.5, 1.0, 2);
@@ -107,9 +107,9 @@ public class TestRRTStar7 {
         assertEquals(0.5, slowU.g, 0.001);
         assertEquals(1, slowU.gdot, 0.001);
         assertEquals(-0.809, slowU.s1.u, 0.001);
-        assertEquals(1.618, slowU.s1.t, 0.001);
+        assertEquals(0.381, slowU.s1.t, 0.001);
         assertEquals(0.809, slowU.s2.u, 0.001);
-        assertEquals(0.381, slowU.s2.t, 0.001);
+        assertEquals(1.618, slowU.s2.t, 0.001);
 
         System.out.println("reflect the above case, I+G-");
         slowU = RRTStar7.slowU(0, 0, -0.5, -1.0, 2);
@@ -310,6 +310,20 @@ public class TestRRTStar7 {
     }
 
     @Test
+    void testSlowU2() {
+        // chasing a case.
+        Axis slowU = RRTStar7.slowU(15.5, 0, 15.548, -1.633, 1.6);
+        assertEquals(15.5, slowU.i, 0.001);
+        assertEquals(0, slowU.idot, 0.001);
+        assertEquals(15.548, slowU.g, 0.001);
+        assertEquals(-1.633, slowU.gdot, 0.001);
+        assertEquals(2.528, slowU.s1.u, 0.001);
+        assertEquals(0.477, slowU.s1.t, 0.001);
+        assertEquals(-2.528, slowU.s2.u, 0.001);
+        assertEquals(1.122, slowU.s2.t, 0.001);
+    }
+
+    @Test
     void testTSwitch() {
 
         assertEquals(0.724, RRTStar7.tSwitch(0, 0, 0.5, 1.0, 2), 0.001);
@@ -344,13 +358,13 @@ public class TestRRTStar7 {
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
 
         // chasing a case i missed
-        // somehow it thinks that the I+G- path in reverse is viable.  how does it choose it?
-        assertEquals(-0.379, RRTStar7.tSwitchIplusGminus(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        // somehow it thinks that the I+G- path in reverse is viable. how does it choose
+        // it?
+        assertEquals(Double.NaN, RRTStar7.tSwitchIplusGminus(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
         // this is what it *should* choose
         assertEquals(2.547, RRTStar7.tSwitchIminusGplus(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
         // ok fixed
         assertEquals(2.547, RRTStar7.tSwitch(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
-        
 
     }
 
@@ -443,16 +457,16 @@ public class TestRRTStar7 {
 
         // the opposite order, 2 to -2, this is a completely invalid result,
         // traversing Iplus backwards, and then Gminus backwards.
-        assertEquals(-4.000, RRTStar7.tSwitchIplusGminus(2, 2, -2, 2, 1), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tSwitchIplusGminus(2, 2, -2, 2, 1), 0.001);
         // from 2 to -2 is the 'long way around' across the x-axis and back.
         assertEquals(9.656, RRTStar7.tSwitchIminusGplus(2, 2, -2, 2, 1), 0.001);
 
         // diagonal, the 'fast' and normal way
         assertEquals(5.656, RRTStar7.tSwitchIplusGminus(-2, 2, 2, -2, 1), 0.001);
         // this is completely invalid
-        assertEquals(0, RRTStar7.tSwitchIminusGplus(-2, 2, 2, -2, 1), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus(-2, 2, 2, -2, 1), 0.001);
         // this is invalid, it should yield like NaN or something
-        assertEquals(0, RRTStar7.tSwitchIplusGminus(2, -2, -2, 2, 1), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tSwitchIplusGminus(2, -2, -2, 2, 1), 0.001);
         // from 2 to -2 is the 'long way around' across the x-axis and back.
         assertEquals(5.656, RRTStar7.tSwitchIminusGplus(2, -2, -2, 2, 1), 0.001);
 
@@ -510,7 +524,7 @@ public class TestRRTStar7 {
                 new Matrix<>(Nat.N4(), Nat.N1(), new double[] { 1, 1, 0, 0 }), T_a,
                 true);
         // (-1,1) to (0,0)
-        assertEquals(2.759, near._dist, 0.001);
+        assertEquals(1.159, near._dist, 0.001);
         assertArrayEquals(new double[] { -1, 1, 0, 0 }, near._nearest.getState().getData(), 0.001);
     }
 
@@ -676,6 +690,28 @@ public class TestRRTStar7 {
     }
 
     @Test
+    void testOptimalTrajectory2() {
+        // chasing a case
+        Trajectory t = RRTStar7.optimalTrajectory(s(15.5, 0, 6.75, 0), s(15.548, -1.633, 6.303, 0.663), 2.5);
+        assertEquals(15.5, t.x.i, 0.001);
+        assertEquals(0, t.x.idot, 0.001);
+        assertEquals(15.548, t.x.g, 0.001);
+        assertEquals(-1.633, t.x.gdot, 0.001);
+        assertEquals(2.5, t.x.s1.u, 0.001);
+        assertEquals(0.482, t.x.s1.t, 0.001);
+        assertEquals(-2.5, t.x.s2.u, 0.001);
+        assertEquals(1.135, t.x.s2.t, 0.001);
+        assertEquals(6.75, t.y.i, 0.001);
+        assertEquals(0, t.y.idot, 0.001);
+        assertEquals(6.303, t.y.g, 0.001);
+        assertEquals(0.663, t.y.gdot, 0.001);
+        assertEquals(-1.607, t.y.s1.u, 0.001);
+        assertEquals(0.602, t.y.s1.t, 0.001);
+        assertEquals(1.607, t.y.s2.u, 0.001);
+        assertEquals(1.015, t.y.s2.t, 0.001);
+    }
+
+    @Test
     void testTOptimal() {
         // no movement = no time
 
@@ -708,8 +744,134 @@ public class TestRRTStar7 {
     }
 
     @Test
-    void testSampleTrajectory() {
+    void testTOptimal2() {
+        assertEquals(1.617, RRTStar7.tOptimal(s(15.5, 0, 6.75, 0), s(15.548, -1.633, 6.303, 0.663), 2.5), 0.001);
 
+        RRTStar7.DEBUG = true;
+        Axis a = RRTStar7.slowU(13.491, -0.413, 13.857, 1.799, 1.297);
+        System.out.println(a);
+        Trajectory trajectory = RRTStar7.optimalTrajectory(s(13.491, -0.413, 7.168, 0.079),
+                s(13.857, 1.799, 6.908, -1.644), 2.5);
+        System.out.println(trajectory);
+
+        assertEquals(1.297, RRTStar7.tOptimal(s(13.491, -0.413, 7.168, 0.079), s(13.857, 1.799, 6.908, -1.644), 2.5),
+                0.001);
+
+    }
+
+    // these four cases are four inversions of the same simple case.
+
+    @Test
+    void testSlowU3() {
+        /*
+         * a 4.326400 b 4.160000 c -9.000000
+         * plus [1.0395565673886438, -2.0010950289271054] minus [2.0010950289271054,
+         * -1.0395565673886438]
+         * p 1.039557 ts 2.482923
+         * reject ts > tw
+         * p -2.001095 ts 0.290410
+         * reject p < 0
+         * m 2.001095 ts 1.789590
+         * accept m 2.001095
+         * m -1.039557 ts -0.402923
+         * reject m < 0
+         */
+        RRTStar7.DEBUG = true;
+        Axis a = RRTStar7.slowU(0, -1, 0, 2, 2.08);
+        assertEquals(-2.001, a.s1.u, 0.001);
+        assertEquals(0.29, a.s1.t, 0.001);
+        assertEquals(2.001, a.s2.u, 0.001);
+        assertEquals(1.79, a.s2.t, 0.001);
+    }
+
+    @Test
+    void testSlowU4() {
+        /*
+         * a 4.326400 b 4.160000 c -9.000000
+         * plus [1.0395565673886438, -2.0010950289271054] minus [2.0010950289271054,
+         * -1.0395565673886438]
+         * p 1.039557 ts -0.402923
+         * reject ts < 0
+         * p -2.001095 ts 1.789590
+         * reject p < 0
+         * m 2.001095 ts 0.290410
+         * accept m 2.001095
+         * m -1.039557 ts 2.482923
+         * reject m < 0
+         */
+        RRTStar7.DEBUG = true;
+        Axis a = RRTStar7.slowU(0, 2, 0, -1, 2.08);
+        assertEquals(-2.001, a.s1.u, 0.001);
+        assertEquals(1.79, a.s1.t, 0.001);
+        assertEquals(2.001, a.s2.u, 0.001);
+        assertEquals(0.29, a.s2.t, 0.001);
+    }
+
+    @Test
+    void testSlowU5() {
+        /*
+         * a 4.326400 b -4.160000 c -9.000000
+         * plus [2.0010950289271054, -1.0395565673886438] minus [1.0395565673886438,
+         * -2.0010950289271054]
+         * p 2.001095 ts 0.290410
+         * accept p 2.001095
+         * p -1.039557 ts 2.482923
+         * reject p < 0
+         * m 1.039557 ts -0.402923
+         * reject ts < 0
+         * m -2.001095 ts 1.789590
+         * reject m < 0
+         */
+        RRTStar7.DEBUG = true;
+        Axis a = RRTStar7.slowU(0, 1, 0, -2, 2.08);
+        assertEquals(2.001, a.s1.u, 0.001);
+        assertEquals(0.29, a.s1.t, 0.001);
+        assertEquals(-2.001, a.s2.u, 0.001);
+        assertEquals(1.79, a.s2.t, 0.001);
+    }
+
+    @Test
+    void testSlowU6() {
+        /*
+         * a 4.326400 b -4.160000 c -9.000000
+         * plus [2.0010950289271054, -1.0395565673886438] minus [1.0395565673886438,
+         * -2.0010950289271054]
+         * p 2.001095 ts 1.789590
+         * accept p 2.001095
+         * p -1.039557 ts -0.402923
+         * reject p < 0
+         * m 1.039557 ts 2.482923
+         * reject ts > tw
+         * m -2.001095 ts 0.290410
+         * reject m < 0
+         */
+        RRTStar7.DEBUG = true;
+        Axis a = RRTStar7.slowU(0, -2, 0, 1, 2.08);
+        assertEquals(2.001, a.s1.u, 0.001);
+        assertEquals(1.79, a.s1.t, 0.001);
+        assertEquals(-2.001, a.s2.u, 0.001);
+        assertEquals(0.29, a.s2.t, 0.001);
+    }
+
+    @Test
+    void testTSwitch2() {
+        // about 0.5s to switching, 0.5s back to axis, 0.6s or so to goal.
+        assertEquals(1.617, RRTStar7.tSwitch(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+        assertEquals(1.617, RRTStar7.tSwitchIplusGminus(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+        assertEquals(1.205, RRTStar7.qDotSwitchIplusGminus(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+        // this path is impossible.
+        assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+        assertEquals(-1.101, RRTStar7.qDotSwitchIminusGplus(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+    }
+
+    @Test
+    void testTLimit2() {
+        assertEquals(Double.NaN, RRTStar7.tLimit(15.5, 0, 15.548, -1.633, 2.5), 0.001);
+    }
+
+    @Test
+    void testTMirror2() {
+        assertEquals(Double.NaN, RRTStar7.tMirror(15.5, 0, 15.548, -1.633, 2.5), 0.001);
     }
 
     @Test
@@ -861,7 +1023,6 @@ public class TestRRTStar7 {
         assertNull(phi);
     }
 
-
     @Test
     void testTLimit() {
         // tLimit does not exist when there is no intersection.
@@ -910,7 +1071,7 @@ public class TestRRTStar7 {
         assertEquals(Double.NaN, RRTStar7.tLimit(0, 0, 1, 0, 2.5), 0.001);
 
         // ??
-        assertEquals(-1.365, RRTStar7.tLimit(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tLimit(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
     }
 
     @Test
@@ -933,7 +1094,7 @@ public class TestRRTStar7 {
         // (0,0) -> (1,0)
         assertEquals(Double.NaN, RRTStar7.tMirror(0, 0, 1, 0, 2.5), 0.001);
 
-        assertEquals(-0.379, RRTStar7.tMirror(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tMirror(7.55, 2.1818, 6.75, 0, 2.5), 0.001);
 
     }
 
