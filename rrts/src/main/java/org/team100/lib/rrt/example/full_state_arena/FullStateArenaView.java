@@ -72,6 +72,7 @@ public class FullStateArenaView extends JComponent {
         // T_b);
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
         solver.setRadius(3); // hoo boy
+        solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 
@@ -91,6 +92,7 @@ public class FullStateArenaView extends JComponent {
         });
 
         // runner.runForDurationMS(100000);
+       // RRTStar7.DEBUG = true;
         runner.runSamples(1000);
         // System.out.println("before");
         //printTree(T_a.getValue(), 0);
@@ -102,6 +104,7 @@ public class FullStateArenaView extends JComponent {
         // }
         // System.out.println("after");
         //printTree(T_a.getValue(), 0);
+        //printTree(T_b.getValue(), 0);
 
         Path<N4> bestPath = runner.getBestPath();
         if (bestPath == null) {
@@ -203,8 +206,9 @@ public class FullStateArenaView extends JComponent {
             for (int ii = 0; ii < depth; ++ii) {
                 System.out.printf(" ");
             }    
-            System.out.printf("%d(%5.2f, %5.2f)->(%5.2f, %5.2f)\n",depth,
-                    x_i.get(0, 0), x_i.get(2, 0), x_g.get(0, 0), x_g.get(2, 0));
+            System.out.printf("%d(%5.2f, %5.2f, %5.2f, %5.2f)->(%5.2f, %5.2f, %5.2f, %5.2f)\n",depth,
+                    x_i.get(0, 0),x_i.get(1, 0), x_i.get(2, 0), x_i.get(3, 0),
+                    x_g.get(0, 0), x_g.get(1, 0), x_g.get(2, 0), x_g.get(3, 0));
             printTree(out.get_target(), depth + 1);
         }
     }

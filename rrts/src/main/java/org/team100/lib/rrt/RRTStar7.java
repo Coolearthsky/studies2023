@@ -71,8 +71,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     private static final int MAX_CHILDREN = 1;
     private static final double BUFFER = 0.3;
     /** for testing */
-    // TODO: i think the source/dest are reversed for time-reversed?
-    private static final boolean BIDIRECTIONAL = false;
+    private static final boolean BIDIRECTIONAL = true;
     /** probability of branching */
     private static final double BUSHINESS = 0.2;
 
@@ -167,20 +166,44 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             // make lots of little segments
             double tStep = 0.1;
             Node<N4> source = x_nearest._nearest;
-            if (DEBUG) System.out.printf("phi %s\n", phi);
-            for (double tSec = tStep; tSec <= tMax; tSec += tStep) {
-                Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
-                if (DEBUG) System.out.printf("stepstate %s\n", state);
-                Node<N4> target = new Node<>(state);
-                LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
-                InsertNode(randLink, _T_a);
-                source = target;
+            if (DEBUG)
+                System.out.printf("phi %s\n", phi);
+            // when time is reversed, the outgoing links go to earlier
+            // states.
+            if (timeForward) {
+                for (double tSec = tStep; tSec <= tMax; tSec += tStep) {
+                    Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+                    if (DEBUG)
+                        System.out.printf("stepstate %s\n", state);
+                    Node<N4> target = new Node<>(state);
+                    LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                    InsertNode(randLink, _T_a);
+                    source = target;
+                }
+            } else {
+                // time is reversed
+                for (double tSec = tMax; tSec >= 0; tSec -= tStep) {
+                    Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+                    if (DEBUG)
+                        System.out.printf("stepstate %s\n", state);
+                    Node<N4> target = new Node<>(state);
+                    LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                    InsertNode(randLink, _T_a);
+                    source = target;
+                }
             }
         } else {
             // just make one segment
-            Node<N4> target = new Node<>(x_rand);
-            LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
-            InsertNode(randLink, _T_a);
+            if (timeForward) {
+                Node<N4> target = new Node<>(x_rand);
+                LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
+                InsertNode(randLink, _T_a);
+            } else {
+                // time is reversed, is this any different in this case?
+                Node<N4> target = new Node<>(x_rand);
+                LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
+                InsertNode(randLink, _T_a);
+            }
         }
 
         // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
@@ -1125,7 +1148,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                 ts = tw;
             } else {
                 // ts = 0.5 * (tw + (gdot - idot) / m);
-                // is this right?  switching i and g for minus?
+                // is this right? switching i and g for minus?
                 ts = 0.5 * (tw + (idot - gdot) / m);
             }
             if (DEBUG)
