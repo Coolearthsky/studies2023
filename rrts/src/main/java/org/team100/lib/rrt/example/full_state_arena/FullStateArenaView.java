@@ -97,7 +97,7 @@ public class FullStateArenaView extends JComponent {
 
         // RRTStar7.DEBUG = true;
         runner.runForDurationMS(60);
-        // runner.runSamples(1000);
+        //runner.runSamples(1000);
         // System.out.println("before");
         // printTree(T_a.getValue(), 0);
 
@@ -117,8 +117,12 @@ public class FullStateArenaView extends JComponent {
         } else {
             System.out.println("found path");
 
+            pause(1000);
             // so now we should try to optimize it for awhile
-            solver.Optimize(bestSinglePath);
+            for (int i = 0; i < 10000; ++i) {
+                if (i % 100 == 0) pause(500);
+                solver.Optimize();
+            }
 
             // System.out.println(bestPath);
         }
@@ -128,6 +132,15 @@ public class FullStateArenaView extends JComponent {
         frame.repaint();
         view.repaint();
 
+    }
+
+    static void pause(int ms) {
+        // try {
+        //     Thread.sleep(ms);
+        // } catch (InterruptedException e) {
+        //     // TODO Auto-generated catch block
+        //     e.printStackTrace();
+        // }
     }
 
     @Override
@@ -355,7 +368,8 @@ public class FullStateArenaView extends JComponent {
                 // while (pathIter.hasNext()) {
                 while (linkIter.hasNext()) {
                     // TODO: make this reflect cost
-                    // g.setColor(new Color(1, (float) statei / statect, (float) (1.0 - (float) statei / statect)));
+                    // g.setColor(new Color(1, (float) statei / statect, (float) (1.0 - (float)
+                    // statei / statect)));
                     g.setColor(new Color(1, (float) statei / linkct, (float) (1.0 - (float) statei / linkct)));
                     // Matrix<N4, N1> curr = pathIter.next();
                     SinglePath.Link<N4> link = linkIter.next();
@@ -376,7 +390,8 @@ public class FullStateArenaView extends JComponent {
                     // while (pathIter.hasNext()) {
                     // Matrix<N4, N1> curr = pathIter.next();
                     SinglePath.Link<N4> link = linkIter.next();
-                    // g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
+                    // g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2
+                    // * r));
                     g.fill(new Ellipse2D.Double(link.x_i.get(0, 0) - r, link.x_i.get(2, 0) - r, 2 * r, 2 * r));
                 }
             }

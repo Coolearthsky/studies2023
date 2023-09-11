@@ -426,19 +426,66 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         _T_b = tmp;
     }
 
-    /**  */
-    public void Optimize(SinglePath<N4> singlePath) {
+    public void Optimize() {
+        SinglePath<N4> singlePath = _single_sigma_best;
 
-        List<Matrix<N4, N1>> states = singlePath.getStates();
+        // List<Matrix<N4, N1>> states = singlePath.getStates();
+        List<SinglePath.Link<N4>> links = singlePath.getLinks();
 
-        int nodect = states.size();
+        int nodect = links.size();
         int node1 = random.nextInt(nodect);
         int node2 = random.nextInt(nodect);
-        Matrix<N4, N1> state1 = states.get(node1);
-        Matrix<N4, N1> state2 = states.get(node2);
-        double tOptimal = tOptimal(state1, state2, MAX_U);
+        // note that node1 and node2 could be the same
+        if (node1 > node2) {
+            int tmp = node1;
+            node1 = node2;
+            node2 = tmp;
+        }
+        // now node1 is first
+        // actually we want the sub-list
+        List<SinglePath.Link<N4>> sublist = links.subList(node1, node2 + 1);
+        // these could be the same, just replace a single link.
+        Matrix<N4, N1> state1 = sublist.get(0).x_i;
+        Matrix<N4, N1> state2 = sublist.get(sublist.size() - 1).x_g;
+        double cost = 0;
+        for (SinglePath.Link<N4> link : sublist) {
+            cost += link.cost;
+        }
 
-        // here's where i need the path to have the costs in it.
+        // try to get there
+
+        Trajectory phiA = BangBangSteer(_model::clear, state1, state2, true);
+        if (phiA == null)
+            return;
+
+        double tMaxA = Math.max(phiA.x.s1.t + phiA.x.s2.t, phiA.y.s1.t + phiA.y.s2.t);
+
+        // double tOptimal = tOptimal(state1, state2, MAX_U);
+        if (tMaxA >= cost)
+            return;
+
+        // we can do better
+        List<SinglePath.Link<N4>> replacement = new ArrayList<>();
+
+        double tStep = 0.1;
+
+        double tSoFar = 0;
+        for (double tSec = tStep; tSec <= tMaxA; tSec += tStep) {
+            tSoFar = tSec;
+            Matrix<N4, N1> state = SampleTrajectory(phiA, tSec);
+            SinglePath.Link<N4> randLink = new SinglePath.Link<>(state1, state, tStep);
+            replacement.add(randLink);
+            state1 = state;
+        }
+        if (tSoFar < tMaxA) {
+            // add one more segment to actually reach xrand
+            SinglePath.Link<N4> randLink = new SinglePath.Link<>(state1, state2, tStep);
+            replacement.add(randLink);
+        }
+
+        sublist.clear();
+        links.addAll(node1, replacement);
+        _single_sigma_best = new SinglePath<>(links);
 
     }
 
@@ -503,16 +550,16 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
         // new: reverse the other one since the walker doesn't do it.
 
-        List<Matrix<N4, N1>> states_1 = p_1.getStates();
-        Collections.reverse(states_1);
+        // List<Matrix<N4, N1>> states_1 = p_1.getStates();
+        // Collections.reverse(states_1);
 
-        List<Matrix<N4, N1>> states_2 = p_2.getStates();
+        // List<Matrix<N4, N1>> states_2 = p_2.getStates();
         // don't include the same point twice
-        states_2.remove(0);
+        // states_2.remove(0);
 
-        List<Matrix<N4, N1>> result = new ArrayList<>();
-        result.addAll(states_1);
-        result.addAll(states_2);
+        // List<Matrix<N4, N1>> result = new ArrayList<>();
+        // result.addAll(states_1);
+        // result.addAll(states_2);
 
         // this list is from leaf to root, so backwards. reverse it.
         List<SinglePath.Link<N4>> links1 = p_1.getLinks();
@@ -527,7 +574,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         resultLinks.addAll(revLinks1);
         resultLinks.addAll(links2);
 
-        return new SinglePath<>(result, resultLinks);
+        return new SinglePath<>(/* result, */ resultLinks);
     }
 
     boolean CollisionFree(Matrix<N4, N1> from, Matrix<N4, N1> to) {
@@ -768,6 +815,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         } else {
             trajectory = optimalTrajectory(x_g, x_i, MAX_U);
         }
+        if (trajectory == null) return null;
         double tMax = Math.max(trajectory.x.s1.t + trajectory.x.s2.t, trajectory.y.s1.t + trajectory.y.s2.t);
         double tStep = 0.1;
         for (double tSec = 0; tSec < tMax; tSec += tStep) {
@@ -1071,8 +1119,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         if (Double.isNaN(tIplusGminus) || tIplusGminus > 1e100 || tIplusGminus < 0) {
             // there should be at least one solution
             if (Double.isNaN(tIminusGplus) || tIminusGplus > 1e100 || tIminusGplus < 0) {
-                throw new IllegalArgumentException(String.format("A %f %f %f %f %f %f",
-                        tIplusGminus, tIminusGplus, i, idot, g, gdot));
+                throw new IllegalArgumentException(String.format("A %f %f %f %f %f %f %f",
+                        tIplusGminus, tIminusGplus, i, idot, g, gdot, umax));
             }
             return tIminusGplus;
 
@@ -1105,7 +1153,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         double t_2 = (gdot - q_dot_switch) / (-1.0 * umax);
         if (DEBUG)
             System.out.printf("I+G- qdotsw %5.3f t1 %5.3f t2 %5.3f\n", q_dot_switch, t_1, t_2);
-        if (t_1 < 0 || t_2 < 0)
+        // these weird comparisons are because sometimes there is "negative zero"
+        if (t_1 < -0.001 || t_2 < -0.001)
             return Double.NaN;
         return t_1 + t_2;
     }
@@ -1126,7 +1175,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         double t_2 = (gdot - q_dot_switch) / umax;
         if (DEBUG)
             System.out.printf("I-G+ qdotsw %5.3f t1 %5.3f t2 %5.3f\n", q_dot_switch, t_1, t_2);
-        if (t_1 < 0 || t_2 < 0)
+        if (t_1 < -0.001 || t_2 < -0.001)
             return Double.NaN;
         return t_1 + t_2;
     }
@@ -1275,12 +1324,15 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * completing both axes at the same time.
      * 
      * for time reversal, the caller should swap the arguments.
+     * 
+     * returns null if failure.
      */
     static Trajectory optimalTrajectory(Matrix<N4, N1> x_i, Matrix<N4, N1> x_g, double umax) {
         double tOptimal = tOptimal(x_i, x_g, umax);
         Trajectory result = new Trajectory();
         result.x = slowU(x_i.get(0, 0), x_i.get(1, 0), x_g.get(0, 0), x_g.get(1, 0), tOptimal);
         result.y = slowU(x_i.get(2, 0), x_i.get(3, 0), x_g.get(2, 0), x_g.get(3, 0), tOptimal);
+        if (result.x == null || result.y == null) return null;
         return result;
     }
 
@@ -1294,7 +1346,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * Note that the ParabolicRamp code works differently from this
      * TODO: try that method
      * 
-     * returns a two-part trajectory for one axis
+     * returns a two-part trajectory for one axis, or null if it fails.
      */
     static Trajectory.Axis slowU(double i, double idot, double g, double gdot, double tw) {
         double a = tw * tw;
@@ -1605,7 +1657,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      */
     SinglePath<N4> walkParentsSingle(Set<Node<N4>> visited, Node<N4> node) {
         // Collect the states along the path (backwards)
-        List<Matrix<N4, N1>> configs = new LinkedList<>();
+        // List<Matrix<N4, N1>> configs = new LinkedList<>();
         List<SinglePath.Link<N4>> links = new LinkedList<>();
 
         // Since we're visiting all the nodes it's very cheap to verify the total
@@ -1619,7 +1671,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             }
             visited.add(node);
 
-            configs.add(node.getState());
+            // configs.add(node.getState());
             LinkInterface<N4> incoming = node.getIncoming();
             if (incoming == null)
                 break;
@@ -1641,7 +1693,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // but note that the caller is going to reverse one of them again,
         // so let's not do that.
 
-        return new SinglePath<>(configs, links);
+        return new SinglePath<>(/* configs, */ links);
     }
 
     @Override

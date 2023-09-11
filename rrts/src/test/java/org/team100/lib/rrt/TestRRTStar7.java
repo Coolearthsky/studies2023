@@ -875,6 +875,19 @@ public class TestRRTStar7 {
     }
 
     @Test
+    void testNaN() {
+        // here's where i learned that sometimes these timing functions produce "negative zero" which
+        // fails a <0 test even though it's actually zero.  sigh.
+        assertEquals(Double.NaN, RRTStar7.tSwitchIplusGminus( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+        assertEquals(0.3, RRTStar7.tSwitchIminusGplus( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+        assertEquals(0.3, RRTStar7.tSwitch( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+
+        assertEquals(0.841, RRTStar7.tSwitchIplusGminus(  8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+        assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus( 8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+        assertEquals(0.841, RRTStar7.tSwitch(  8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+    }
+
+    @Test
     void testSampleAxis() {
         // case from elsewhere
         // (1,0) -> (0,0) takes 1.264
