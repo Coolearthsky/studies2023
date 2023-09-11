@@ -9,6 +9,8 @@ import edu.wpi.first.math.numbers.N1;
 
 /**
  * paths from both trees joined into a single list.
+ *
+ * TODO: add control states here
  */
 public class SinglePath<States extends Num> {
     public static class Link<States extends Num> {
@@ -23,13 +25,9 @@ public class SinglePath<States extends Num> {
         }
     }
 
-    /** The states along the path. */
-    // private final List<Matrix<States, N1>> states;
     private final List<Link<States>> links;
 
-    public SinglePath(/*List<Matrix<States, N1>> states,*/ List<Link<States>> links) {
-        // this.distance = distance;
-        // this.states = states;
+    public SinglePath(List<Link<States>> links) {
         this.links = links;
 
         // invariant: x_g of one link is x_i of the next.
@@ -41,19 +39,6 @@ public class SinglePath<States extends Num> {
                 throw new IllegalArgumentException();
             }
         }
-
-        // // these are temporary
-        // if (states.size() != links.size() + 1)
-        //     throw new IllegalArgumentException();
-        // for (int i = 0; i < links.size(); ++i) {
-        //     Matrix<States, N1> initial = states.get(i);
-        //     Matrix<States, N1> goal = states.get(i + 1);
-        //     Link<States> link = links.get(i);
-        //     if (!initial.isEqual(link.x_i, 0.001))
-        //         throw new IllegalArgumentException();
-        //     if (!goal.isEqual(link.x_g, 0.001))
-        //         throw new IllegalArgumentException();
-        // }
     }
 
     /** Sum of link cost via full scan. */
@@ -64,12 +49,6 @@ public class SinglePath<States extends Num> {
         }
         return result;
     }
-
-    // public List<Matrix<States, N1>> getStates() {
-    //     List<Matrix<States, N1>> allStates = new ArrayList<>();
-    //     allStates.addAll(states);
-    //     return allStates;
-    // }
 
     /** return a copy of the link list */
     public List<Link<States>> getLinks() {

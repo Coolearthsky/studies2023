@@ -14,7 +14,7 @@ public class OptimizeTest {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), T_a, T_b);
 
     }
     

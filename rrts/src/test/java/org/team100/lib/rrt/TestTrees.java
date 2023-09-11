@@ -27,7 +27,7 @@ public class TestTrees {
         KDNode<Node<N4>> T_a = new KDNode<>(initial);
         KDNode<Node<N4>> T_b = new KDNode<>(goal);
         // note fixed rand seed so the tests here will be deterministic
-        RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena, 0), 3, T_a, T_b);
+        RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena, 0), T_a, T_b);
         solver.setRadius(3);
         solver.curves = false; // don't add a zillion little segments
         // it does a bunch of sampling before it finds a feasible point.

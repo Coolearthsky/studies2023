@@ -1,5 +1,7 @@
 package org.team100.lib.rrt;
 
+import static java.lang.Math.sqrt;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -40,7 +42,9 @@ import edu.wpi.first.math.numbers.N4;
 import edu.wpi.first.math.system.NumericalIntegration;
 
 /**
- * RRT* version 7
+ * RRT* version 8
+ * 
+ * This is like version 7, but with the PLP interpolator, not yet finished.
  * 
  * Full-state 4d field, following the bang-bang rrt paper.
  * 
@@ -49,15 +53,38 @@ import edu.wpi.first.math.system.NumericalIntegration;
  * [1] LaSalle et al, Bang-Bang RRT, 2023. https://arxiv.org/pdf/2210.01744.pdf
  * [2] Hauser et al, Optimal shortcuts, 2010,
  * https://motion.cs.illinois.edu/papers/icra10-smoothing.pdf
+ * 
+ * alpha = sample from state
+ * x_n = nearest neighbor
+ * find a path to the steer to sample using max U
+ * make the times of each axis match, respecting the gap if it exists
+ * same routine for rewiring i guess?
+ * 
+ * Note B Paden wrote a paper in 2017 about nearest-neighbor finding for
+ * nonholonomic systems, maybe useful.
+ * 
+ * 
+ * 
+ * for rewiring and connecting, use a linear solver.
  */
-public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
+public class RRTStar8<T extends Arena<N4>> implements Solver<N4> {
     public static boolean DEBUG = false;
     private static final double MAX_U = 2.5;
+    private static final double DT = 0.6;
+    private static final int MAX_CHILDREN = 1;
+    private static final double BUFFER = 0.3;
+    /** for testing */
     private static final boolean BIDIRECTIONAL = true;
+    /** probability of branching */
+    private static final double BUSHINESS = 0.2;
 
     private final T _model;
     private final Sample<N4> _sample;
+    private final double _gamma;
     private final Random random = new MersenneTwister(new Random().nextInt());
+    private final ShootingSolver<N4, N2> solver = new ShootingSolver<>(VecBuilder.fill(MAX_U, MAX_U), DT, 20);
+    private final Matrix<N4, N1> min;
+    private final Matrix<N4, N1> max;
 
     /** Initially, tree grown from initial, but is swapped repeatedly */
     private KDNode<Node<N4>> _T_a;
@@ -65,18 +92,44 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     private KDNode<Node<N4>> _T_b;
 
     // mutable loop variables to make the loop code cleaner
+    private int stepNo;
     private double radius;
     // TODO remove
     private Path<N4> _sigma_best;
     private SinglePath<N4> _single_sigma_best;
-    public boolean curves = true;
 
-    public RRTStar7(T model, Sample<N4> sample, KDNode<Node<N4>> T_a, KDNode<Node<N4>> T_b) {
+    public RRTStar8(T model, Sample<N4> sample, double gamma, KDNode<Node<N4>> T_a, KDNode<Node<N4>> T_b) {
+        if (gamma < 1.0) {
+            throw new IllegalArgumentException("invalid gamma, must be >= 1.0");
+        }
         _model = model;
         _sample = sample;
         _T_a = T_a;
         _T_b = T_b;
+        _gamma = gamma;
+        min = _model.getMin();
+        max = _model.getMax();
     }
+
+    /** The top level is just a 2d double-integrator. */
+    BiFunction<Matrix<N4, N1>, Matrix<N2, N1>, Matrix<N4, N1>> f = (x, u) -> {
+        double x2 = x.get(1, 0);
+        double y2 = x.get(3, 0);
+        double ux = u.get(0, 0);
+        double uy = u.get(1, 0);
+        double x1dot = x2;
+        double x2dot = ux;
+        double y1dot = y2;
+        double y2dot = uy;
+        Matrix<N4, N1> result = new Matrix<>(Nat.N4(), Nat.N1());
+        result.set(0, 0, x1dot);
+        result.set(1, 0, x2dot);
+        result.set(2, 0, y1dot);
+        result.set(3, 0, y2dot);
+        return result;
+    };
+
+    public boolean curves = true;
 
     /**
      * Note this isn't quite the same as https://arxiv.org/pdf/1703.08944.pdf
@@ -286,11 +339,84 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                         _single_sigma_best = sp;
                     }
                 }
+
                 // bail so that we can stop looking
                 return -1;
             }
+            // if (DEBUG)
+            // System.out.println("PATH " + p);
+            // if (_sigma_best == null) {
+            // System.out.printf("first path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // } else {
+            // if (p.getDistance() < _sigma_best.getDistance()) {
+            // System.out.printf("new best path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // }
 
+            // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
+            // Node<>(x_rand), tMax);
 
+            // LocalLink<N4> randLink = SampleFree(timeForward);
+            // if (DEBUG)
+            // System.out.println("randLink: " + randLink);
+
+            // if (CollisionFree(randLink.get_source().getState(),
+            // randLink.get_target().getState())) {
+            // new node in "this" tree
+
+            // Node<N4> newNode = InsertNode(randLink, _T_a);
+
+            // if (DEBUG)
+            // System.out.println("NEW NODE " + newNode);
+
+            // List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
+            // Rewire(X_nearA, newNode, timeForward);
+
+            // // is there a point in the other tree that is reachable from
+            // // the node we just inserted? reachable nodes are nearby in a Euclidean
+            // // sense, though most Euclidean nearby nodes are not reachable.
+            // // so start with a list of near nodes and test them one by one.
+
+            // // near nodes in the other tree:
+            // List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
+            // Matrix<N4, N1> x1 = newNode.getState();
+            // for (NearNode<N4> nearNode : X_near) {
+            // // one near node in the other tree
+            // Matrix<N4, N1> x2 = nearNode.node.getState();
+
+            // ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1,
+            // x2, timeForward);
+            // if (sol != null) {
+            // // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
+            // if (DEBUG)
+            // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
+            // Util.matStr(x1), Util.matStr(x2), sol);
+            // // TODO: do something with the solution u value
+            // // add a node in a corresponding to the near node in b
+            // LocalLink<N4> newInA = new LocalLink<>(newNode, new
+            // Node<>(nearNode.node.getState()),
+            // Math.abs(sol.dt));
+            // Node<N4> newNewNode = InsertNode(newInA, _T_a);
+            // Rewire(X_near, newNewNode, timeForward);
+            // // create a path that traverses the new link.
+            // Path<N4> p = GeneratePath(newNewNode, nearNode.node);
+            // if (DEBUG)
+            // System.out.println("PATH " + p);
+            // if (_sigma_best == null) {
+            // System.out.printf("first path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // } else {
+            // if (p.getDistance() < _sigma_best.getDistance()) {
+            // System.out.printf("new best path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // }
+            // }
+            // // don't need more than one feasible link
+            // break;
+            // }
+            // }
+            // }
             SwapTrees();
         }
         return edges;
@@ -317,7 +443,6 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             node1 = node2;
             node2 = tmp;
         }
-        if (DEBUG) System.out.printf("%d %d\n",node1,node2);
         // now node1 is first
         // actually we want the sub-list
         List<SinglePath.Link<N4>> sublist = links.subList(node1, node2 + 1);
@@ -337,6 +462,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
         double tMaxA = Math.max(phiA.x.s1.t + phiA.x.s2.t, phiA.y.s1.t + phiA.y.s2.t);
 
+        // double tOptimal = tOptimal(state1, state2, MAX_U);
         if (tMaxA >= cost)
             return;
 
@@ -368,8 +494,6 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     /**
      * the parameters describe a link between initial and goal trees, the same
      * state in both cases.
-     * 
-     * TODO: remove
      * 
      * @param x_1 Node in one tree
      * @param x_2 Same state in the other tree
@@ -423,6 +547,21 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             p_1 = p_2;
             p_2 = tmp;
         }
+
+        // now p_1 root is the initial state.
+
+        // new: reverse the other one since the walker doesn't do it.
+
+        // List<Matrix<N4, N1>> states_1 = p_1.getStates();
+        // Collections.reverse(states_1);
+
+        // List<Matrix<N4, N1>> states_2 = p_2.getStates();
+        // don't include the same point twice
+        // states_2.remove(0);
+
+        // List<Matrix<N4, N1>> result = new ArrayList<>();
+        // result.addAll(states_1);
+        // result.addAll(states_2);
 
         // this list is from leaf to root, so backwards. reverse it.
         List<SinglePath.Link<N4>> links1 = p_1.getLinks();
@@ -509,7 +648,18 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     static double tOptimal(
             Matrix<N4, N1> x_i,
             Matrix<N4, N1> x_g,
+            // boolean timeForward,
             double umax) {
+        // Matrix<N4, N1> x_i;
+        // Matrix<N4, N1> x_g;
+        // if (timeForward) {
+        // x_i = x1;
+        // x_g = x2;
+        // } else {
+        // x_i = x2;
+        // x_g = x1;
+        // }
+        // TODO: handle time reversal
 
         double xTSwitch = tSwitch(
                 x_i.get(0, 0),
@@ -754,6 +904,193 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         public String toString() {
             return "Trajectory [\nx=" + x + ",\n y=" + y + "]";
         }
+    }
+
+    Matrix<N4, N1> sample(Trajectory traj, double t) {
+        return null;
+    }
+
+    Trajectory connect(Matrix<N4, N1> start, Matrix<N4, N1> end) {
+        return null;
+    }
+
+    /**
+     * Applies random control to random tree node *in T_a.* If the node
+     * has a parent, just continue the same way as that node.
+     */
+    LocalLink<N4> SampleFree(boolean timeForward) {
+        // run backwards if the tree root is the goal
+        if (DEBUG)
+            System.out.println("SampleFree");
+        while (true) {
+            if (DEBUG)
+                System.out.println("sample");
+            // applied to a random point in the tree
+            List<Node<N4>> nodes = KDTree.values(_T_a);
+            int nodect = nodes.size();
+            int nodeidx = random.nextInt(nodect);
+            Node<N4> node_rand = nodes.get(nodeidx);
+            // persuade the tree to be longer
+            if (node_rand.getOutgoingCount() >= MAX_CHILDREN) {
+                // maybe add anyway?
+                if (random.nextDouble() > BUSHINESS) {
+                    if (DEBUG)
+                        System.out.println("skip node with too many children");
+                    continue;
+                }
+            }
+
+            double x_nearest1 = node_rand.getState().get(0, 0);
+            double x_nearest2 = node_rand.getState().get(1, 0);
+            double x_nearest3 = node_rand.getState().get(2, 0);
+            double x_nearest4 = node_rand.getState().get(3, 0);
+
+            Matrix<N4, N1> xxx = new Matrix<>(Nat.N4(), Nat.N1());
+            xxx.set(0, 0, x_nearest1);
+            xxx.set(1, 0, x_nearest2);
+            xxx.set(2, 0, x_nearest3);
+            xxx.set(3, 0, x_nearest4);
+
+            Matrix<N2, N1> uuu = new Matrix<>(Nat.N2(), Nat.N1());
+            double azimuth = 2 * Math.PI * random.nextDouble();
+            uuu.set(0, 0, MAX_U * Math.cos(azimuth));
+            uuu.set(1, 0, MAX_U * Math.sin(azimuth));
+
+            double dt = DT * random.nextDouble();
+            // maybe integrate backwards :-)
+            if (!timeForward)
+                dt *= -1.0;
+            Matrix<N4, N1> newxxx = NumericalIntegration.rk4(f, xxx, uuu, dt);
+            double x_new1 = newxxx.get(0, 0);
+            double x_new2 = newxxx.get(1, 0);
+            double x_new3 = newxxx.get(2, 0);
+            double x_new4 = newxxx.get(3, 0);
+
+            if (DEBUG)
+                System.out.printf("integrated to get %s\n", Util.matStr(newxxx));
+
+            // reject samples off the edge of the world
+            // TODO: this is actually a cylindrical space, so make it so
+            if (x_new1 < min.get(0, 0) || x_new1 > max.get(0, 0)
+                    || x_new2 < min.get(1, 0) || x_new2 > max.get(1, 0)
+                    || x_new3 < min.get(2, 0) || x_new3 > max.get(2, 0)
+                    || x_new4 < min.get(3, 0) || x_new4 > max.get(3, 0)
+
+            ) {
+                if (DEBUG)
+                    System.out.printf("reject out of bounds %s u %s\n",
+                            Util.matStr(newxxx), Util.matStr(uuu));
+                continue;
+            }
+
+            Matrix<N4, N1> newConfig = newxxx;
+
+            double[] dx_new = new double[] {
+                    x_new1 - x_nearest1,
+                    x_new2 - x_nearest2,
+                    x_new3 - x_nearest3,
+                    x_new4 - x_nearest4
+            };
+            if (node_rand.getIncoming() != null) {
+                // continue in the same direction as the incoming,
+                // to avoid clumping
+                // could use the same "u" (or nearly same) here but
+                // we want to allow the bang-bang deceleration case
+                LinkInterface<N4> incoming = node_rand.getIncoming();
+                double[] incoming_dx_new = new double[] {
+                        incoming.get_target().getState().get(0, 0) - incoming.get_source().getState().get(0, 0),
+                        incoming.get_target().getState().get(1, 0) - incoming.get_source().getState().get(1, 0),
+                        incoming.get_target().getState().get(2, 0) - incoming.get_source().getState().get(2, 0),
+                        incoming.get_target().getState().get(3, 0) - incoming.get_source().getState().get(3, 0)
+
+                };
+                double dot = incoming_dx_new[0] * dx_new[0]
+                        + incoming_dx_new[1] * dx_new[1]
+                        + incoming_dx_new[2] * dx_new[2]
+                        + incoming_dx_new[3] * dx_new[3];
+                if (dot < 0) {
+                    if (DEBUG)
+                        System.out.printf(
+                                "reject dot parent [%5.3f %5.3f %5.3f %5.3f] node %s to %s u %s dot %5.3f\n",
+                                incoming.get_source().getState().get(0, 0), incoming.get_source().getState().get(1, 0),
+                                incoming.get_source().getState().get(2, 0), incoming.get_source().getState().get(3, 0),
+                                Util.matStr(xxx),
+                                Util.matStr(newxxx),
+                                Util.matStr(uuu), dot);
+                    continue;
+                }
+
+                // reject the new node if it's too close to any others
+                // for now just use Euclidean distance.
+                // note this will find the parent so make sure the step
+                // size is larger than the buffer size
+                KDNearNode<Node<N4>> n = KDTree.nearest(_model, _T_a, newConfig);
+                if (n != null) {
+                    // look only at spatial dimensions; it's ok for there to be lots of
+                    // points at the same velocity.
+                    double newDist = Math.sqrt(Math.pow(x_new1 - n._nearest.getState().get(0, 0), 2) +
+                            Math.pow(x_new3 - n._nearest.getState().get(2, 0), 2));
+                    if (newDist < BUFFER) {
+                        if (DEBUG)
+                            System.out.printf(
+                                    "reject conflict from %s to %s old [%5.3f %5.3f %5.3f %5.3f] d %5.3f\n",
+                                    Util.matStr(xxx),
+                                    Util.matStr(newxxx),
+                                    n._nearest.getState().get(0, 0), n._nearest.getState().get(1, 0),
+                                    n._nearest.getState().get(2, 0), n._nearest.getState().get(3, 0),
+                                    newDist);
+                        continue;
+                    }
+                }
+
+            }
+
+            if (_model.clear(newConfig)) {
+                if (DEBUG)
+                    System.out.printf(
+                            "found new %s u %s dt %5.3f\n",
+                            Util.matStr(newxxx), Util.matStr(uuu), dt);
+                // note abs() due to (sometimes) time reversal
+                return new LocalLink<>(node_rand, new Node<>(newConfig), Math.abs(dt));
+            }
+            if (DEBUG)
+                System.out.println("not clear");
+        }
+    }
+
+    /**
+     * not literally to the right of initial state, but to the right of the
+     * switching surface containing the initial state. the paper has a different
+     * way of expressing this which i think might be wrong.
+     * https://arxiv.org/pdf/2210.01744.pdf
+     * 
+     * The params are primitives because we kinda pick them out of the N4 state.
+     * 
+     * @param i    initial position
+     * @param idot initial velocity
+     * @param g    goal position
+     * @param gdot goal velocity
+     */
+    public static boolean goalRight(double i, double idot, double g, double gdot, double umax) {
+        // intercept of umax parabola intersecting x1
+        double c_I_plus = c_plus(i, idot, umax);
+        // intercept of umin parabola intersecting x1
+        double c_I_minus = c_minus(i, idot, umax);
+        // intercept of umax parabola intersecting x2
+        double c_G_plus = c_plus(g, gdot, umax);
+        // intercept of umin parabola intersecting x2
+        double c_G_minus = c_minus(g, gdot, umax);
+
+        if (gdot > idot) {
+            if (c_G_plus > c_I_plus) {
+                return true;
+            }
+            return false;
+        }
+        if (c_G_minus > c_I_minus) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -1003,6 +1340,95 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return result;
     }
 
+    /**
+     * This is the method of Hauser et al [1] (see section D) for the
+     * parabola-linear-parabola solution, i.e. bang bang with a maximum speed.
+     * This is from ParabolicRamp.cpp.
+     */
+    static Trajectory.Axis PLP(double i, double idot, double g, double gdot, double tw, double vmax) {
+        double a1 = aPLP(i, idot, g, gdot, tw, vmax);
+        double a2 = aPLP(i, idot, g, gdot, tw, -1.0 * vmax);
+        double a = Double.MAX_VALUE;
+        double v = Double.MAX_VALUE;
+        double tswitch1 = 0;
+        double tswitch2 = 0;
+        double ttotal = 0;
+        if (Math.abs(a1) < a) {
+            a = a1;
+            v = vmax;
+        }
+        if (Math.abs(a2) < a) {
+            a = a2;
+            v = -1.0 * vmax;
+        }
+        if (a > 1e100) {
+            return null;
+        }
+        if (Math.abs(a) < 0.001) {
+            tswitch1 = 0;
+            tswitch2 = tw;
+            ttotal = tw;
+        } else {
+            ttotal = CalcTotalTime(i, idot, g, gdot, a, v);
+            tswitch1 = CalcSwitchTime1(i, idot, g, gdot, a, v);
+            tswitch2 = CalcSwitchTime2(i, idot, g, gdot, a, v);
+        }
+        return null;
+    }
+
+    /**
+     * This is from ParabolicRamp.cpp.
+     */
+    static double CalcTotalTime(double i, double idot, double g, double gdot, double a, double v) {
+        double t1 = (v - idot) / a;
+        double t2mt = (gdot - v) / a;
+        double t2mt1 = 0.5 * (gdot * gdot + idot * idot) / (v * a) - (v / a) + (g - i) / v;
+        if (t1 < 0 || t2mt > 0 || t2mt1 < 0)
+            return Double.NaN;
+        if (t1 > 1e100 || t2mt > 1e100)
+            return Double.NaN;
+        return t1 + t2mt1 - t2mt;
+    }
+
+    /**
+     * This is from ParabolicRamp.cpp.
+     */
+    static double CalcSwitchTime1(double i, double idot, double g, double gdot, double a, double v) {
+        double t1 = (v - idot) / a;
+        if (t1 < 0)
+            return Double.NaN;
+        return t1;
+    }
+
+    /**
+     * This is from ParabolicRamp.cpp.
+     */
+    static double CalcSwitchTime2(double i, double idot, double g, double gdot, double a, double v) {
+        double t1 = (v - idot) / a;
+        double y1 = 0.5 * (v * v - idot * idot) / a + i;
+        double y2 = 0.5 * (gdot * gdot - v * v) / a + g;
+        System.out.printf("y1 %f y2 %f\n", y1, y2);
+        double t2mt1 = (y2 - y1) / v;
+        // double t2mt1 = 0.5 * (gdot * gdot + idot * idot) / (v * a) - (v / a) + (g -
+        // i) / v;
+        if (t1 < 0 || t2mt1 < 0)
+            return Double.NaN;
+        return t1 + t2mt1;
+    }
+
+    /**
+     * this is from ParabolicRamp.cpp:CalcMinAcell, which has some extra code to
+     * deal with values near zero, etc
+     * TODO: add that?
+     */
+    static double aPLP(double i, double idot, double g, double gdot, double tw, double vmax) {
+        // return (vmax * vmax - vmax * (idot + gdot) + 0.5 * (idot * idot + gdot *
+        // gdot)) / (tw * vmax - (g - i));
+
+        double den = tw - (g - i) / vmax;
+        double num = vmax * 0.5 * (idot / vmax - 1.0) * (idot / vmax - 1.0) + (gdot / vmax - 1.0) * (gdot / vmax - 1.0);
+        return num / den;
+    }
 
     /**
      * This is the method of Hauser et al [1] (see section D) to solve the two-point
@@ -1024,9 +1450,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             System.out.printf("a %f b %f c %f\n", a, b, c);
 
         // I+G-
-        List<Double> plus = org.team100.lib.math.Util.quadratic(a, b, c);
+        List<Double> plus = quadratic(a, b, c);
         // I-G+
-        List<Double> minus = org.team100.lib.math.Util.quadratic(a, -b, c);
+        List<Double> minus = quadratic(a, -b, c);
         if (DEBUG)
             System.out.printf("plus %s minus %s\n", plus, minus);
         // we generally want the *lowest* acceleration that will solve the problem
@@ -1132,6 +1558,65 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     }
 
     /**
+     * returns roots of the quadratic
+     * see KrisLibrary/planning/ParabolicRamp.cpp
+     */
+    static List<Double> quadratic(double a, double b, double c) {
+        if (a == 0) {
+            if (b == 0) {
+                if (c == 0)
+                    return List.of();
+                return List.of();
+            }
+            return List.of(-c / b);
+
+        }
+        if (c == 0) { // det = b^2
+            if (b == 0) // just y=ax^2
+                return List.of(0.0);
+            return List.of(0.0, -b / a);
+        }
+        double det = b * b - 4.0 * a * c;
+        if (det < 0.0)
+            return List.of();
+        if (det == 0.0) {
+            return List.of(-b / (2.0 * a));
+        }
+        det = sqrt(det);
+        double x1;
+        double x2;
+        if (Math.abs(-b - det) < Math.abs(a))
+            x1 = 0.5 * (-b + det) / a;
+        else
+            x1 = 2.0 * c / (-b - det);
+        if (Math.abs(-b + det) < Math.abs(a))
+            x2 = 0.5 * (-b - det) / a;
+        else
+            x2 = 2.0 * c / (-b + det);
+        return List.of(x1, x2);
+    }
+
+    static double Sqr(double x) {
+        return x * x;
+    }
+
+    static boolean FuzzyZero(double a, double eps) {
+        return Math.abs(a) <= eps;
+    }
+
+    static boolean FuzzyEquals(double a, double b, double eps) {
+        return Math.abs(a - b) <= eps;
+    }
+
+    static class Outvar<T> {
+        T v;
+
+        public Outvar(T v) {
+            this.v = v;
+        }
+    }
+
+    /**
      * Return a list of nearby nodes, using the KDTree metric, which may not
      * actually contain the nearest nodes in non-Euclidean spaces.
      */
@@ -1143,11 +1628,60 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return nearNodes;
     }
 
+    /**
+     * Returns a member of X_near resulting in the lowest-cost path to x_new.
+     * Removes infeasible nodes from X_near so we don't look at them again later.
+     */
+    Node<N4> ChooseParent(List<NearNode<N4>> X_near, Matrix<N4, N1> x_new) {
+        Collections.sort(X_near);
+        Iterator<NearNode<N4>> ni = X_near.iterator();
+        while (ni.hasNext()) {
+            NearNode<N4> nearNode = ni.next();
+            ni.remove();
+            if (CollisionFree(nearNode.node.getState(), x_new)) {
+                return nearNode.node;
+            }
+        }
+        return null;
+    }
+
     /** Add the node link.target to the tree, with an edge from source to target. */
     Node<N4> InsertNode(LocalLink<N4> link, KDNode<Node<N4>> rootNode) {
         Graph.newLink(link.get_source(), link.get_target(), link.get_linkDist());
         KDTree.insert(_model, rootNode, link.get_target());
         return link.get_target();
+    }
+
+    /**
+     * look through the nodes in X_near to see if any should be new children of
+     * newNode.
+     */
+    void Rewire(List<NearNode<N4>> X_near, Node<N4> newNode, boolean timeForward) {
+        if (DEBUG)
+            System.out.printf("Rewire candidates %d\n", X_near.size());
+        ListIterator<NearNode<N4>> li = X_near.listIterator(X_near.size());
+        while (li.hasPrevious()) {
+            NearNode<N4> jn = li.previous();
+            if (jn.node.getIncoming() != null) {
+                Matrix<N4, N1> x1 = newNode.getState();
+                Matrix<N4, N1> x2 = jn.node.getState();
+                // shortcut the inevitable duplicate
+                if (x1.isEqual(x2, 0.01))
+                    continue;
+                if (DEBUG)
+                    System.out.printf("Try rewiring %s to %s\n", Util.matStr(x1), Util.matStr(x2));
+                ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1, x2, timeForward);
+                if (sol == null) {
+                    if (DEBUG)
+                        System.out.println("no solution");
+                } else {
+                    if (Graph.rewire(_model, newNode, jn.node, Math.abs(sol.dt))) {
+                        if (DEBUG)
+                            System.out.println("REWIRED");
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -1216,7 +1750,13 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
      * @param node leaf of a tree
      */
     SinglePath<N4> walkParentsSingle(Set<Node<N4>> visited, Node<N4> node) {
+        // Collect the states along the path (backwards)
+        // List<Matrix<N4, N1>> configs = new LinkedList<>();
         List<SinglePath.Link<N4>> links = new LinkedList<>();
+
+        // Since we're visiting all the nodes it's very cheap to verify the total
+        // distance
+        double totalDistance = 0;
 
         while (true) {
             if (visited.contains(node)) {
@@ -1229,7 +1769,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             LinkInterface<N4> incoming = node.getIncoming();
             if (incoming == null)
                 break;
-
+            totalDistance += incoming.get_linkDist();
             // walking backwards here, so the "source" is actually the "target" of the link.
             SinglePath.Link<N4> link = new SinglePath.Link<>(
                     incoming.get_target().getState(),
@@ -1238,13 +1778,25 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
             links.add(link);
             node = incoming.get_source();
         }
+        // we collected these from leaf to root, so reverse to get root to leaf.
 
-        return new SinglePath<>(links);
+        // new, no more reversing.
+
+        // Collections.reverse(configs);
+        // reversing the list of links entails reversing each link too.
+        // but note that the caller is going to reverse one of them again,
+        // so let's not do that.
+
+        return new SinglePath<>(/* configs, */ links);
     }
 
     @Override
     public void setStepNo(int stepNo) {
-
+        if (stepNo < 1)
+            throw new IllegalArgumentException();
+        this.stepNo = stepNo;
+        // see below
+        // this.radius = _gamma * Math.pow(Math.log(stepNo + 1) / (stepNo + 1), 0.25);
     }
 
     public void setRadius(double radius) {

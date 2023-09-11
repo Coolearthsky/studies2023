@@ -2,9 +2,7 @@ package org.team100.lib.rrt;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
 import java.util.List;
@@ -17,6 +15,7 @@ import org.team100.lib.graph.Node;
 import org.team100.lib.index.KDNearNode;
 import org.team100.lib.index.KDNode;
 import org.team100.lib.index.KDTree;
+import org.team100.lib.math.Util;
 import org.team100.lib.rrt.RRTStar7.Trajectory;
 import org.team100.lib.rrt.RRTStar7.Trajectory.Axis;
 import org.team100.lib.rrt.example.full_state_arena.FullStateHolonomicArena;
@@ -28,20 +27,6 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N4;
 
 public class TestRRTStar7 {
-
-    @Test
-    void testGoalRight() {
-        assertTrue(RRTStar7.goalRight(0, 0, 0.5, 1.0, 2.0));
-        assertTrue(RRTStar7.goalRight(0, 1, 5, 1, 2.0));
-        assertTrue(RRTStar7.goalRight(0, 1, 0, -2, 2.0));
-        assertFalse(RRTStar7.goalRight(0, 1, 0, 0, 2.0));
-        // no movement == zero time
-        assertFalse(RRTStar7.goalRight(0, 0, 0, 0, 2.5));
-        // simply move back, rest-to-rest
-        assertFalse(RRTStar7.goalRight(1, 0, 0, 0, 2.5));
-        // slows to a stop, back, stop, forward, motion-to-motion
-        assertFalse(RRTStar7.goalRight(1, 1, -1, 1, 2.5));
-    }
 
     @Test
     void testSlowU() {
@@ -487,7 +472,7 @@ public class TestRRTStar7 {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), T_a, T_b);
 
         solver.setRadius(10);
 
@@ -516,7 +501,7 @@ public class TestRRTStar7 {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), T_a, T_b);
         solver.setRadius(10);
 
         KDTree.insert(arena, T_a, new Node<>(new Matrix<>(Nat.N4(), Nat.N1(), new double[] { -1, 1, 0, 0 })));
@@ -537,7 +522,7 @@ public class TestRRTStar7 {
         final FullStateHolonomicArena arena = new FullStateHolonomicArena();
         KDNode<Node<N4>> T_a = new KDNode<>(new Node<>(arena.initial()));
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), T_a, T_b);
 
         // note small radius; this won't find anything
         solver.setRadius(1);
@@ -876,15 +861,16 @@ public class TestRRTStar7 {
 
     @Test
     void testNaN() {
-        // here's where i learned that sometimes these timing functions produce "negative zero" which
-        // fails a <0 test even though it's actually zero.  sigh.
-        assertEquals(Double.NaN, RRTStar7.tSwitchIplusGminus( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
-        assertEquals(0.3, RRTStar7.tSwitchIminusGplus( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
-        assertEquals(0.3, RRTStar7.tSwitch( 2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+        // here's where i learned that sometimes these timing functions produce
+        // "negative zero" which
+        // fails a <0 test even though it's actually zero. sigh.
+        assertEquals(0.3, RRTStar7.tSwitchIplusGminus(2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+        assertEquals(0.3, RRTStar7.tSwitchIminusGplus(2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
+        assertEquals(0.3, RRTStar7.tSwitch(2.698095, 0.577782, 2.758929, -0.172218, 2.5), 0.001);
 
-        assertEquals(0.841, RRTStar7.tSwitchIplusGminus(  8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
-        assertEquals(Double.NaN, RRTStar7.tSwitchIminusGplus( 8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
-        assertEquals(0.841, RRTStar7.tSwitch(  8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+        assertEquals(0.841, RRTStar7.tSwitchIplusGminus(8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+        assertEquals(0.841, RRTStar7.tSwitchIminusGplus(8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
+        assertEquals(0.841, RRTStar7.tSwitch(8.635502, 1.556397, 9.060257, -0.546445, 2.500000), 0.001);
     }
 
     @Test
@@ -1113,11 +1099,11 @@ public class TestRRTStar7 {
 
     @Test
     void quadraticTest() {
-        assertEquals(List.of(0.0), RRTStar7.quadratic(1, 0, 0));
-        assertEquals(List.of(1.0, -1.0), RRTStar7.quadratic(1, 0, -1));
+        assertEquals(List.of(0.0), Util.quadratic(1, 0, 0));
+        assertEquals(List.of(1.0, -1.0), Util.quadratic(1, 0, -1));
         // https://en.wikipedia.org/wiki/Quadratic_formula
-        assertEquals(List.of(4.0, 1.0), RRTStar7.quadratic(0.5, -2.5, 2));
-        assertEquals(List.of(-0.0), RRTStar7.quadratic(0, 1, 0));
+        assertEquals(List.of(4.0, 1.0), Util.quadratic(0.5, -2.5, 2));
+        assertEquals(List.of(-0.0), Util.quadratic(0, 1, 0));
 
     }
 }

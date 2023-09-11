@@ -74,7 +74,7 @@ public class FullStateArenaView extends JComponent {
         // final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a,
         // T_b);
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena,
-                new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
+                new Sample<>(arena, new Random().nextInt()), T_a, T_b);
         solver.setRadius(4); // hoo boy
         // solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
@@ -96,8 +96,8 @@ public class FullStateArenaView extends JComponent {
         });
 
         // RRTStar7.DEBUG = true;
-        runner.runForDurationMS(60);
-        //runner.runSamples(1000);
+        runner.runForDurationMS(100);
+        //runner.runSamples(100);
         // System.out.println("before");
         // printTree(T_a.getValue(), 0);
 
@@ -119,8 +119,9 @@ public class FullStateArenaView extends JComponent {
 
             pause(1000);
             // so now we should try to optimize it for awhile
-            for (int i = 0; i < 10000; ++i) {
-                if (i % 100 == 0) pause(500);
+            for (int i = 0; i < 100000; ++i) {
+                //if (i % 100 == 0)                System.out.println(i);
+                //if (i % 100 == 0) pause(500);
                 solver.Optimize();
             }
 
