@@ -16,6 +16,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -70,9 +71,9 @@ public class FullStateArenaView extends JComponent {
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         // final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a,
         // T_b);
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
         solver.setRadius(3); // hoo boy
-        solver.SwapTrees();
+        //solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 
@@ -91,9 +92,9 @@ public class FullStateArenaView extends JComponent {
             }
         });
 
-        // runner.runForDurationMS(100000);
-       // RRTStar7.DEBUG = true;
-        runner.runSamples(1000);
+        // RRTStar7.DEBUG = true;
+        // runner.runForDurationMS(100);
+         runner.runSamples(100);
         // System.out.println("before");
         //printTree(T_a.getValue(), 0);
 
@@ -102,18 +103,20 @@ public class FullStateArenaView extends JComponent {
         //         break;
         //     }
         // }
-        // System.out.println("after");
-        //printTree(T_a.getValue(), 0);
-        //printTree(T_b.getValue(), 0);
+        // System.out.println("A");
+        // printTree(T_a.getValue(), 0);
+        // System.out.println("B");
+        // printTree(T_b.getValue(), 0);
 
         Path<N4> bestPath = runner.getBestPath();
         if (bestPath == null) {
             System.out.println("failed to find path");
         } else {
             System.out.println("found path");
-            System.out.println(bestPath);
+            // System.out.println(bestPath);
         }
         System.out.println("done");
+        // view.printPaths(bestPath);
 
         frame.repaint();
         view.repaint();
@@ -285,6 +288,41 @@ public class FullStateArenaView extends JComponent {
         // }
     }
 
+    void printPaths(Path<N4> path) {
+        if (path == null) {
+            return;
+        }
+
+        List<Matrix<N4, N1>> statesA = path.getStatesA();
+        if (statesA.size() > 1) {
+            Iterator<Matrix<N4, N1>> pathIter = statesA.iterator();
+            Matrix<N4, N1> prev = pathIter.next();
+            while (pathIter.hasNext()) {
+                Matrix<N4, N1> curr = pathIter.next();
+                System.out.printf("green: %f %f %f %f\n", prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                prev = curr;
+            }
+        }
+        List<Matrix<N4, N1>> statesB = path.getStatesB();
+        if (statesB.size() > 1) {
+            Iterator<Matrix<N4, N1>> pathIter = statesB.iterator();
+            Matrix<N4, N1> prev = pathIter.next();
+            while (pathIter.hasNext()) {
+                Matrix<N4, N1> curr = pathIter.next();
+                System.out.printf("red: %f %f %f %f\n", prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                prev = curr;
+            }
+        }
+
+        Matrix<N4, N1> nA = statesA.get(statesA.size() - 1);
+        Matrix<N4, N1> nB = statesB.get(0);
+        if (nA != null && nB != null) {
+            System.out.printf("black: %f %f %f %f\n", nA.get(0, 0), nA.get(2, 0), nB.get(0, 0), nB.get(2, 0));
+        } else {
+            System.out.println("NULLS");
+        }
+
+    }
     private void renderPaths(Path<N4> path, Graphics2D g, double scale) {
         if (path == null) {
             return;

@@ -146,135 +146,260 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         Matrix<N4, N1> x_rand = SampleState();
 
         // x_n
-        KDNearNode<Node<N4>> x_nearest = BangBangNearest(x_rand, _T_a, timeForward);
-        if (x_nearest == null)
+        KDNearNode<Node<N4>> x_nearestA = BangBangNearest(x_rand, _T_a, timeForward);
+        if (x_nearestA == null)
             return 0;
 
         // includes states and controls
-        Trajectory phi = BangBangSteer(_model::clear, x_nearest._nearest.getState(), x_rand, timeForward);
-
-        if (phi == null)
+        Trajectory phiA = BangBangSteer(_model::clear, x_nearestA._nearest.getState(), x_rand, timeForward);
+        if (phiA == null)
             return 0;
+
         if (DEBUG)
-            System.out.println(phi);
+            System.out.println(phiA);
 
         // now we have a clear trajectory from nearest to rand.
 
-        double tMax = Math.max(phi.x.s1.t + phi.x.s2.t, phi.y.s1.t + phi.y.s2.t);
+        double tMaxA = Math.max(phiA.x.s1.t + phiA.x.s2.t, phiA.y.s1.t + phiA.y.s2.t);
+        Node<N4> freeEndA = null;
 
         if (curves) {
             // make lots of little segments
             double tStep = 0.1;
-            Node<N4> source = x_nearest._nearest;
+            Node<N4> source = x_nearestA._nearest;
             if (DEBUG)
-                System.out.printf("phi %s\n", phi);
-            // when time is reversed, the outgoing links go to earlier
-            // states.
+                System.out.printf("phi %s\n", phiA);
             if (timeForward) {
-                for (double tSec = tStep; tSec <= tMax; tSec += tStep) {
-                    Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+                double tSoFar = 0;
+                for (double tSec = tStep; tSec <= tMaxA; tSec += tStep) {
+                    tSoFar = tSec;
+                    Matrix<N4, N1> state = SampleTrajectory(phiA, tSec);
                     if (DEBUG)
-                        System.out.printf("stepstate %s\n", state);
+                        System.out.printf("A1 stepstate %s\n", state);
                     Node<N4> target = new Node<>(state);
+                    freeEndA = target;
                     LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
                     InsertNode(randLink, _T_a);
                     source = target;
                 }
+                if (tSoFar < tMaxA) {
+                    // add one more segment to actually reach xrand
+                    Node<N4> target = new Node<>(x_rand);
+                    freeEndA = target;
+                    LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                    InsertNode(randLink, _T_a);
+                }
             } else {
-                // time is reversed
-                for (double tSec = tMax; tSec >= 0; tSec -= tStep) {
-                    Matrix<N4, N1> state = SampleTrajectory(phi, tSec);
+                // time is reversed, so walk the trajectory backwards
+                double tSoFar = 0;
+                for (double tSec = tMaxA; tSec >= 0; tSec -= tStep) {
+                    tSoFar = tSec;
+                    Matrix<N4, N1> state = SampleTrajectory(phiA, tSec);
                     if (DEBUG)
-                        System.out.printf("stepstate %s\n", state);
+                        System.out.printf("A2 stepstate %s\n", state);
                     Node<N4> target = new Node<>(state);
+                    freeEndA = target;
                     LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
                     InsertNode(randLink, _T_a);
                     source = target;
+                }
+                if (tSoFar > 0) {
+                    // add one more segment to actually reach xrand
+                    Node<N4> target = new Node<>(x_rand);
+                    freeEndA = target;
+                    LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                    InsertNode(randLink, _T_a);
                 }
             }
         } else {
             // just make one segment
-            if (timeForward) {
-                Node<N4> target = new Node<>(x_rand);
-                LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
-                InsertNode(randLink, _T_a);
-            } else {
-                // time is reversed, is this any different in this case?
-                Node<N4> target = new Node<>(x_rand);
-                LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, target, tMax);
-                InsertNode(randLink, _T_a);
-            }
+            // same for forward and reverse cases.
+            Node<N4> target = new Node<>(x_rand);
+            freeEndA = target;
+
+            LocalLink<N4> randLink = new LocalLink<>(x_nearestA._nearest, target, tMaxA);
+            InsertNode(randLink, _T_a);
         }
 
-        // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
-        // Node<>(x_rand), tMax);
-
-        // LocalLink<N4> randLink = SampleFree(timeForward);
-        // if (DEBUG)
-        // System.out.println("randLink: " + randLink);
-
-        // if (CollisionFree(randLink.get_source().getState(),
-        // randLink.get_target().getState())) {
-        // new node in "this" tree
-
-        // Node<N4> newNode = InsertNode(randLink, _T_a);
-
-        // if (DEBUG)
-        // System.out.println("NEW NODE " + newNode);
-
-        // List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
-        // Rewire(X_nearA, newNode, timeForward);
+        // SwapTrees();
 
         edges += 1;
 
-        // if (BIDIRECTIONAL) {
-        // // is there a point in the other tree that is reachable from
-        // // the node we just inserted? reachable nodes are nearby in a Euclidean
-        // // sense, though most Euclidean nearby nodes are not reachable.
-        // // so start with a list of near nodes and test them one by one.
+        if (BIDIRECTIONAL) {
 
-        // // near nodes in the other tree:
-        // List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
-        // Matrix<N4, N1> x1 = newNode.getState();
-        // for (NearNode<N4> nearNode : X_near) {
-        // // one near node in the other tree
-        // Matrix<N4, N1> x2 = nearNode.node.getState();
+            // now check for feasible paths to some node in the other tree.
+            // note that the continuity requirement is not to match the state, it's to match
+            // the time-reversed state, since the two trees have opposite time polarity.
 
-        // ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1,
-        // x2, timeForward);
-        // if (sol != null) {
-        // // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
-        // if (DEBUG)
-        // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
-        // Util.matStr(x1), Util.matStr(x2), sol);
-        // // TODO: do something with the solution u value
-        // // add a node in a corresponding to the near node in b
-        // LocalLink<N4> newInA = new LocalLink<>(newNode, new
-        // Node<>(nearNode.node.getState()),
-        // Math.abs(sol.dt));
-        // Node<N4> newNewNode = InsertNode(newInA, _T_a);
-        // Rewire(X_near, newNewNode, timeForward);
-        // // create a path that traverses the new link.
-        // Path<N4> p = GeneratePath(newNewNode, nearNode.node);
-        // if (DEBUG)
-        // System.out.println("PATH " + p);
-        // if (_sigma_best == null) {
-        // System.out.printf("first path distance %7.3f\n", p.getDistance());
-        // _sigma_best = p;
-        // } else {
-        // if (p.getDistance() < _sigma_best.getDistance()) {
-        // System.out.printf("new best path distance %7.3f\n", p.getDistance());
-        // _sigma_best = p;
-        // }
-        // }
-        // // don't need more than one feasible link
-        // break;
-        // }
-        // }
-        // }
-        // // }
-        if (BIDIRECTIONAL)
+            KDNearNode<Node<N4>> x_nearestB = BangBangNearest(x_rand, _T_b, !timeForward);
+            if (x_nearestB == null) {
+                SwapTrees();
+                return 1;
+            }
+
+            Trajectory phiB = BangBangSteer(_model::clear, x_nearestB._nearest.getState(), x_rand, !timeForward);
+            if (phiB == null) {
+                SwapTrees();
+                return 1;
+            }
+            double tMaxB = Math.max(phiB.x.s1.t + phiB.x.s2.t, phiB.y.s1.t + phiB.y.s2.t);
+
+            Node<N4> freeEndB = null;
+            if (curves) {
+                // make lots of little segments
+                double tStep = 0.1;
+                Node<N4> source = x_nearestB._nearest;
+                if (DEBUG)
+                    System.out.printf("phiB %s\n", phiB);
+                if (!timeForward) {
+                    double tSoFar = 0;
+                    for (double tSec = tStep; tSec <= tMaxB; tSec += tStep) {
+                        // for (double tSec = 0; tSec <= tMaxB; tSec += tStep) {
+                        tSoFar = tSec;
+                        Node<N4> source1 = source;
+                        Matrix<N4, N1> state = SampleTrajectory(phiB, tSec);
+                        if (DEBUG)
+                            System.out.printf("A3 stepstate %s\n", state);
+                        Node<N4> target = new Node<>(state);
+                        freeEndB = target;
+                        LocalLink<N4> randLink = new LocalLink<>(source1, target, tStep);
+                        InsertNode(randLink, _T_b);
+                        source1 = target;
+                        source = source1;
+                    }
+                    if (tSoFar < tMaxB) {
+                        // add one more segment to actually reach xrand
+                        Node<N4> target = new Node<>(x_rand);
+                        freeEndB = target;
+                        LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                        InsertNode(randLink, _T_b);
+                    }
+                } else {
+                    // time is reversed, so walk the trajectory backwards
+                    double tSoFar = 0;
+                    for (double tSec = tMaxB; tSec >= 0; tSec -= tStep) {
+                        tSoFar = tSec;
+                        Matrix<N4, N1> state = SampleTrajectory(phiB, tSec);
+                        if (DEBUG)
+                            System.out.printf("A4 stepstate %s\n", state);
+                        Node<N4> target = new Node<>(state);
+                        freeEndB = target;
+                        LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                        InsertNode(randLink, _T_b);
+                        source = target;
+                    }
+                    if (tSoFar > 0) {
+                        // add one more segment to actually reach xrand
+                        if (DEBUG)
+                            System.out.printf("A4 last state %s\n", x_rand);
+                        Node<N4> target = new Node<>(x_rand);
+                        freeEndB = target;
+                        LocalLink<N4> randLink = new LocalLink<>(source, target, tStep);
+                        InsertNode(randLink, _T_b);
+                    }
+                }
+            } else {
+                // just make one segment
+                // same for forward and reverse cases.
+                Node<N4> target = new Node<>(x_rand);
+                freeEndB = target;
+                LocalLink<N4> randLink = new LocalLink<>(x_nearestB._nearest, target, tMaxB);
+                InsertNode(randLink, _T_b);
+            }
+
+            // if we got here then we are finished constructing a path, and should stop
+            // and start optimizing it.
+
+            // for now make a "path"
+
+            if (freeEndB != null) {
+                Path<N4> p = GeneratePath(freeEndA, freeEndB);
+                if (_sigma_best == null) {
+                    System.out.printf("first path distance %7.3f\n", p.getDistance());
+                    _sigma_best = p;
+                } else {
+                    if (p.getDistance() < _sigma_best.getDistance()) {
+                        System.out.printf("new best path distance %7.3f\n", p.getDistance());
+                        _sigma_best = p;
+                    }
+                }
+            }
+            // if (DEBUG)
+            // System.out.println("PATH " + p);
+            // if (_sigma_best == null) {
+            // System.out.printf("first path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // } else {
+            // if (p.getDistance() < _sigma_best.getDistance()) {
+            // System.out.printf("new best path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // }
+
+            // LocalLink<N4> randLink = new LocalLink<>(x_nearest._nearest, new
+            // Node<>(x_rand), tMax);
+
+            // LocalLink<N4> randLink = SampleFree(timeForward);
+            // if (DEBUG)
+            // System.out.println("randLink: " + randLink);
+
+            // if (CollisionFree(randLink.get_source().getState(),
+            // randLink.get_target().getState())) {
+            // new node in "this" tree
+
+            // Node<N4> newNode = InsertNode(randLink, _T_a);
+
+            // if (DEBUG)
+            // System.out.println("NEW NODE " + newNode);
+
+            // List<NearNode<N4>> X_nearA = Near(newNode.getState(), _T_a);
+            // Rewire(X_nearA, newNode, timeForward);
+
+            // // is there a point in the other tree that is reachable from
+            // // the node we just inserted? reachable nodes are nearby in a Euclidean
+            // // sense, though most Euclidean nearby nodes are not reachable.
+            // // so start with a list of near nodes and test them one by one.
+
+            // // near nodes in the other tree:
+            // List<NearNode<N4>> X_near = Near(newNode.getState(), _T_b);
+            // Matrix<N4, N1> x1 = newNode.getState();
+            // for (NearNode<N4> nearNode : X_near) {
+            // // one near node in the other tree
+            // Matrix<N4, N1> x2 = nearNode.node.getState();
+
+            // ShootingSolver<N4, N2>.Solution sol = solver.solve(Nat.N4(), Nat.N2(), f, x1,
+            // x2, timeForward);
+            // if (sol != null) {
+            // // there's a route from x1 aka newnode (in a) to x2 aka nearnode (in b)
+            // if (DEBUG)
+            // System.out.printf("FOUND feasible link x1: %s x2: %s sol: %s\n",
+            // Util.matStr(x1), Util.matStr(x2), sol);
+            // // TODO: do something with the solution u value
+            // // add a node in a corresponding to the near node in b
+            // LocalLink<N4> newInA = new LocalLink<>(newNode, new
+            // Node<>(nearNode.node.getState()),
+            // Math.abs(sol.dt));
+            // Node<N4> newNewNode = InsertNode(newInA, _T_a);
+            // Rewire(X_near, newNewNode, timeForward);
+            // // create a path that traverses the new link.
+            // Path<N4> p = GeneratePath(newNewNode, nearNode.node);
+            // if (DEBUG)
+            // System.out.println("PATH " + p);
+            // if (_sigma_best == null) {
+            // System.out.printf("first path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // } else {
+            // if (p.getDistance() < _sigma_best.getDistance()) {
+            // System.out.printf("new best path distance %7.3f\n", p.getDistance());
+            // _sigma_best = p;
+            // }
+            // }
+            // // don't need more than one feasible link
+            // break;
+            // }
+            // }
+            // }
             SwapTrees();
+        }
         return edges;
     }
 
@@ -287,6 +412,9 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     /**
      * the parameters describe a link between initial and goal trees, the same
      * state in both cases.
+     * 
+     * @param x_1 Node in one tree
+     * @param x_2 Same state in the other tree
      */
     Path<N4> GeneratePath(Node<N4> x_1, Node<N4> x_2) {
         if (!x_1.getState().isEqual(x_2.getState(), 0.001))
@@ -312,7 +440,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
     /** Sample the free state. */
     Matrix<N4, N1> SampleState() {
-        // if (random.nextDouble() > 0.9) return _model.goal();
+        //if (random.nextDouble() > 0.95) return _model.goal();
         while (true) {
             Matrix<N4, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
