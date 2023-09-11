@@ -19,6 +19,7 @@ import org.team100.lib.planner.RobotModel;
 import org.team100.lib.planner.Solver;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Num;
@@ -181,5 +182,11 @@ public class RRTStar<States extends Num, T extends KDModel<States> & RobotModel<
         Collections.reverse(configs);
 
         return new Path<>(totalDistance, configs, new LinkedList<>());
+    }
+
+    @Override
+    public SinglePath<States> getBestSinglePath() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getBestSinglePath'");
     }
 }

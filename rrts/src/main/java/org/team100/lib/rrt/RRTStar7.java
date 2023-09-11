@@ -30,6 +30,7 @@ import org.team100.lib.planner.Solver;
 import org.team100.lib.random.MersenneTwister;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 import org.team100.lib.util.Util;
 
 import edu.wpi.first.math.Matrix;
@@ -92,6 +93,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     private int stepNo;
     private double radius;
     private Path<N4> _sigma_best;
+    private SinglePath<N4> _single_sigma_best;
 
     public RRTStar7(T model, Sample<N4> sample, double gamma, KDNode<Node<N4>> T_a, KDNode<Node<N4>> T_b) {
         if (gamma < 1.0) {
@@ -323,6 +325,18 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                         _sigma_best = p;
                     }
                 }
+                // TODO replace above with this
+                SinglePath<N4> sp = GenerateSinglePath(freeEndA, freeEndB);
+                if (_single_sigma_best == null) {
+                    System.out.printf("first path distance %7.3f\n", sp.getDistance());
+                    _single_sigma_best = sp;
+                } else {
+                    if (sp.getDistance() < _single_sigma_best.getDistance()) {
+                        System.out.printf("new best path distance %7.3f\n", sp.getDistance());
+                        _single_sigma_best = sp;
+                    }
+                }
+
                 //  bail so that we can stop looking
                 return -1;
             }
@@ -419,7 +433,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         Matrix<N4,N1> state1 = path.get(node1);
         Matrix<N4,N1> state2 = path.get(node2);
         double tOptimal = tOptimal(state1, state2, MAX_U);
-        
+
         // here's where i need the path to have the costs in it.
 
     }
@@ -447,6 +461,26 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         // don't include the same point twice
         states_2.remove(0);
         return new Path<>(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
+    }
+    
+    SinglePath<N4> GenerateSinglePath(Node<N4> x_1, Node<N4> x_2) {
+        if (!x_1.getState().isEqual(x_2.getState(), 0.001))
+            throw new IllegalArgumentException(
+                    "x1 " + x_1.getState().toString() + " != x2 " + x_2.getState().toString());
+
+        SinglePath<N4> p_1 = walkParentsSingle(new HashSet<>(), x_1);
+        if (DEBUG)
+            System.out.println("p1 " + p_1);
+        SinglePath<N4> p_2 = walkParentsSingle(new HashSet<>(), x_2);
+        if (DEBUG)
+            System.out.println("p2 " + p_2);
+        List<Matrix<N4, N1>> states_2 = p_2.getStates();
+        Collections.reverse(states_2);
+        // don't include the same point twice
+        states_2.remove(0);
+        List<Matrix<N4,N1>> states_1 = p_1.getStates();
+        states_1.addAll(states_2);
+        return new SinglePath<>(p_1.getDistance() + p_2.getDistance(), states_1);
     }
 
     boolean CollisionFree(Matrix<N4, N1> from, Matrix<N4, N1> to) {
@@ -1476,6 +1510,11 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return _sigma_best;
     }
 
+    @Override
+    public SinglePath<N4> getBestSinglePath() {
+        return _single_sigma_best;
+    }
+
     /**
      * Starting from leaf node, walk the parent links to accumulate
      * the full path, and reverse it, to return a path from root to node.
@@ -1507,6 +1546,31 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         Collections.reverse(configs);
 
         return new Path<>(totalDistance, configs, new LinkedList<>());
+    }
+
+    SinglePath<N4> walkParentsSingle(Set<Node<N4>> visited, Node<N4> node) {
+        // Collect the states along the path (backwards)
+        List<Matrix<N4, N1>> configs = new LinkedList<>();
+        // Since we're visiting all the nodes it's very cheap to verify the total
+        // distance
+        double totalDistance = 0;
+        while (true) {
+            if (visited.contains(node)) {
+                System.out.println("found a cycle");
+                throw new IllegalArgumentException();
+            }
+            visited.add(node);
+            configs.add(node.getState());
+            LinkInterface<N4> incoming = node.getIncoming();
+            if (incoming == null)
+                break;
+            totalDistance += incoming.get_linkDist();
+            node = incoming.get_source();
+        }
+        // now we have the forwards list of states
+        Collections.reverse(configs);
+
+        return new SinglePath<>(totalDistance, configs);
     }
 
     @Override

@@ -14,6 +14,7 @@ import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -34,6 +35,7 @@ import org.team100.lib.planner.Solver;
 import org.team100.lib.rrt.RRTStar7;
 import org.team100.lib.space.Path;
 import org.team100.lib.space.Sample;
+import org.team100.lib.space.SinglePath;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.numbers.N1;
@@ -71,9 +73,10 @@ public class FullStateArenaView extends JComponent {
         KDNode<Node<N4>> T_b = new KDNode<>(new Node<>(arena.goal()));
         // final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a,
         // T_b);
-        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
+        final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena,
+                new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
         solver.setRadius(5); // hoo boy
-        //solver.SwapTrees();
+        // solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
 
@@ -99,9 +102,9 @@ public class FullStateArenaView extends JComponent {
         // printTree(T_a.getValue(), 0);
 
         // while (true) {
-        //     if (solver.step() > 0) {
-        //         break;
-        //     }
+        // if (solver.step() > 0) {
+        // break;
+        // }
         // }
         // System.out.println("A");
         // printTree(T_a.getValue(), 0);
@@ -119,7 +122,6 @@ public class FullStateArenaView extends JComponent {
             states.addAll(bestPath.getStatesA());
             states.addAll(bestPath.getStatesB());
             solver.Optimize(states);
-
 
             // System.out.println(bestPath);
         }
@@ -150,7 +152,7 @@ public class FullStateArenaView extends JComponent {
         Matrix<N4, N1> min = robotModel.getMin();
         Matrix<N4, N1> max = robotModel.getMax();
 
-        Path<N4> bestPath = _rrtStar.getBestPath();
+        SinglePath<N4> bestPath = _rrtStar.getBestSinglePath();
 
         createBGImage(min, max, size, bestPath);
 
@@ -169,7 +171,7 @@ public class FullStateArenaView extends JComponent {
     }
 
     /** min and max are (x xdot y ydot) */
-    private void createBGImage(Matrix<N4, N1> min, Matrix<N4, N1> max, Dimension size, Path<N4> link) {
+    private void createBGImage(Matrix<N4, N1> min, Matrix<N4, N1> max, Dimension size, SinglePath<N4> link) {
         _backgroundImage = createImage(size.width, size.height);
 
         Graphics2D g = (Graphics2D) _backgroundImage.getGraphics();
@@ -216,9 +218,9 @@ public class FullStateArenaView extends JComponent {
             Matrix<N4, N1> x_g = out.get_target().getState();
             for (int ii = 0; ii < depth; ++ii) {
                 System.out.printf(" ");
-            }    
-            System.out.printf("%d(%5.2f, %5.2f, %5.2f, %5.2f)->(%5.2f, %5.2f, %5.2f, %5.2f)\n",depth,
-                    x_i.get(0, 0),x_i.get(1, 0), x_i.get(2, 0), x_i.get(3, 0),
+            }
+            System.out.printf("%d(%5.2f, %5.2f, %5.2f, %5.2f)->(%5.2f, %5.2f, %5.2f, %5.2f)\n", depth,
+                    x_i.get(0, 0), x_i.get(1, 0), x_i.get(2, 0), x_i.get(3, 0),
                     x_g.get(0, 0), x_g.get(1, 0), x_g.get(2, 0), x_g.get(3, 0));
             printTree(out.get_target(), depth + 1);
         }
@@ -307,7 +309,8 @@ public class FullStateArenaView extends JComponent {
             Matrix<N4, N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
                 Matrix<N4, N1> curr = pathIter.next();
-                System.out.printf("green: %f %f %f %f\n", prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                System.out.printf("green: %f %f %f %f\n", prev.get(0, 0), prev.get(2, 0), curr.get(0, 0),
+                        curr.get(2, 0));
                 prev = curr;
             }
         }
@@ -331,56 +334,67 @@ public class FullStateArenaView extends JComponent {
         }
 
     }
-    private void renderPaths(Path<N4> path, Graphics2D g, double scale) {
+
+    private void renderPaths(SinglePath<N4> path, Graphics2D g, double scale) {
         if (path == null) {
             return;
         }
 
         Line2D.Double line = new Line2D.Double();
-        g.setStroke(new BasicStroke((float) (2.0 / scale)));
+        g.setStroke(new BasicStroke((float) (3.0 / scale)));
 
-        List<Matrix<N4, N1>> statesA = path.getStatesA();
-        if (statesA.size() > 1) {
-            Iterator<Matrix<N4, N1>> pathIter = statesA.iterator();
-            Matrix<N4, N1> prev = pathIter.next();
-            while (pathIter.hasNext()) {
-                Matrix<N4, N1> curr = pathIter.next();
-  
-                g.setColor(Color.GREEN);
-                line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
-                g.draw(line);
+        List<Matrix<N4, N1>> states = path.getStates();
+        if (states.size() > 1) {
+            // first the line
+            {
+                g.setColor(Color.ORANGE);
+                Iterator<Matrix<N4, N1>> pathIter = states.iterator();
+                Matrix<N4, N1> prev = pathIter.next();
+                while (pathIter.hasNext()) {
+                    Matrix<N4, N1> curr = pathIter.next();
+                    line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+                    g.draw(line);
+                    prev = curr;
+                }
+            }
+            // then the dots
+            {
                 double r = 0.02;
                 g.setColor(Color.BLACK);
-                g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
-                prev = curr;
+                Iterator<Matrix<N4, N1>> pathIter = states.iterator();
+                while (pathIter.hasNext()) {
+                    Matrix<N4, N1> curr = pathIter.next();
+                    g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
+                }
             }
         }
-        List<Matrix<N4, N1>> statesB = path.getStatesB();
-        if (statesB.size() > 1) {
-            Iterator<Matrix<N4, N1>> pathIter = statesB.iterator();
-            Matrix<N4, N1> prev = pathIter.next();
-            while (pathIter.hasNext()) {
-                Matrix<N4, N1> curr = pathIter.next();
+        // List<Matrix<N4, N1>> statesB = path.getStatesB();
+        // if (statesB.size() > 1) {
+        // Iterator<Matrix<N4, N1>> pathIter = statesB.iterator();
+        // Matrix<N4, N1> prev = pathIter.next();
+        // while (pathIter.hasNext()) {
+        // Matrix<N4, N1> curr = pathIter.next();
 
-                g.setColor(Color.RED);
-                line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
-                g.draw(line);
-                double r = 0.02;
-                g.setColor(Color.BLACK);
-                g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
-                prev = curr;
-            }
-        }
+        // g.setColor(Color.RED);
+        // line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
+        // g.draw(line);
+        // double r = 0.02;
+        // g.setColor(Color.BLACK);
+        // g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2
+        // * r));
+        // prev = curr;
+        // }
+        // }
 
-        Matrix<N4, N1> nA = statesA.get(statesA.size() - 1);
-        Matrix<N4, N1> nB = statesB.get(0);
-        if (nA != null && nB != null) {
-            g.setColor(Color.BLACK);
-            line.setLine(nA.get(0, 0), nA.get(2, 0), nB.get(0, 0), nB.get(2, 0));
-            g.draw(line);
-        } else {
-            System.out.println("NULLS");
-        }
+        // Matrix<N4, N1> nA = statesA.get(statesA.size() - 1);
+        // Matrix<N4, N1> nB = statesB.get(0);
+        // if (nA != null && nB != null) {
+        // g.setColor(Color.BLACK);
+        // line.setLine(nA.get(0, 0), nA.get(2, 0), nB.get(0, 0), nB.get(2, 0));
+        // g.draw(line);
+        // } else {
+        // System.out.println("NULLS");
+        // }
 
     }
 
