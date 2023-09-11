@@ -411,6 +411,19 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         _T_b = tmp;
     }
 
+    /**  */
+    public  void Optimize(List<Matrix<N4,N1>> path) {
+        int nodect = path.size();
+        int node1 = random.nextInt(nodect);
+        int node2 = random.nextInt(nodect);
+        Matrix<N4,N1> state1 = path.get(node1);
+        Matrix<N4,N1> state2 = path.get(node2);
+        double tOptimal = tOptimal(state1, state2, MAX_U);
+        
+        // here's where i need the path to have the costs in it.
+
+    }
+
     /**
      * the parameters describe a link between initial and goal trees, the same
      * state in both cases.

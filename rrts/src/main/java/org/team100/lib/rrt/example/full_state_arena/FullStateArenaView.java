@@ -115,6 +115,10 @@ public class FullStateArenaView extends JComponent {
             System.out.println("found path");
 
             // so now we should try to optimize it for awhile
+            List<Matrix<N4, N1>> states = new ArrayList<>();
+            states.addAll(bestPath.getStatesA());
+            states.addAll(bestPath.getStatesB());
+            solver.Optimize(states);
 
 
             // System.out.println(bestPath);
