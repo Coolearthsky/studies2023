@@ -72,7 +72,7 @@ public class FullStateArenaView extends JComponent {
         // final Solver<N4> solver = new RRTStar6<>(arena, new Sample<>(arena), 3, T_a,
         // T_b);
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena, new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
-        solver.setRadius(3); // hoo boy
+        solver.setRadius(5); // hoo boy
         //solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
@@ -93,10 +93,10 @@ public class FullStateArenaView extends JComponent {
         });
 
         // RRTStar7.DEBUG = true;
-        // runner.runForDurationMS(100);
-         runner.runSamples(100);
+        runner.runForDurationMS(60);
+        // runner.runSamples(1000);
         // System.out.println("before");
-        //printTree(T_a.getValue(), 0);
+        // printTree(T_a.getValue(), 0);
 
         // while (true) {
         //     if (solver.step() > 0) {
@@ -113,6 +113,10 @@ public class FullStateArenaView extends JComponent {
             System.out.println("failed to find path");
         } else {
             System.out.println("found path");
+
+            // so now we should try to optimize it for awhile
+
+
             // System.out.println(bestPath);
         }
         System.out.println("done");
@@ -329,7 +333,7 @@ public class FullStateArenaView extends JComponent {
         }
 
         Line2D.Double line = new Line2D.Double();
-        g.setStroke(new BasicStroke((float) (5.0 / scale)));
+        g.setStroke(new BasicStroke((float) (2.0 / scale)));
 
         List<Matrix<N4, N1>> statesA = path.getStatesA();
         if (statesA.size() > 1) {
@@ -337,9 +341,13 @@ public class FullStateArenaView extends JComponent {
             Matrix<N4, N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
                 Matrix<N4, N1> curr = pathIter.next();
+  
                 g.setColor(Color.GREEN);
                 line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
                 g.draw(line);
+                double r = 0.02;
+                g.setColor(Color.BLACK);
+                g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
                 prev = curr;
             }
         }
@@ -349,9 +357,13 @@ public class FullStateArenaView extends JComponent {
             Matrix<N4, N1> prev = pathIter.next();
             while (pathIter.hasNext()) {
                 Matrix<N4, N1> curr = pathIter.next();
+
                 g.setColor(Color.RED);
                 line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
                 g.draw(line);
+                double r = 0.02;
+                g.setColor(Color.BLACK);
+                g.fill(new Ellipse2D.Double(curr.get(0, 0) - r, curr.get(2, 0) - r, 2 * r, 2 * r));
                 prev = curr;
             }
         }

@@ -323,6 +323,8 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                         _sigma_best = p;
                     }
                 }
+                //  bail so that we can stop looking
+                return -1;
             }
             // if (DEBUG)
             // System.out.println("PATH " + p);

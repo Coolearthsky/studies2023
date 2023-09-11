@@ -68,7 +68,10 @@ public class Runner<States extends Num> {
             if (actualLimit > 10000)
                 break;
             _solver.setStepNo(_stepNo);
-            if (_solver.step() > 0) {
+
+            int step = _solver.step();
+            if (step < 0) return; // solver says "stop".
+            if (step > 0) {
                 _stepNo++;
                 if (_stepNo > sampleLimit) {
                     return;
