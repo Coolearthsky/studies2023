@@ -92,6 +92,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     // mutable loop variables to make the loop code cleaner
     private int stepNo;
     private double radius;
+    // TODO remove
     private Path<N4> _sigma_best;
     private SinglePath<N4> _single_sigma_best;
 
@@ -337,7 +338,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
                     }
                 }
 
-                //  bail so that we can stop looking
+                // bail so that we can stop looking
                 return -1;
             }
             // if (DEBUG)
@@ -426,12 +427,15 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
     }
 
     /**  */
-    public  void Optimize(List<Matrix<N4,N1>> path) {
-        int nodect = path.size();
+    public void Optimize(SinglePath<N4> singlePath) {
+
+        List<Matrix<N4, N1>> states = singlePath.getStates();
+
+        int nodect = states.size();
         int node1 = random.nextInt(nodect);
         int node2 = random.nextInt(nodect);
-        Matrix<N4,N1> state1 = path.get(node1);
-        Matrix<N4,N1> state2 = path.get(node2);
+        Matrix<N4, N1> state1 = states.get(node1);
+        Matrix<N4, N1> state2 = states.get(node2);
         double tOptimal = tOptimal(state1, state2, MAX_U);
 
         // here's where i need the path to have the costs in it.
@@ -462,25 +466,67 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         states_2.remove(0);
         return new Path<>(p_1.getDistance() + p_2.getDistance(), p_1.getStatesA(), states_2);
     }
-    
+
+    /**
+     * Returns a copy of the solution path.
+     * Param nodes need to have the same state.
+     * 
+     * @param x_1 "leaf" end of one of the trees; could be initial or goal depending
+     *            on swapping
+     * @param x_2 leaf of the other tree
+     */
     SinglePath<N4> GenerateSinglePath(Node<N4> x_1, Node<N4> x_2) {
         if (!x_1.getState().isEqual(x_2.getState(), 0.001))
             throw new IllegalArgumentException(
                     "x1 " + x_1.getState().toString() + " != x2 " + x_2.getState().toString());
 
+        // the list of states and links returned starts at the leaf and ends at the
+        // root.
         SinglePath<N4> p_1 = walkParentsSingle(new HashSet<>(), x_1);
         if (DEBUG)
             System.out.println("p1 " + p_1);
         SinglePath<N4> p_2 = walkParentsSingle(new HashSet<>(), x_2);
         if (DEBUG)
             System.out.println("p2 " + p_2);
+        // either p_1 or p_2 are the initial tree
+        //
+        boolean root1 = same(_T_a.getValue().getState(), p_1.getRoot());
+        if (!root1) {
+            // swap them
+            SinglePath<N4> tmp = p_1;
+            p_1 = p_2;
+            p_2 = tmp;
+        }
+
+        // now p_1 root is the initial state.
+
+        // new: reverse the other one since the walker doesn't do it.
+
+        List<Matrix<N4, N1>> states_1 = p_1.getStates();
+        Collections.reverse(states_1);
+
         List<Matrix<N4, N1>> states_2 = p_2.getStates();
-        Collections.reverse(states_2);
         // don't include the same point twice
         states_2.remove(0);
-        List<Matrix<N4,N1>> states_1 = p_1.getStates();
-        states_1.addAll(states_2);
-        return new SinglePath<>(p_1.getDistance() + p_2.getDistance(), states_1);
+
+        List<Matrix<N4, N1>> result = new ArrayList<>();
+        result.addAll(states_1);
+        result.addAll(states_2);
+
+        // this list is from leaf to root, so backwards. reverse it.
+        List<SinglePath.Link<N4>> links1 = p_1.getLinks();
+        LinkedList<SinglePath.Link<N4>> revLinks1 = new LinkedList<>();
+        for (SinglePath.Link<N4> l : links1) {
+            revLinks1.addFirst(new SinglePath.Link<>(l.x_g, l.x_i, l.cost));
+        }
+        // this list is in the correct order.
+        List<SinglePath.Link<N4>> links2 = p_2.getLinks();
+
+        List<SinglePath.Link<N4>> resultLinks = new ArrayList<>();
+        resultLinks.addAll(revLinks1);
+        resultLinks.addAll(links2);
+
+        return new SinglePath<>(p_1.getDistance() + p_2.getDistance(), result, resultLinks);
     }
 
     boolean CollisionFree(Matrix<N4, N1> from, Matrix<N4, N1> to) {
@@ -489,7 +535,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
 
     /** Sample the free state. */
     Matrix<N4, N1> SampleState() {
-        //if (random.nextDouble() > 0.95) return _model.goal();
+        // if (random.nextDouble() > 0.95) return _model.goal();
         while (true) {
             Matrix<N4, N1> newConfig = _sample.get();
             if (_model.clear(newConfig))
@@ -1505,6 +1551,7 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return allNodes;
     }
 
+    // TODO remove
     @Override
     public Path<N4> getBestPath() {
         return _sigma_best;
@@ -1548,29 +1595,52 @@ public class RRTStar7<T extends Arena<N4>> implements Solver<N4> {
         return new Path<>(totalDistance, configs, new LinkedList<>());
     }
 
+    /**
+     * Return a path starting the leaf, ending at the root.
+     * 
+     * Return a list of links starting from the leaf, ending at the root.
+     * 
+     * @param node leaf of a tree
+     */
     SinglePath<N4> walkParentsSingle(Set<Node<N4>> visited, Node<N4> node) {
         // Collect the states along the path (backwards)
         List<Matrix<N4, N1>> configs = new LinkedList<>();
+        List<SinglePath.Link<N4>> links = new LinkedList<>();
+
         // Since we're visiting all the nodes it's very cheap to verify the total
         // distance
         double totalDistance = 0;
+
         while (true) {
             if (visited.contains(node)) {
                 System.out.println("found a cycle");
                 throw new IllegalArgumentException();
             }
             visited.add(node);
+
             configs.add(node.getState());
             LinkInterface<N4> incoming = node.getIncoming();
             if (incoming == null)
                 break;
             totalDistance += incoming.get_linkDist();
+            // walking backwards here, so the "source" is actually the "target" of the link.
+            SinglePath.Link<N4> link = new SinglePath.Link<>(
+                    incoming.get_target().getState(),
+                    incoming.get_source().getState(),
+                    incoming.get_linkDist());
+            links.add(link);
             node = incoming.get_source();
         }
-        // now we have the forwards list of states
-        Collections.reverse(configs);
+        // we collected these from leaf to root, so reverse to get root to leaf.
 
-        return new SinglePath<>(totalDistance, configs);
+        // new, no more reversing.
+
+        // Collections.reverse(configs);
+        // reversing the list of links entails reversing each link too.
+        // but note that the caller is going to reverse one of them again,
+        // so let's not do that.
+
+        return new SinglePath<>(totalDistance, configs, links);
     }
 
     @Override

@@ -39,22 +39,30 @@ class PathTest {
     @Test
     void testSingleIsBetter() {
         List<Matrix<N1, N1>> a1 = new ArrayList<>();
+        List<SinglePath.Link<N1>> l1 = new ArrayList<>();
         a1.add(VecBuilder.fill(0));
         a1.add(VecBuilder.fill(1));
+        l1.add(new SinglePath.Link<>(VecBuilder.fill(0), VecBuilder.fill(1), 1));
         a1.add(VecBuilder.fill(2));
+        l1.add(new SinglePath.Link<>(VecBuilder.fill(1), VecBuilder.fill(2), 1));
         a1.add(VecBuilder.fill(3));
-        SinglePath<N1> p1 = new SinglePath<>(2, a1);
+        l1.add(new SinglePath.Link<>(VecBuilder.fill(2), VecBuilder.fill(3), 1));
+        SinglePath<N1> p1 = new SinglePath<>(2, a1, l1);
         assertEquals(2, p1.getDistance());
 
         List<Matrix<N1, N1>> a2 = new ArrayList<>();
+        List<SinglePath.Link<N1>> l2 = new ArrayList<>();
         a2.add(VecBuilder.fill(0));
         a2.add(VecBuilder.fill(2));
+        l2.add(new SinglePath.Link<>(VecBuilder.fill(0), VecBuilder.fill(2), 2));
         a2.add(VecBuilder.fill(3));
+        l2.add(new SinglePath.Link<>(VecBuilder.fill(2), VecBuilder.fill(3), 1));
         a2.add(VecBuilder.fill(4));
-        SinglePath<N1> p2 = new SinglePath<>(3, a2);
+        l2.add(new SinglePath.Link<>(VecBuilder.fill(3), VecBuilder.fill(4), 1));
+        SinglePath<N1> p2 = new SinglePath<>(3, a2, l2);
         assertEquals(3, p2.getDistance());
 
-        assertTrue(SinglePath.isBetter(p1,p2));
+        assertTrue(p1.getDistance() < p2.getDistance());
     }
 
 }

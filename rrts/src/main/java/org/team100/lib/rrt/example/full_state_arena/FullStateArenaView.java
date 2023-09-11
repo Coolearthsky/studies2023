@@ -75,7 +75,7 @@ public class FullStateArenaView extends JComponent {
         // T_b);
         final RRTStar7<FullStateHolonomicArena> solver = new RRTStar7<>(arena,
                 new Sample<>(arena, new Random().nextInt()), 3, T_a, T_b);
-        solver.setRadius(5); // hoo boy
+        solver.setRadius(4); // hoo boy
         // solver.SwapTrees();
         final Runner<N4> runner = new Runner<>(solver);
         final FullStateArenaView view = new FullStateArenaView(arena, runner, T_a, T_b);
@@ -111,17 +111,14 @@ public class FullStateArenaView extends JComponent {
         // System.out.println("B");
         // printTree(T_b.getValue(), 0);
 
-        Path<N4> bestPath = runner.getBestPath();
-        if (bestPath == null) {
+        SinglePath<N4> bestSinglePath = runner.getBestSinglePath();
+        if (bestSinglePath == null) {
             System.out.println("failed to find path");
         } else {
             System.out.println("found path");
 
             // so now we should try to optimize it for awhile
-            List<Matrix<N4, N1>> states = new ArrayList<>();
-            states.addAll(bestPath.getStatesA());
-            states.addAll(bestPath.getStatesB());
-            solver.Optimize(states);
+            solver.Optimize(bestSinglePath);
 
             // System.out.println(bestPath);
         }
@@ -347,14 +344,18 @@ public class FullStateArenaView extends JComponent {
         if (states.size() > 1) {
             // first the line
             {
-                g.setColor(Color.ORANGE);
                 Iterator<Matrix<N4, N1>> pathIter = states.iterator();
                 Matrix<N4, N1> prev = pathIter.next();
+                final int statect = states.size();
+                int statei = 0;
                 while (pathIter.hasNext()) {
+                    // TODO: make this reflect cost
+                    g.setColor(new Color(1, (float)statei/statect, (float)(1.0-(float)statei/statect)));
                     Matrix<N4, N1> curr = pathIter.next();
                     line.setLine(prev.get(0, 0), prev.get(2, 0), curr.get(0, 0), curr.get(2, 0));
                     g.draw(line);
                     prev = curr;
+                    ++statei;
                 }
             }
             // then the dots
