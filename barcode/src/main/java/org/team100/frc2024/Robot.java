@@ -20,8 +20,8 @@ public class Robot extends TimedRobot {
     private final Mux mux = new Mux(m_outputs);
     private final AnalogInput m_input = new AnalogInput(0);
     private final AnalogInput m_testInput = new AnalogInput(1);
-    private final DigitalOutput m_odd = new DigitalOutput(0);
-    private final DigitalOutput m_even = new DigitalOutput(1);
+    private final DigitalOutput m_odd = new DigitalOutput(5);
+    private final DigitalOutput m_even = new DigitalOutput(6);
     private final Timer m_testTimer = new Timer();
     // TODO: tune the thresholds
     private final Sensor m_array = new Sensor(
@@ -46,6 +46,9 @@ public class Robot extends TimedRobot {
     @Override
     public void teleopPeriodic() {
         System.out.println(m_array.readValue());
+        System.out.printf("0: %5.3f 1: %5.3f\n",
+                    m_input.getAverageVoltage(),
+                    m_testInput.getAverageVoltage());
     }
 
     @Override
