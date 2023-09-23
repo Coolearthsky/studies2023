@@ -4,6 +4,7 @@ import java.util.OptionalInt;
 
 import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalOutput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Represents the id sensor assembly, which consists of two parts:
@@ -61,6 +62,12 @@ import edu.wpi.first.wpilibj.DigitalOutput;
  * https://www.pololu.com/product/4405/resources
  */
 public class Sensor {
+    private final double[] s5 = new double[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private final double[] s4 = new double[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private final double[] s3 = new double[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private final double[] s2 = new double[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private final double[] s1 = new double[] {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    private double average; 
     private final double[] m_thresholds;
     private final AnalogInput m_input;
     private final Mux m_mux;
@@ -114,7 +121,7 @@ public class Sensor {
             for (int i = 0; i < m_thresholds.length; i += 2) {
                 m_mux.set(i);
                 Thread.sleep(0, 100);// 100ns of settling time
-                result[i] = readInput(m_thresholds[i]);
+                result[i] = readInput(m_thresholds[i], i);
             }
             // switch the emitters to 1,3 (note the confusing naming here)
             m_odd.set(false);
@@ -124,7 +131,7 @@ public class Sensor {
             for (int i = 1; i < m_thresholds.length; i += 2) {
                 m_mux.set(i);
                 Thread.sleep(0, 100);// 100ns of settling time
-                result[i] = readInput(m_thresholds[i]);
+                result[i] = readInput(m_thresholds[i], i);
             }
             m_even.set(false);
             return result;
@@ -142,8 +149,69 @@ public class Sensor {
      * @param threshold above the threshold means dark, 1, below means light, is 0
      * @return true = dark = "1" in the bar code.
      */
-    boolean readInput(double threshold) {
-        return m_input.getAverageVoltage() > threshold;
+    boolean readInput(double threshold, int i) {
+        int loops = 150;
+        double sv = m_input.getAverageVoltage();
+        switch(i) {
+            case 0: for (int j = 0; j < loops; j++) {
+                sv += s1[j];
+            }
+            average = sv/(loops+1);
+            for (int j = 0; j < loops; j++) {
+                s1[loops-j] = s1[loops-j-1]; 
+            }
+            s1[0] = m_input.getAverageVoltage(); 
+            break;
+            case 1: for (int j = 0; j < loops; j++) {
+                sv += s2[j];
+            }
+            average = sv/(loops+1);
+            for (int j = 0; j < loops; j++) {
+                s2[loops-j] = s2[loops-j-1]; 
+            }
+            s2[0] = m_input.getAverageVoltage(); 
+            break;
+            case 2: for (int j = 0; j < loops; j++) {
+                sv += s3[j];
+            }
+            average = sv/(loops+1);
+            for (int j = 0; j < loops; j++) {
+                s3[loops-j] = s3[loops-j-1]; 
+            }
+            s3[0] = m_input.getAverageVoltage(); 
+            break;
+            case 3: for (int j = 0; j < loops; j++) {
+                sv += s4[j];
+            }
+            average = sv/(loops+1);
+            for (int j = 0; j < loops; j++) {
+                s4[loops-j] = s4[loops-j-1]; 
+            }
+            s4[0] = m_input.getAverageVoltage(); 
+            break;
+            case 4: for (int j = 0; j < loops; j++) {
+                sv += s5[j];
+            }
+            average = sv/(loops+1);
+            for (int j = 0; j < loops; j++) {
+                s5[loops-j] = s5[loops-j-1]; 
+            }
+            s5[0] = m_input.getAverageVoltage(); 
+            break;
+            default:
+            System.out.println("Analog Input number does not exist");
+            break;
+        }
+        System.out.println(i+1 + ": " + average);
+        SmartDashboard.putNumber("Average " + i, average);
+        SmartDashboard.putNumber("Real " + i, m_input.getAverageVoltage());
+        return average > threshold;
+        //ORDER OF THINGS FROM BACK: 
+        // 2 = FAR RIGHT
+        // 3 = right
+        // 4 = center
+        // 0 = left
+        // 1 = far left
     }
 
     /** @return int representation of array */

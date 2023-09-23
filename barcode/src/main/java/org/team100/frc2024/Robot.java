@@ -26,7 +26,7 @@ public class Robot extends TimedRobot {
     // TODO: tune the thresholds
     private final Sensor m_array = new Sensor(
             m_input,
-            new double[] { 1, 1, 1, 1, 1 },
+            new double[] { 2.5, 3, 1.5, 2.4, 1.8 },
             mux,
             m_odd,
             m_even);
