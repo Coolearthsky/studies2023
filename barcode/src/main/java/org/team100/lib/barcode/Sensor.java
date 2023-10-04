@@ -120,7 +120,7 @@ public class Sensor {
             Thread.sleep(0, 200);// sensor startup time minus the mux time below
             for (int i = 0; i < m_thresholds.length; i += 2) {
                 m_mux.set(i);
-                Thread.sleep(0, 100);// 100ns of settling time
+                Thread.sleep(5, 0);// 100ns of settling time
                 result[i] = readInput(m_thresholds[i], i);
             }
             // switch the emitters to 1,3 (note the confusing naming here)
@@ -130,7 +130,7 @@ public class Sensor {
             Thread.sleep(0, 200);// sensor startup time minus the mux time below
             for (int i = 1; i < m_thresholds.length; i += 2) {
                 m_mux.set(i);
-                Thread.sleep(0, 100);// 100ns of settling time
+                Thread.sleep(5, 0);// 100ns of settling time
                 result[i] = readInput(m_thresholds[i], i);
             }
             m_even.set(false);
@@ -202,16 +202,11 @@ public class Sensor {
             System.out.println("Analog Input number does not exist");
             break;
         }
-        System.out.println(i+1 + ": " + average);
+        // System.out.println(i+1 + ": " + average);
         SmartDashboard.putNumber("Average " + i, average);
         SmartDashboard.putNumber("Real " + i, m_input.getAverageVoltage());
-        return average > threshold;
-        //ORDER OF THINGS FROM BACK: 
-        // 2 = FAR RIGHT
-        // 3 = right
-        // 4 = center
-        // 0 = left
-        // 1 = far left
+        return m_input.getAverageVoltage() > threshold;
+        //Sensors go from looking at face left to right 0-4 in order
     }
 
     /** @return int representation of array */

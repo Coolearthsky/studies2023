@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalOutput;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
     private final DigitalOutput[] m_outputs = new DigitalOutput[] {
@@ -19,14 +20,13 @@ public class Robot extends TimedRobot {
     // TODO: wire up the mux and try it out
     private final Mux mux = new Mux(m_outputs);
     private final AnalogInput m_input = new AnalogInput(0);
-    private final AnalogInput m_testInput = new AnalogInput(1);
     private final DigitalOutput m_odd = new DigitalOutput(5);
-    private final DigitalOutput m_even = new DigitalOutput(6);
+    private final DigitalOutput m_even = new DigitalOutput(4);
     private final Timer m_testTimer = new Timer();
     // TODO: tune the thresholds
     private final Sensor m_array = new Sensor(
             m_input,
-            new double[] { 2.5, 3, 1.5, 2.4, 1.8 },
+            new double[] { 2.5, 3, 3, 2.4, 2.5 },
             mux,
             m_odd,
             m_even);
@@ -53,12 +53,21 @@ public class Robot extends TimedRobot {
 
     @Override
     public void testPeriodic() {
-        if (m_testTimer.get() > 0.25) {
-            System.out.printf("0: %5.3f 1: %5.3f\n",
-                    m_input.getAverageVoltage(),
-                    m_testInput.getAverageVoltage());
-            m_testTimer.restart();
-        }
+        mux.set(1);
+        try {
+            Thread.sleep(5, 0);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }// led driver startup time
+        SmartDashboard.putNumber("Real 1", m_input.getAverageVoltage());
+        mux.set(0);
+        try {
+            Thread.sleep(5, 0);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();}
+        SmartDashboard.putNumber("Real 0", m_input.getAverageVoltage());
     }
 
     @Override
